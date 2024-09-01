@@ -1,0 +1,166 @@
+%test_component_hollow_sphere Component solution spaces for a sphere problem 
+%   test_component_hollow_sphere computes a component solution spaces with 
+%   for a sphere problem.
+%
+%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   SPDX-License-Identifier: Apache-2.0
+
+%   Licensed under the Apache License, Version 2.0 (the "License");
+%   you may not use this file except in compliance with the License.
+%   You may obtain a copy of the License at
+%   
+%       http://www.apache.org/licenses/LICENSE-2.0
+%   
+%   Unless required by applicable law or agreed to in writing, software
+%   distributed under the License is distributed on an "AS IS" BASIS,
+%   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+%   See the License for the specific language governing permissions and
+%   limitations under the License.
+
+%% Cleanup
+fclose all;
+close all;
+clear all;
+clc;
+more off;
+diary off;
+
+
+%% debugging
+rng(4);
+
+
+%% Documentation / Archive
+RNGstate = rng;
+saveFolder = save_diary_files(mfilename);
+goldenratio = (1+sqrt(5))/2;
+figureSize = [goldenratio 1]*8.5;
+
+
+%% function call
+%
+systemFunction = @truss_six_bar_2d_moving_node;
+systemParameter = [1000,210e3]; % [mm^2],[MPa]
+%        x1  x2  x3
+designSpaceLowerBound = [0.5 -0.5 0.5 0.5];
+designSpaceUpperBound = [1.5  0.5 1.5 1.5];
+Components = {[1,2]',[3,4]'};
+%
+performanceLowerLimit = 0;
+performanceUpperLimit = [0.7e-4 repmat(250,1,6)];
+%
+initialDesign = [1,0,1,1];
+
+RequirementSpacesType = 'Omega1';
+
+
+%% find optimum
+bottomUpMapping = BottomUpMappingFunction(systemFunction,systemParameter);
+
+[nodePositionOptimal,displacementOptimal] = design_optimize_quantities_of_interest(...
+    bottomUpMapping,...
+    initialDesign,...
+    designSpaceLowerBound,...
+    designSpaceUpperBound,...
+    @(performanceMeasure)[performanceMeasure(1)],...
+    'InequalityConstraintFunction',@(performanceMeasure)[performanceMeasure(2:end)-250],...
+    'OptimizationMethodOptions',{'Display','iter-detailed'});
+
+
+%% Box Opt - Function
+% update uppwer limit based on optimal value
+performanceUpperLimit(1) = displacementOptimal*1.1;
+
+designEvaluator = DesignEvaluatorBottomUpMapping(...
+        bottomUpMapping,...
+        performanceLowerLimit,...
+        performanceUpperLimit);
+
+
+tic
+optionsBox = sso_stochastic_options('box',...
+    'NumberSamplesPerIterationExploration',300,...
+    'NumberSamplesPerIterationConsolidation',300,...
+    'FixIterNumberExploration',true,...
+    'FixIterNumberConsolidation',true,...
+    'MaxIterExploration',30,...
+    'MaxIterConsolidation',30,...
+    'UseAdaptiveGrowthRate',false,...
+    'GrowthRate',0.2,...
+    'ApplyLeanness','never',...
+    'TrimmingOperationOptions',{'PassesCriterion','full'},...
+    'TrimmingOrderOptions',{'OrderPreference','score'});
+toc
+
+
+[solutionSpaceBox,problemDataBox,iterDataBox] = sso_box_stochastic(designEvaluator,...
+    initialDesign,designSpaceLowerBound,designSpaceUpperBound,optionsBox);
+
+
+%% Component Opt - 
+tic
+optionsComponent = sso_stochastic_options('component',...
+    'NumberSamplesPerIterationExploration',300,...
+    'NumberSamplesPerIterationConsolidation',300,...
+    'FixIterNumberExploration',true,...
+    'FixIterNumberConsolidation',true,...
+    'MaxIterExploration',30,...
+    'MaxIterConsolidation',30,...
+    'CandidateSpaceConstructorExploration',@CandidateSpaceConvexHull,...
+    'CandidateSpaceConstructorConsolidation',@CandidateSpaceConvexHull,...
+    'TrimmingMethodFunction',@component_trimming_method_planar_trimming,...
+    'UseAdaptiveGrowthRate',false,...
+    'GrowthRate',0.2,...
+    'ApplyLeanness','never',...
+    'UsePaddingSamplesInTrimming',true,...
+    'UsePreviousEvaluatedSamplesConsolidation',false,...
+    'UsePreviousPaddingSamplesConsolidation',false,...
+    'TrimmingOperationOptions',{'PassesCriterion','reduced'},...
+    'TrimmingOrderOptions',{'OrderPreference','score'});
+
+
+[componentSolutionSpace,problemDataComponent,iterDataComponent] = sso_component_stochastic(designEvaluator,...
+    initialDesign,designSpaceLowerBound,designSpaceUpperBound,Components,optionsComponent);
+toc
+
+
+%% Plot Visualization
+nodePositionInitial = [0 0; 0 1; initialDesign([1,2]); initialDesign([3,4]); 2 0.5];
+nodePositionOptimized = [0 0; 0 1; nodePositionOptimal([1,2]); nodePositionOptimal([3,4]); 2 0.5];
+fixedDegreesOfFreedom = [true true; true true; false false; false false; false false];
+nodeForce = [0 0; 0 0; 0 0; 0 0; 0 -1000];
+nodeElement = [1 3; 2 4; 2 3; 3 4; 3 5; 4 5];
+elementCrossSectionArea = systemParameter(1); % [mm^2]
+elementYoungsModulus = systemParameter(2); % [MPa]
+
+figure;
+hold all;
+handleInitial = plot_truss_deformation(gcf,nodePositionInitial,nodeElement);
+handleOptimal = plot_truss_deformation(gcf,nodePositionOptimized,nodeElement,'ColorUndeformed','r');
+handleToleranceNode1Box = plot_design_box_2d(gcf,solutionSpaceBox(:,[1,2]),'EdgeColor','c','Linewidth',2.0);
+handleToleranceNode2Box = plot_design_box_2d(gcf,solutionSpaceBox(:,[3,4]),'EdgeColor','c','Linewidth',2.0);
+handleToleranceNode1Component = componentSolutionSpace(1).plot_candidate_space(gcf,'Color','g','Linewidth',2.0);
+handleToleranceNode2Component = componentSolutionSpace(2).plot_candidate_space(gcf,'Color','g','Linewidth',2.0);
+grid minor;
+legend([handleInitial,handleOptimal,handleToleranceNode1Box,handleToleranceNode2Box,...
+    handleToleranceNode1Component,handleToleranceNode2Component],...
+    {'Initial Truss','Optimized Truss',...
+    'Tolerance Region for Node 1 (Box)','Tolerance Region for Node 2 (Box)'...
+    'Tolerance Region for Node 1 (Component)','Tolerance Region for Node 2 (Component)'},...
+    'location','west');
+save_print_figure(gcf,[saveFolder,'TrussVisualization']);
+
+
+%% 
+algoDataBox = postprocess_sso_box_stochastic(problemDataBox,iterDataBox);
+plot_sso_box_stochastic_metrics(algoDataBox,'SaveFolder',saveFolder);
+
+algoDataComponent = postprocess_sso_component_stochastic(problemDataComponent,iterDataComponent);
+plot_sso_component_stochastic_metrics(algoDataComponent,'SaveFolder',saveFolder);
+
+
+
+%% Save and Stop Transcripting
+save([saveFolder,'Data.mat']);
+diary off;
+
