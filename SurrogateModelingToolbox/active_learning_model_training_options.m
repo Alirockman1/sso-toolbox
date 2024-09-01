@@ -120,7 +120,7 @@ function options = active_learning_model_training_options(varargin)
     parser.addParameter('NumberCandidatesInitial',1000,@(x)isnumeric(x)&&isscalar(x));
     parser.addParameter('FunctionUpdateNumberCandidates',@(nCandidate0, nCandidate, iter)[nCandidate0*iter],@(x)isa(x,'function_handle'));
     parser.addParameter('MaxIter',20,@(x)isnumeric(x)&&isscalar(x));
-    parser.addParameter('FixIter',false,@(x)islogical(x)&&isscalar(x));
+    parser.addParameter('FixIter',true,@(x)islogical(x)&&isscalar(x));
     parser.addParameter('ExplorationErrorTolerance',0.01,@(x)isnumeric(x)&&isscalar(x));
     parser.addParameter('CyclesToConverge',3,@(x)isnumeric(x)&&isscalar(x));
     parser.addParameter('ExplorationToBoundaryRatio',0.50,@(x)isnumeric(x)&&isscalar(x));
