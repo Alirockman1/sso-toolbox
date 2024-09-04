@@ -51,7 +51,7 @@ function plotHandle = plot_candidate_space_3d(fighan,candidateSpace,varargin)
 
     % make the intervals for each variable
     definitionSample = candidateSpace.DesignSampleDefinition;
-    definitionLabel = candidateSpace.LabelDefinition;
+    definitionLabel = candidateSpace.IsInsideDefinition;
     [~,positiveRegionBox] = design_bounding_box(definitionSample,definitionLabel);
     xInterval = positiveRegionBox(1,1) + (0:stepSize:1)*(positiveRegionBox(2,1)-positiveRegionBox(1,1));
     yInterval = positiveRegionBox(1,2) + (0:stepSize:1)*(positiveRegionBox(2,2)-positiveRegionBox(1,2));

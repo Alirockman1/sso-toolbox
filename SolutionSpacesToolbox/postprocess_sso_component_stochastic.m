@@ -99,7 +99,7 @@ function algorithmData = postprocess_sso_component_stochastic(problemData,iterat
     componentMeasuresAfterTrimNormalized = nan(iConsolidationEnd,nComponent);
     for i=1:iConsolidationEnd
         for j=1:nComponent
-            if(isempty(iterationData(i).CandidateSpacesBeforeTrim) || isempty(iterationData(i).CandidateSpacesBeforeTrim(j).IsInsideDefinition))
+            if(isempty(iterationData(i).CandidateSpacesBeforeTrim(j)) || isempty(iterationData(i).CandidateSpacesBeforeTrim(j).IsInsideDefinition))
                 if(isempty(iterationData(i).CandidateSpacesAfterTrim))
                     componentMeasuresBeforeTrim(i,j) = 0;
                 else

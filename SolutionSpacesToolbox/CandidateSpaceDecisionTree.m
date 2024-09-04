@@ -249,7 +249,7 @@ classdef CandidateSpaceDecisionTree < CandidateSpaceBase
             else % two classes
                 % Weighting factor of Type II error 
                 % false negative - is positive (inside) design, predicted negative (outside) design
-                if(isa(obj.DecisionTreeBalanceCost,'function_handle'))
+                if(isa(obj.InsidePriorityRatio,'function_handle'))
                     nOutsideTraining = sum(~isInside);
                     nInsideTraining = sum(isInside);
 
@@ -322,15 +322,27 @@ classdef CandidateSpaceDecisionTree < CandidateSpaceBase
         end
 
         function designSample = get.DesignSampleDefinition(obj)
-            designSample = obj.DecisionTree.X;
+            if(isempty(obj.DecisionTree))
+                designSample = [];
+            else
+                designSample = obj.DecisionTree.X;
+            end
         end
 
         function isInside = get.IsInsideDefinition(obj)
-            isInside = obj.DecisionTree.Y;
+            if(isempty(obj.DecisionTree))
+                isInside = [];
+            else
+                isInside = obj.DecisionTree.Y;
+            end
         end
 
         function isShapeDefinition = get.IsShapeDefinition(obj)
-            shapeDefinition = design_find_boundary_samples(obj.DesignSampleDefinition,obj.IsInsideDefinition);
+            if(all(obj.IsInsideDefinition(1)==obj.IsInsideDefinition))
+                isShapeDefinition = true(size(obj.IsInsideDefinition,1),1);
+            else
+                isShapeDefinition = design_find_boundary_samples(obj.DesignSampleDefinition,obj.IsInsideDefinition);
+            end
         end
         
         function volume = get.Measure(obj)

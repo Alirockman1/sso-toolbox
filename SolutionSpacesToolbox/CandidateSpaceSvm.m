@@ -338,11 +338,19 @@ classdef CandidateSpaceSvm < CandidateSpaceBase
         end
 
         function designSample = get.DesignSampleDefinition(obj)
-            designSample = obj.Svm.X;
+            if(isempty(obj.Svm))
+                designSample = [];
+            else
+                designSample = obj.Svm.X;
+            end
         end
 
         function isInside = get.IsInsideDefinition(obj)
-            isInside = obj.Svm.Y;
+            if(isempty(obj.Svm))
+                isInside = [];
+            else
+                isInside = obj.Svm.Y;
+            end
         end
         
         function volume = get.Measure(obj)
@@ -355,8 +363,8 @@ classdef CandidateSpaceSvm < CandidateSpaceBase
             volume = volumeFactor * prod(samplingBox(2,:) - samplingBox(1,:));
         end
 
-        function shapeDefinition = get.IsShapeDefinition(obj)
-            shapeDefinition = obj.Svm.IsSupportVector;
+        function isShapeDefinition = get.IsShapeDefinition(obj)
+            isShapeDefinition = obj.Svm.IsSupportVector;
         end
     end
 end
