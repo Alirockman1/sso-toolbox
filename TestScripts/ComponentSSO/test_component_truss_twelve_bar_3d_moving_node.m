@@ -175,8 +175,8 @@ nodePositionOptimized = [...
 
 figure;
 hold all;
-handleInitial = plot_truss_deformation(gcf,nodePositionInitial,nodeElement);
-handleOptimal = plot_truss_deformation(gcf,nodePositionOptimized,nodeElement,'ColorUndeformed','r');
+... handleInitial = plot_truss_deformation(gcf,nodePositionInitial,nodeElement);
+handleOptimal = plot_truss_deformation(gcf,nodePositionOptimized,nodeElement,'ColorUndeformed','b','linewidth',3.0);
 handleToleranceNode1Box = plot_design_box_3d(gcf,solutionSpaceBox(:,[1,2,3]),'FaceAlpha',0.2,'FaceColor','c');
 handleToleranceNode2Box = plot_design_box_3d(gcf,solutionSpaceBox(:,[4,5,6]),'FaceAlpha',0.2,'FaceColor','c');
 handleToleranceNode3Box = plot_design_box_3d(gcf,solutionSpaceBox(:,[7,8,9]),'FaceAlpha',0.2,'FaceColor','c');
@@ -184,12 +184,27 @@ handleToleranceNode1Component = componentSolutionSpace(1).plot_candidate_space(g
 handleToleranceNode2Component = componentSolutionSpace(2).plot_candidate_space(gcf,'FaceAlpha',0.2,'FaceColor','g');
 handleToleranceNode3Component = componentSolutionSpace(3).plot_candidate_space(gcf,'FaceAlpha',0.2,'FaceColor','g');
 grid minor;
-legend([handleInitial,handleOptimal,...
+legend([...
+    ... handleInitial,...
+    handleOptimal,...
     handleToleranceNode1Box,handleToleranceNode2Box,handleToleranceNode3Box,...
     handleToleranceNode1Component,handleToleranceNode2Component,handleToleranceNode3Component],...
     {'Initial Truss','Optimized Truss',...
     'Tolerance Region for Node 1 (Box)','Tolerance Region for Node 2 (Box)','Tolerance Region for Node 3 (Box)',...
     'Tolerance Region for Node 1 (Component)','Tolerance Region for Node 2 (Component)','Tolerance Region for Node 3 (Component)'});
+measureComponent1 = componentSolutionSpace(1).Measure;
+measureComponent2 = componentSolutionSpace(2).Measure;
+measureComponent3 = componentSolutionSpace(3).Measure;
+measureBox1 = prod(solutionSpaceBox(2,[1,2,3])-solutionSpaceBox(1,[1,2,3]));
+measureBox2 = prod(solutionSpaceBox(2,[4,5,6])-solutionSpaceBox(1,[4,5,6]));
+measureBox3 = prod(solutionSpaceBox(2,[7,8,9])-solutionSpaceBox(1,[7,8,9]));
+sgtitle(sprintf('Volume Increases - Node 1: %.3gx ; Node 2: %.3gx ; Node 3: %.3gx',...
+    measureComponent1/measureBox1,...
+    measureComponent2/measureBox2,...
+    measureComponent3/measureBox3));
+axis('equal');
+axis('vis3d');
+camproj('perspective')
 save_print_figure(gcf,[saveFolder,'TrussVisualization']);
 
 

@@ -1,4 +1,4 @@
-function [figureElementHandle,plotData] = plot_selective_design_space_projection(designEvaluator,designBox,designSpaceLowerBound,designSpaceUpperBound,desiredPairs,plotGrid,varargin)
+function [figureElementHandle,problemData,plotData] = plot_selective_design_space_projection(designEvaluator,designBox,designSpaceLowerBound,designSpaceUpperBound,desiredPairs,plotGrid,varargin)
 %PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION Pair-view of box-shaped solution space
 %   PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION projects the solution space design
 %   box into 2D-planes and allows for the visualization of them together with
@@ -52,8 +52,13 @@ function [figureElementHandle,plotData] = plot_selective_design_space_projection
 %       - GoodPerformance : handle for good performance points.
 %       - BadPerformance : handles for each type of bad performance points.
 %
-%   [FIGUREELEMENTHANDLE,PLOTDATA] = PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION(...)
-%   additionally returns all the data generated for each plot.
+%   [FIGUREELEMENTHANDLE,PROBLEMDATA] = 
+%   PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION(...) additionally returns the fixed 
+%   problem data in PROBLEMDATA.
+%
+%   [FIGUREELEMENTHANDLE,PROBLEMDATA,PLOTDATA] = 
+%   PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION(...) additionally returns all the 
+%   data generated for each plot.
 %       - DesignSample : design sample points evaluated.
 %       - PerformanceDeficit : performance deficit for each design sample point
 %       - PhysicalFeasibilityDeficit : physical feasibility deficit for each 
@@ -154,6 +159,27 @@ function [figureElementHandle,plotData] = plot_selective_design_space_projection
     nDesignVariable = size(designBox,2);
     nSample = options.NumberSamplesPerPlot;
     designSample = nan(nSample,nDesignVariable);
+
+    if(nargout>=2)
+        problemData = struct(...
+            'DesignEvaluator',designEvaluator,...
+            'DesignBox',designBox,...
+            'DesignSpaceLowerBound',designSpaceLowerBound,...
+            'DesignSpaceUpperBound',designSpaceUpperBound,...
+            'DesiredPairwisePlots',desiredPairs,...
+            'PlotGrid',plotGrid,...
+            'Options',options,...
+            'InitialRNGState',rng);
+    end
+
+    isOutputPlotData = (nargout>=3);
+    if(isOutputPlotData)
+        plotData = struct(...
+            'DesignSample',[],...
+            'PerformanceDeficit',[],...
+            'PhysicalFeasibilityDeficit',[],...
+            'EvaluatorOutput',[]);
+    end
     
     plotData.DesignSample = [];
     plotData.PerformanceDeficit = [];
@@ -268,10 +294,13 @@ function [figureElementHandle,plotData] = plot_selective_design_space_projection
         grid('off');
         drawnow;
         
-        plotData(j).DesignSample = designSample;
-        plotData(j).PerformanceDeficit = performanceDeficit;
-        plotData(j).PhysicalFeasibilityDeficit = performanceDeficit;
-        plotData(j).EvaluatorOutput = evaluatorOutput;
+        if(isOutputPlotData)
+            plotData(j) = struct(...
+                'DesignSample',designSample,...
+                'PerformanceDeficit',performanceDeficit,...
+                'PhysicalFeasibilityDeficit',physicalFeasibilityDeficit,...
+                'EvaluatorOutput',evaluatorOutput);
+        end
     end
 
     if(nargout<1)
