@@ -306,16 +306,18 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
         %           -- AspaceMinPathOrder : (nSample,1) integer
         %           -- AspaceMinPathDistance : (nSample,1) double
         %           -- BspaceOptimal : (nSample,nBspaceDesignVariable) double
+        %           -- PerformanceScoreOptimal : (nSample,1) double
         %           -- OptimizationMethodOutput : function-dependent
-        %           -- BaseEvaluatorOutput : class-dependent
+        %           -- BaseEvaluatorOutputOptimization : class-dependent
         %           -- BaseEvaluatorOutputOptimal : class-dependent
         %   
         %   See also design_sort_min_distance, design_optimize_performance_score.
             
             nSample = size(designSample,1);
+            nDesignVariable = size(obj.CompensationAspaceIndex,2);
             nDesignVariableBspace = size(obj.BspaceLowerBound,2);
 
-            if(size(designSample,2)==size(obj.CompensationAspaceIndex,2))
+            if(size(designSample,2)==nDesignVariable)
                 isFullSpaceSample = true;
 
                 % use the given B-space value as initial designs for each optimization
@@ -340,15 +342,12 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
             end
 
             % initialize outputs and other information to be logged
-            performanceDeficit = [];
-            physicalFeasibilityDeficit = [];
             scoreOptimal = nan(nSample,1);
             optimizationOutput = cell(nSample,1);
             evaluatorOutput = cell(nSample,1);
-            evaluatorOutputFinal = cell(nSample,1);
             bspaceOptimal = nan(nSample,nDesignVariableBspace);
 
-            % start evaluating each design
+            % find the optimal B-space values for each design
             for i=1:nSample
                 iCurrent = minDistanceOrder(i);
 
@@ -369,28 +368,11 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
                         obj.BspaceUpperBound,...
                         obj.OptimizationOptions{:});
 
-                % evaluate optimal design
-                [performanceDeficitOptimal,physicalFeasibilityDeficitOptimal,evaluatorOutputOptimal] = ...
-                    obj.BaseDesignEvaluator.evaluate(optimalDesign);
-
-                % initialize output arrays if not done so yet
-                if(isempty(performanceDeficit))
-                    performanceDeficit = nan(nSample,size(performanceDeficitOptimal,2));
-                end
-                if(isempty(physicalFeasibilityDeficit))
-                    physicalFeasibilityDeficit = nan(nSample,size(physicalFeasibilityDeficitOptimal,2));
-                end
-
-                % save result
-                performanceDeficit(iCurrent,:) = performanceDeficitOptimal;
-                physicalFeasibilityDeficit(iCurrent,:) = physicalFeasibilityDeficitOptimal;
-
                 % log extra information
                 bspaceOptimal(iCurrent,:) = optimalDesign(~obj.CompensationAspaceIndex);
                 scoreOptimal(iCurrent) = scoreOptimalCurrent;
                 optimizationOutput{iCurrent} = optimizationOutputCurrent;
                 evaluatorOutput{iCurrent} = evaluatorOutputCurrent;
-                evaluatorOutputFinal{iCurrent} = evaluatorOutputOptimal;
 
                 % start next iteration already where you are
                 % --> with A-space ordered, this should improve convergence time
@@ -399,11 +381,21 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
                 end
             end
 
+            % evaluate optimal designs
+            optimalDesignSample = nan(nSample,nDesignVariable);
+            optimalDesignSample(:,obj.CompensationAspaceIndex) = designSample;
+            optimalDesignSample(:,~obj.CompensationAspaceIndex) = bspaceOptimal;
+
+            [performanceDeficit,physicalFeasibilityDeficit,evaluatorOutputFinal] = ...
+                obj.BaseDesignEvaluator.evaluate(optimalDesignSample);
+
+            % save extra information
             evaluationOutput.AspaceMinPathOrder = minDistanceOrder;
             evaluationOutput.AspaceMinPathDistance = minPathDistance;
             evaluationOutput.BspaceOptimal = bspaceOptimal;
+            evaluationOutput.PerformanceScoreOptimal = scoreOptimal;
             evaluationOutput.OptimizationMethodOutput = optimizationOutput;
-            evaluationOutput.BaseEvaluatorOutput = evaluatorOutput;
+            evaluationOutput.BaseEvaluatorOutputOptimization = evaluatorOutput;
             evaluationOutput.BaseEvaluatorOutputOptimal = evaluatorOutputFinal;
         end
     end

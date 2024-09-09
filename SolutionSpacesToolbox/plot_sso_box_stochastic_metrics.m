@@ -137,9 +137,9 @@ function figureHandle = plot_sso_box_stochastic_metrics(algorithmData,varargin)
     xlabel('Iteration Step');
     ylabel('Number of Sample Points');
     if(algorithmData.IsUsingRequirementSpaces)
-        legend({'m_{Accept & Useful}','m_{Accept}','m_{Useful}','N'});
+        legend({'Number of Acceptable & Useful Samples','Number of Acceptable Samples','Number of Useful Samples','Sample Size'});
     else
-        legend({'m','N'});
+        legend({'Number of Good Samples','Sample Size'});
     end
 
     % Relative Increases
@@ -153,7 +153,7 @@ function figureHandle = plot_sso_box_stochastic_metrics(algorithmData,varargin)
     axis([algorithmData.IndexExplorationStart algorithmData.IndexConsolidationEnd 0 2]);
     grid minor;
     xlabel('Iteration Step');
-    legend({'V_i/V_{i-1}','m/N'})
+    legend({'V_i/V_{i-1}','Sample Purity'})
 
     % Normalized Volume over m/N
     figureHandle(7) = figure;
@@ -162,7 +162,7 @@ function figureHandle = plot_sso_box_stochastic_metrics(algorithmData,varargin)
         '.-');
     hold on;
     grid minor;
-    xlabel('n/N');
+    xlabel('Sample Purity');
     ylabel('Normalized Box Volume (V/V_{ds})');
     
     % 3D plot with purity/size/cost
@@ -174,7 +174,7 @@ function figureHandle = plot_sso_box_stochastic_metrics(algorithmData,varargin)
     hold on;
     grid minor;
     xlabel('Total Number of Function Evaluations');
-    ylabel('n/N');
+    ylabel('Sample Purity');
     zlabel('Normalized Box Volume (V/V_{ds})');
 
     % save if required
