@@ -266,10 +266,14 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
         %   a sample of the early decision variables ("A-space"), an optimization 
         %   sub-problem is solved for each sample point where late-decision variables 
         %   ("B-space") are varied to find an optimal design for those early-decision 
-        %   variables. Furthermore, the design sample points given (in A-space) are
+        %   variables. 
+        %   Furthermore, if the design sample points are given in A-space, they are
         %   ordered to minimize the distance from one sample to the other, and the
         %   optimized B-space design from the previous A-space sample is used as the 
-        %   new initial design in the optimization process.
+        %   new initial design in the optimization process. If the design sample
+        %   points given are in the full space, however, the B-space design variables
+        %   are used as initial designs for each sample point instead, and no 
+        %   ordering is used.
         %
         %   PERFORMANCEDEFICIT = OBJ.EVALUATE(DESIGNSAMPLE) returns the performance
         %   deficit PERFORMANCEDEFICIT of each given design sample point DESIGNSAMPLE.
@@ -311,14 +315,28 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
             nSample = size(designSample,1);
             nDesignVariableBspace = size(obj.BspaceLowerBound,2);
 
-            % order A-space designs to assist with convergence
-            [minDistanceOrder,minPathDistance] = design_sort_min_distance(designSample,...
-                obj.AspaceOrderPasses,obj.AspaceOrderKnnsearchOptions{:});
-            
-            % start B-space sample in the middle if value was not given
-            bspaceInitial = obj.BspaceInitialDesign;
-            if(isempty(bspaceInitial))
-                bspaceInitial = mean([obj.BspaceLowerBound;obj.BspaceUpperBound],1);
+            if(size(designSample,2)==size(obj.CompensationAspaceIndex,2))
+                isFullSpaceSample = true;
+
+                % use the given B-space value as initial designs for each optimization
+                bspaceInitialSample = designSample(:,~obj.CompensationAspaceIndex);
+                designSample = designSample(:,obj.CompensationAspaceIndex);
+
+                % do not order
+                minDistanceOrder = 1:nSample;
+                minPathDistance = [];
+            else
+                isFullSpaceSample = false; 
+
+                % start B-space sample in the middle if value was not given
+                bspaceInitial = obj.BspaceInitialDesign;
+                if(isempty(bspaceInitial))
+                    bspaceInitial = mean([obj.BspaceLowerBound;obj.BspaceUpperBound],1);
+                end
+    
+                % order A-space designs to assist with convergence
+                [minDistanceOrder,minPathDistance] = design_sort_min_distance(designSample,...
+                    obj.AspaceOrderPasses,obj.AspaceOrderKnnsearchOptions{:});
             end
 
             % initialize outputs and other information to be logged
@@ -333,6 +351,11 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
             % start evaluating each design
             for i=1:nSample
                 iCurrent = minDistanceOrder(i);
+
+                % if full sample was given, use that for the initial design of B-space
+                if(isFullSpaceSample)
+                    bspaceInitial = bspaceInitialSample(iCurrent,:);
+                end
 
                 initialDesign = nan(1,size(obj.CompensationAspaceIndex,2));
                 initialDesign(obj.CompensationAspaceIndex) = designSample(iCurrent,:);
@@ -371,7 +394,9 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
 
                 % start next iteration already where you are
                 % --> with A-space ordered, this should improve convergence time
-                bspaceInitial = bspaceOptimal(iCurrent,:);
+                if(~isFullSpaceSample)
+                    bspaceInitial = bspaceOptimal(iCurrent,:);
+                end
             end
 
             evaluationOutput.AspaceMinPathOrder = minDistanceOrder;
