@@ -122,6 +122,23 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
         %   See also design_sort_min_distance, knnsearch.
         AspaceOrderKnnsearchOptions
     end
+
+    properties
+        %ACCEPTFULLSPACESAMPLE Use B-space part of sample points as initial design
+        %   ACCEPTFULLSPACESAMPLE determines whether the input of the evaluate method
+        %   can be given in the full space (including both A-space and B-space design
+        %   variable values). If enabled, the B-space part of the sample points is used
+        %   as initial guess for the optimization; in this case, the A-space sample 
+        %   points are not ordered, nor is the previous result used.
+        %   ACCEPTFULLSPACESAMPLE is introduced only to stop the use of such 
+        %   functionality in cases where it wouldn't be appropriate, such as the 
+        %   computation of solution spaces.
+        %
+        %   ACCEPTFULLSPACESAMPLE : logical
+        %   
+        %   See also evaluate.
+        AcceptFullSpaceSample
+    end
     
     methods
         function [obj,aspaceLowerBound,aspaceUpperBound,aspaceInitialDesign,aspaceComponentIndex] = DesignEvaluatorCompensation(...
@@ -166,6 +183,11 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
         %       sample points by distance before evaluation. Default: 1.
         %       - 'AspaceOrderKnnsearchOptions' : options used when ordering the A-space
         %       sample points by distance before evaluation. Default is empty.
+        %        - 'AcceptFullSpaceSample' : flag to know if the input sample points for
+        %       the evaluate method can be given in the complete design space instead
+        %       of just the A-space part. For situations like computing solution-
+        %       compensation spaces, such inputs would be undesirable and would suggest
+        %       an error in setup. Default: false.
         %
         %   [OBJ,ASPACELOWERBOUND] = DESIGNEVALUATORCOMPENSATION(...) additionally 
         %   returns the part of the lower bound of the design space that is exclusive to
@@ -213,6 +235,7 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
             parser.addParameter('OptimizationOptions',{});
             parser.addParameter('AspaceOrderPasses',1);
             parser.addParameter('AspaceOrderKnnsearchOptions',{});
+            parser.addParameter('AcceptFullSpaceSample',false,@islogical);
             parser.parse(varargin{:});
             options = parser.Results;
 
@@ -253,8 +276,9 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
                     {'OptimizationMethodOptions',{'Display','none'}},...
                     parser.Results.OptimizationOptions,...
                     {'CompensationAspaceIndex',compensationAspaceIndex});
-            obj.AspaceOrderPasses = parser.Results.AspaceOrderPasses;
-            obj.AspaceOrderKnnsearchOptions = parser.Results.AspaceOrderKnnsearchOptions;
+            obj.AspaceOrderPasses = options.AspaceOrderPasses;
+            obj.AspaceOrderKnnsearchOptions = options.AspaceOrderKnnsearchOptions;
+            obj.AcceptFullSpaceSample = options.AcceptFullSpaceSample;
         end
         
         function [performanceDeficit,physicalFeasibilityDeficit,evaluationOutput] = evaluate(obj,designSample)
@@ -315,21 +339,26 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
             
             nSample = size(designSample,1);
             nDesignVariable = size(obj.CompensationAspaceIndex,2);
+            nDesignVariableAspace = sum(obj.CompensationAspaceIndex);
             nDesignVariableBspace = size(obj.BspaceLowerBound,2);
 
-            if(size(designSample,2)==nDesignVariable)
-                isFullSpaceSample = true;
+            isFullSpaceSample = (size(designSample,2)==nDesignVariable);
+            if(isFullSpaceSample)
+                if(obj.AcceptFullSpaceSample)
+                    % use the given B-space value as initial designs for each optimization
+                    bspaceInitialSample = designSample(:,~obj.CompensationAspaceIndex);
+                    designSample = designSample(:,obj.CompensationAspaceIndex);
 
-                % use the given B-space value as initial designs for each optimization
-                bspaceInitialSample = designSample(:,~obj.CompensationAspaceIndex);
-                designSample = designSample(:,obj.CompensationAspaceIndex);
-
-                % do not order
-                minDistanceOrder = 1:nSample;
-                minPathDistance = [];
-            else
-                isFullSpaceSample = false; 
-
+                    % do not order
+                    minDistanceOrder = 1:nSample;
+                    minPathDistance = [];
+                else
+                    error('DesignEvaluatorCompensation:FullSpaceSampleNotAccepted',...
+                        ['Sample points for compensation given in full space form.\n',...
+                        'If you are computing solution-compensation spaces, this suggests an error in setup.\n',...
+                        'If not, and this is expected, remember to change property ''AcceptFullSpaceSample'' to true.']);
+                end
+            elseif(size(designSample,2)==nDesignVariableAspace)
                 % start B-space sample in the middle if value was not given
                 bspaceInitial = obj.BspaceInitialDesign;
                 if(isempty(bspaceInitial))
@@ -339,6 +368,8 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
                 % order A-space designs to assist with convergence
                 [minDistanceOrder,minPathDistance] = design_sort_min_distance(designSample,...
                     obj.AspaceOrderPasses,obj.AspaceOrderKnnsearchOptions{:});
+            else
+                error('DesignEvaluatorCompensation:SampleNotCompatibleSize','Sample given to DesignEvaluatorCompensation is not of a compatible size.');
             end
 
             % initialize outputs and other information to be logged
