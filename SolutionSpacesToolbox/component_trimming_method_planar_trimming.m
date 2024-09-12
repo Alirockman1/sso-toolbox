@@ -1,4 +1,4 @@
-function removalCandidate = component_trimming_method_planar_trimming(designSampleComponent,iRemove,iKeep,varargin)
+function removalCandidate = component_trimming_method_planar_trimming(designSampleComponent,iRemove,isKeep,varargin)
 %COMPONENT_TRIMMING_METHOD_PLANAR_TRIMMING Component SSO Convex Trimming
 %   COMPONENT_TRIMMING_METHOD_PLANAR_TRIMMING uses the planar trimming method to
 %   find the sample points for candidate removal during the trimming operation 
@@ -40,24 +40,48 @@ function removalCandidate = component_trimming_method_planar_trimming(designSamp
 %   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %   See the License for the specific language governing permissions and
 %   limitations under the License.
+
+    parser = inputParser;
+    parser.addParameter('ReferenceDesigns','keep');
+    parser.parse(varargin{:});
+    options = parser.Results;
+
+    [upperValueDesignVariable,upperBoundaryDesignIndexKeep] = max(designSampleComponent(isKeep,:),[],1);
+    [lowerValueDesignVariable,lowerBoundaryDesignIndexKeep] = min(designSampleComponent(isKeep,:),[],1);
     
     % normalize values for better numerical behavior
-    designSampleComponent = designSampleComponent./(max(designSampleComponent,[],1)-min(designSampleComponent,[],1));
+    designSampleComponent = designSampleComponent./(upperValueDesignVariable-lowerValueDesignVariable);
+
+    if(strcmpi(options.ReferenceDesigns,'all'))
+        designReference = designSampleComponent;
+        designReference(iRemove,:) = [];
+    elseif(strcmpi(options.ReferenceDesigns,'keep'))
+        designReference = designSampleComponent(isKeep,:);
+    elseif(strcmpi(options.ReferenceDesigns,'boundary-center'))
+        boundaryIndexKeep = unique([upperBoundaryDesignIndexKeep,lowerBoundaryDesignIndexKeep])';
+        boundaryIndex = convert_index_base(isKeep,boundaryIndexKeep,'backward');
+        designReference = designSampleComponent(boundaryIndex,:);
+        designReference = [designReference;mean(designSampleComponent(isKeep,:),1)];
+    elseif(strcmpi(options.ReferenceDesigns,'center'))
+        designReference = mean(designSampleComponent(isKeep,:),1);
+    end
 
     % find all distances
     distanceAll = designSampleComponent(iRemove,:) - designSampleComponent;
     normalizedDistanceAll = distanceAll./vecnorm(distanceAll,2,2);
-    normalizedDistanceKeep = normalizedDistanceAll(iKeep,:);
+
+    distanceReference = designSampleComponent(iRemove,:) - designReference;
+    normalizedDistanceReference = distanceReference./vecnorm(distanceReference,2,2);
 
     % for each plane, points being removed are all whose dot product between the 
     % distance to the anchor and each normal is non-positive
     % note: full product could be written as a matrix multiplication, but in my
     % experience, that actually makes the performance worse
     nSample = size(designSampleComponent,1);
-    nRemovalCandidate = size(normalizedDistanceKeep,1);
+    nRemovalCandidate = size(normalizedDistanceReference,1);
     removalCandidate = false(nSample,nRemovalCandidate);
     for i=1:nRemovalCandidate
-        dotProduct = sum(normalizedDistanceKeep(i,:).*normalizedDistanceAll,2);
+        dotProduct = sum(normalizedDistanceReference(i,:).*normalizedDistanceAll,2);
         removalCandidate(:,i) = (dotProduct<=0);
     end
 end
