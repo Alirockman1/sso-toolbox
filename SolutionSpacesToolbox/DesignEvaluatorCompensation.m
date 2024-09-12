@@ -369,7 +369,8 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
                 [minDistanceOrder,minPathDistance] = design_sort_min_distance(designSample,...
                     obj.AspaceOrderPasses,obj.AspaceOrderKnnsearchOptions{:});
             else
-                error('DesignEvaluatorCompensation:SampleNotCompatibleSize','Sample given to DesignEvaluatorCompensation is not of a compatible size.');
+                error('DesignEvaluatorCompensation:SampleNotCompatibleSize',...
+                    'Sample given to DesignEvaluatorCompensation is not of a compatible size.');
             end
 
             % initialize outputs and other information to be logged
