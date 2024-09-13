@@ -33,6 +33,8 @@ classdef CandidateSpaceAlphaShape < CandidateSpaceBase
         CandidateAlphaShape
 
         AlphaShapeOptions
+
+        CriticalAlphaType
     end
 
     properties (SetAccess = protected, Dependent)
@@ -56,6 +58,8 @@ classdef CandidateSpaceAlphaShape < CandidateSpaceBase
             parser.addParameter('SamplingBoxSlack',0.5,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
             parser.addParameter('GrowthDistanceOptions',{});
             parser.addParameter('AlphaShapeOptions',{});
+            parser.addParameter('CriticalAlphaType','one-region');
+            parser.addParameter('FillHoles',true);
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
             
@@ -63,8 +67,13 @@ classdef CandidateSpaceAlphaShape < CandidateSpaceBase
             obj.DesignSpaceUpperBound = parser.Results.designSpaceUpperBound;
             obj.SamplingBoxSlack = parser.Results.SamplingBoxSlack;
             obj.GrowthDistanceOptions = parser.Results.GrowthDistanceOptions;
+            obj.CriticalAlphaType = parser.Results.CriticalAlphaType;
 
-            defaultAlphaShapeOptions = {};
+            if(~parser.Results.FillHoles)
+                defaultAlphaShapeOptions = {};
+            else
+                defaultAlphaShapeOptions = {'HoleThreshold',prod(designSpaceUpperBound-designSpaceLowerBound)};
+            end
             [~,obj.AlphaShapeOptions] = merge_name_value_pair_argument(...
                 defaultAlphaShapeOptions,parser.Results.AlphaShapeOptions);
 
@@ -92,11 +101,11 @@ classdef CandidateSpaceAlphaShape < CandidateSpaceBase
             obj.CandidateAlphaShape = alphaShape(designSample(isInside,:),obj.AlphaShapeOptions{:});
 
             % check for the possibilities where results may change
-            possibleAlphaRadius = alphaSpectrum(obj.CandidateAlphaShape);
+            possibleAlphaRadius = obj.CandidateAlphaShape.alphaSpectrum;
 
             % eliminate possibilites where not all points are included; 
             % additionally, flip so lower index means smaller volume
-            minimumAlphaRadius = criticalAlpha(obj.CandidateAlphaShape,'all-points');
+            minimumAlphaRadius = obj.CandidateAlphaShape.criticalAlpha(obj.CriticalAlphaType);
             possibleAlphaRadius = flip(possibleAlphaRadius(possibleAlphaRadius>=minimumAlphaRadius));
 
             iStart = 1;
