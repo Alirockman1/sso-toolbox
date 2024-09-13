@@ -265,9 +265,6 @@ classdef (Abstract) CandidateSpaceBase
             designSampleNew = max(designSampleNew, obj.DesignSpaceLowerBound); % lower bound limit
             designSampleNew = min(designSampleNew, obj.DesignSpaceUpperBound); % upper bound limit
             designSampleNew = unique(designSampleNew,'rows');
-
-            % remove potential duplicate entries
-            designSampleNew = unique(designSampleNew,'rows');
             
             % see which samples are within a distance of growth rate of the previous inside region
             referenceSample = obj.ActiveDesign./designSpaceFactor;
