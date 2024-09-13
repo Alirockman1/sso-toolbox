@@ -61,18 +61,23 @@ function [stepSizeLimitInside,stepSizeLimitOutside] = region_limit_line_search(r
     stepSizeInitialDesignSpace = repmat(stepSizeInitialDesignSpace,nSample,1);
 
     % search for limit where design is still inside design space
-    designSpaceCriterium = @(stepSize) [is_in_design_box(initialPoint + stepSize.*direction,designSpace)];
-    [stepSizeLowerDesignSpace,stepSizeUpperDesignSpace] = bracketing_line_search(designSpaceCriterium,stepSizeInitialDesignSpace,maxIter);
-    [stepSizeLowerDesignSpace,~] = bissection_line_search(designSpaceCriterium,stepSizeLowerDesignSpace,stepSizeUpperDesignSpace,maxIter);
+    designSpaceCriterion = @(stepSize) [is_in_design_box(initialPoint + stepSize.*direction,designSpace)];
+    [stepSizeLowerDesignSpace,stepSizeUpperDesignSpace] = bracketing_line_search(designSpaceCriterion,stepSizeInitialDesignSpace,maxIter);
+    [stepSizeLowerDesignSpace,~] = bissection_line_search(designSpaceCriterion,stepSizeLowerDesignSpace,stepSizeUpperDesignSpace,maxIter);
 
-    % given the maximum step size for design space, compute the initial one for
-    % the given region in an analogous way
-    stepSizeInitialRegion = stepSizeLowerDesignSpace./2^maxIter;
-
-    % find bracketing limits for inside the given region
-    regionStepSizeCriterium = @(stepSize) [regionCriterion(initialPoint + stepSize.*direction)];
-    [stepSizeLowerRegion,stepSizeUpperRegion] = bracketing_line_search(regionStepSizeCriterium,stepSizeInitialRegion,maxIter); 
-    [stepSizeLimitInside,stepSizeLimitOutside] = bissection_line_search(regionStepSizeCriterium,stepSizeLowerRegion,stepSizeUpperRegion,maxIter);
+    if(~isempty(regionCriterion))
+        % given the maximum step size for design space, compute the initial one for
+        % the given region in an analogous way
+        stepSizeInitialRegion = stepSizeLowerDesignSpace./2^maxIter;
+    
+        % find bracketing limits for inside the given region
+        regionStepSizeCriterium = @(stepSize) [regionCriterion(initialPoint + stepSize.*direction)];
+        [stepSizeLowerRegion,stepSizeUpperRegion] = bracketing_line_search(regionStepSizeCriterium,stepSizeInitialRegion,maxIter); 
+        [stepSizeLimitInside,stepSizeLimitOutside] = bissection_line_search(regionStepSizeCriterium,stepSizeLowerRegion,stepSizeUpperRegion,maxIter);
+    else
+        stepSizeLimitInside = stepSizeLowerDesignSpace;
+        stepSizeLimitOutside = [];
+    end
 end
 
 function [stepSizeLower,stepSizeUpper] = bracketing_line_search(regionCriterion,stepSize,maxIter)

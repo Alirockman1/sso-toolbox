@@ -246,15 +246,25 @@ classdef (Abstract) CandidateSpaceBase
             distances = obj.DesignSampleDefinition - centerActive;
             directionGrowth = distances./vecnorm(distances,1,2);
             
-            % grow the current samples
+            % prepare for growth operation
             designSpaceFactor = obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound;
-            grownSample = obj.DesignSampleDefinition + growthRate.*designSpaceFactor.*directionGrowth;
-            shrunkSample = obj.DesignSampleDefinition + growthRate.*designSpaceFactor.*(-directionGrowth);
+            designSpace = [obj.DesignSpaceLowerBound;obj.DesignSpaceUpperBound];
+
+            % grow the current samples
+            maxGrowthRate = region_limit_line_search([],obj.DesignSampleDefinition,designSpaceFactor.*directionGrowth,designSpace);
+            sampleGrowthRate = min(growthRate,maxGrowthRate);
+            grownSample = obj.DesignSampleDefinition + sampleGrowthRate.*designSpaceFactor.*directionGrowth;
+
+            % shrink the current samples
+            maxGrowthRate = region_limit_line_search([],obj.DesignSampleDefinition,designSpaceFactor.*(-directionGrowth),designSpace);
+            sampleGrowthRate = min(growthRate,maxGrowthRate);
+            shrunkSample = obj.DesignSampleDefinition + sampleGrowthRate.*designSpaceFactor.*(-directionGrowth);
             
             % limit new samples to design space
             designSampleNew = [obj.DesignSampleDefinition;grownSample;shrunkSample];
             designSampleNew = max(designSampleNew, obj.DesignSpaceLowerBound); % lower bound limit
             designSampleNew = min(designSampleNew, obj.DesignSpaceUpperBound); % upper bound limit
+            designSampleNew = unique(designSampleNew,'rows');
 
             % remove potential duplicate entries
             designSampleNew = unique(designSampleNew,'rows');

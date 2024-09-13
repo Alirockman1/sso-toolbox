@@ -41,9 +41,9 @@ figureSize = [goldenRatio 1]*8.5;
 %
 systemFunction = @truss_six_bar_2d_moving_node;
 systemParameter = [1000,210e3]; % [mm^2],[MPa]
-%        x1  x2  x3
+%                         x1   y1  x2  y2
 designSpaceLowerBound = [0.5 -0.5 0.5 0.5];
-designSpaceUpperBound = [1.5  0.5 1.5 1.5];
+designSpaceUpperBound = [1.5  0.5 2.0 1.5];
 Components = {[1,2]',[3,4]'};
 %
 performanceLowerLimit = 0;
@@ -90,11 +90,11 @@ optionsBox = sso_stochastic_options('box',...
     'ApplyLeanness','never',...
     'TrimmingOperationOptions',{'PassesCriterion','full'},...
     'TrimmingOrderOptions',{'OrderPreference','score'});
-toc(timeElapsedBox)
 
-
+rng(rngState);
 [solutionSpaceBox,problemDataBox,iterDataBox] = sso_box_stochastic(designEvaluator,...
     initialDesign,designSpaceLowerBound,designSpaceUpperBound,optionsBox);
+toc(timeElapsedBox)
 
 
 %% Component Opt - 
@@ -106,10 +106,10 @@ optionsComponent = sso_stochastic_options('component',...
     'FixIterNumberConsolidation',true,...
     'MaxIterExploration',30,...
     'MaxIterConsolidation',30,...
-    'CandidateSpaceConstructorExploration',@CandidateSpaceConvexHull,...
-    'CandidateSpaceConstructorConsolidation',@CandidateSpaceConvexHull,...
-    'TrimmingMethodFunction',@component_trimming_method_planar_trimming,...
-    'TrimmingMethodOptions',{'ReferenceDesigns','boundary-center'},...
+    'CandidateSpaceConstructorExploration',@CandidateSpaceDelaunay,...
+    'CandidateSpaceConstructorConsolidation',@CandidateSpaceDelaunay,...
+    'TrimmingMethodFunction',@component_trimming_method_corner_box_removal,...
+    ... 'TrimmingMethodOptions',{'ReferenceDesigns','boundary-center'},...
     'UseAdaptiveGrowthRate',false,...
     'GrowthRate',0.2,...
     'ApplyLeanness','never',...
@@ -119,7 +119,7 @@ optionsComponent = sso_stochastic_options('component',...
     'TrimmingOperationOptions',{'PassesCriterion','reduced'},...
     'TrimmingOrderOptions',{'OrderPreference','score'});
 
-
+rng(rngState);
 [componentSolutionSpace,problemDataComponent,iterDataComponent] = sso_component_stochastic(designEvaluator,...
     initialDesign,designSpaceLowerBound,designSpaceUpperBound,Components,optionsComponent);
 toc(timeElapsedComponent)
@@ -144,10 +144,10 @@ handleOptimal = plot_truss_deformation(gcf,nodePositionOptimized,nodeElement,'Co
 handleWall = plot(wallX,wallY,'Linewidth',8.0,'Color',[0.7 0.7 0.7]);
 handleToleranceNode1Box = plot_design_box_2d(gcf,solutionSpaceBox(:,[1,2]),'EdgeColor','c','Linewidth',2.0);
 handleToleranceNode2Box = plot_design_box_2d(gcf,solutionSpaceBox(:,[3,4]),'EdgeColor','c','Linewidth',2.0);
-% handleToleranceNode1Component = componentSolutionSpace(1).plot_candidate_space(gcf,'EdgeColor','none','FaceColor','g','FaceAlpha',0.5,'Linewidth',2.0);
-% handleToleranceNode2Component = componentSolutionSpace(2).plot_candidate_space(gcf,'EdgeColor','none','FaceColor','g','FaceAlpha',0.5,'Linewidth',2.0);
-handleToleranceNode1Component = componentSolutionSpace(1).plot_candidate_space(gcf,'Color','g','Linewidth',2.0);
-handleToleranceNode2Component = componentSolutionSpace(2).plot_candidate_space(gcf,'Color','g','Linewidth',2.0);
+handleToleranceNode1Component = componentSolutionSpace(1).plot_candidate_space(gcf,'EdgeColor','none','FaceColor','g','FaceAlpha',0.5,'Linewidth',2.0);
+handleToleranceNode2Component = componentSolutionSpace(2).plot_candidate_space(gcf,'EdgeColor','none','FaceColor','g','FaceAlpha',0.5,'Linewidth',2.0);
+%handleToleranceNode1Component = componentSolutionSpace(1).plot_candidate_space(gcf,'Color','g','Linewidth',2.0);
+%handleToleranceNode2Component = componentSolutionSpace(2).plot_candidate_space(gcf,'Color','g','Linewidth',2.0);
 grid minor;
 legend([...
         ... handleInitial,...
@@ -187,8 +187,8 @@ save_print_figure(gcf,[saveFolder,'TrussVisualization']);
 designSample = componentSolutionSpace(1).DesignSampleDefinition;
 labelSample = componentSolutionSpace(1).IsInsideDefinition;
 figure;
-... componentSolutionSpace(1).plot_candidate_space(gcf,'EdgeColor','none','FaceColor','g','FaceAlpha',0.5,'Linewidth',2.0);
-componentSolutionSpace(1).plot_candidate_space(gcf,'Color','g','Linewidth',2.0);
+componentSolutionSpace(1).plot_candidate_space(gcf,'EdgeColor','none','FaceColor','g','FaceAlpha',0.5,'Linewidth',2.0);
+%componentSolutionSpace(1).plot_candidate_space(gcf,'Color','g','Linewidth',2.0);
 hold all;
 plot(designSample(labelSample,1),designSample(labelSample,2),'g.');
 plot(designSample(~labelSample,1),designSample(~labelSample,2),'r.');
@@ -199,8 +199,8 @@ save_print_figure(gcf,[saveFolder,'ComponentSpace1TrimmingPlot']);
 designSample = componentSolutionSpace(2).DesignSampleDefinition;
 labelSample = componentSolutionSpace(2).IsInsideDefinition;
 figure;
-% componentSolutionSpace(2).plot_candidate_space(gcf,'EdgeColor','none','FaceColor','g','FaceAlpha',0.5,'Linewidth',2.0);
-componentSolutionSpace(2).plot_candidate_space(gcf,'Color','g','Linewidth',2.0);
+componentSolutionSpace(2).plot_candidate_space(gcf,'EdgeColor','none','FaceColor','g','FaceAlpha',0.5,'Linewidth',2.0);
+%componentSolutionSpace(2).plot_candidate_space(gcf,'Color','g','Linewidth',2.0);
 hold all;
 plot(designSample(labelSample,1),designSample(labelSample,2),'g.');
 plot(designSample(~labelSample,1),designSample(~labelSample,2),'r.');

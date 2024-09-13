@@ -252,11 +252,17 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             distances = obj.ActiveDesign - center;
             directionGrowth = distances./vecnorm(distances,2,2);
             designSpaceFactor = obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound;
+            designSpace = [obj.DesignSpaceLowerBound;obj.DesignSpaceUpperBound];
 
-            newSamples = obj.ActiveDesign + growthRate.*designSpaceFactor.*directionGrowth;
+            % find maximum growth rate not to escape design space
+            maxGrowthRate = region_limit_line_search([],obj.ActiveDesign,designSpaceFactor.*directionGrowth,designSpace);
+            sampleGrowthRate = min(growthRate,maxGrowthRate);
+
+            newSamples = obj.ActiveDesign + sampleGrowthRate.*designSpaceFactor.*directionGrowth;
             newSamples = max(newSamples, obj.DesignSpaceLowerBound); % lower bound limit
             newSamples = min(newSamples, obj.DesignSpaceUpperBound); % upper bound limit
-            obj = obj.define_candidate_space([obj.ActiveDesign;newSamples]);
+            newSamples = unique([obj.ActiveDesign;newSamples],'rows');
+            obj = obj.define_candidate_space(newSamples);
         end
         
         function [label, score] = is_in_candidate_space(obj,designSample)
