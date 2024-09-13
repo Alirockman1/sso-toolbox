@@ -43,7 +43,7 @@ grid minor;
 
 
 %% train candidate space
-candidateSpace = CandidateSpaceAlphaShape(designSpaceLowerBound,designSpaceUpperBound);
+candidateSpace = CandidateSpaceAlphaShape(designSpaceLowerBound,designSpaceUpperBound,'FillHoles',false);
 candidateSpace = candidateSpace.define_candidate_space(designSample,labelSample);
 
 figure;
