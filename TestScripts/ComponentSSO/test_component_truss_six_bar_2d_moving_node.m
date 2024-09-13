@@ -31,10 +31,10 @@ rng(4);
 
 
 %% Documentation / Archive
-RNGstate = rng;
+rngState = rng;
 saveFolder = save_diary_files(mfilename);
-goldenratio = (1+sqrt(5))/2;
-figureSize = [goldenratio 1]*8.5;
+goldenRatio = (1+sqrt(5))/2;
+figureSize = [goldenRatio 1]*8.5;
 
 
 %% function call
@@ -177,6 +177,30 @@ title(sprintf('Volume Increases - Node 1: %.3gx ; Node 2: %.3gx',...
     measureComponent1/measureBox1,...
     measureComponent2/measureBox2));
 save_print_figure(gcf,[saveFolder,'TrussVisualization']);
+
+
+%% plot candidate spaces samples
+% candidate space 1
+designSample = componentSolutionSpace(1).DesignSampleDefinition;
+labelSample = componentSolutionSpace(1).IsInsideDefinition;
+figure;
+componentSolutionSpace(1).plot_candidate_space(gcf,'EdgeColor','none','FaceColor','g','FaceAlpha',0.5,'Linewidth',2.0);
+hold all;
+plot(designSample(labelSample,1),designSample(labelSample,2),'g.');
+plot(designSample(~labelSample,1),designSample(~labelSample,2),'r.');
+grid minor;
+save_print_figure(gcf,[saveFolder,'ComponentSpace1TrimmingPlot']);
+
+% candidate space 2
+designSample = componentSolutionSpace(2).DesignSampleDefinition;
+labelSample = componentSolutionSpace(2).IsInsideDefinition;
+figure;
+componentSolutionSpace(2).plot_candidate_space(gcf,'EdgeColor','none','FaceColor','g','FaceAlpha',0.5,'Linewidth',2.0);
+hold all;
+plot(designSample(labelSample,1),designSample(labelSample,2),'g.');
+plot(designSample(~labelSample,1),designSample(~labelSample,2),'r.');
+grid minor;
+save_print_figure(gcf,[saveFolder,'ComponentSpace2TrimmingPlot']);
 
 
 %% 
