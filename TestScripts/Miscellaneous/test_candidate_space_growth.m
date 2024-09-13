@@ -43,14 +43,16 @@ grid minor;
 
 
 %% train candidate space
-candidateSpace = CandidateSpaceDelaunay(designSpaceLowerBound,designSpaceUpperBound);
+candidateSpace = CandidateSpaceAlphaShape(designSpaceLowerBound,designSpaceUpperBound,'FillHoles',false);
 candidateSpace = candidateSpace.define_candidate_space(designSample,labelSample);
+isShapeDefinition = candidateSpace.IsShapeDefinition;
 
 figure;
 plot(designSample(labelSample,1),designSample(labelSample,2),'g.');
 hold all;
 plot(designSample(~labelSample,1),designSample(~labelSample,2),'r.');
 candidateSpace.plot_candidate_space(gcf,'FaceColor','g','FaceAlpha',0.5,'EdgeColor','none');
+plot(designSample(isShapeDefinition,1),designSample(isShapeDefinition,2),'bo');
 grid minor;
 
 

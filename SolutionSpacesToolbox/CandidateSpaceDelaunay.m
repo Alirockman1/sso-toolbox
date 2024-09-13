@@ -108,6 +108,8 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
                 obj.IsShapeDefinition = false(size(designSample,1),1);
                 obj.IsShapeDefinition(convert_index_base(~isInside,~isnan(outsideInsideSimplex),'backward')) = true;
                 obj.IsShapeDefinition(convert_index_base(isInside,boundarySimplex,'backward')) = true;
+                obj.IsShapeDefinition = obj.IsShapeDefinition | ...
+                    design_find_boundary_samples(obj.DesignSampleDefinition,obj.IsInsideDefinition);
     
                 % delete simplices where bad designs are inside
                 obj.DelaunayIndex(isInsideWrong,:) = [];
