@@ -64,10 +64,24 @@ function plotHandle = plot_candidate_space_2d(figureHandle,candidateSpace,vararg
     defaultPlotOptions = {};
     [~,plotOptions] = merge_name_value_pair_argument(defaultPlotOptions,inputPlotOptions);
 
-    % plot decision boundary surface
+    % find decision boundary surface
+    contourMatrix = contourc(xInterval,yInterval,score,[0 0]);
+
+    % process data
+    countourXY = [];
+    while(~isempty(contourMatrix))
+        index = contourMatrix(2)+1;
+        countourXY = [countourXY;contourMatrix(:,2:index)'];
+        contourMatrix(:,1:index) = [];
+    end
+
+    % plot options
+    defaultPlotOptions = {};
+    [~,plotOptions] = merge_name_value_pair_argument(defaultPlotOptions,inputPlotOptions);
+
     figure(figureHandle);
     hold on
-    [~,plotHandle] = contour(xGrid,yGrid,score,[0 0],plotOptions{:});
+    plotHandle = patch('XData',countourXY(:,1),'YData',countourXY(:,2),plotOptions{:});
 
     if(nargout<1)
         clear plotHandle

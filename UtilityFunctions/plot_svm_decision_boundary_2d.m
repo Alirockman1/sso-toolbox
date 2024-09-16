@@ -60,14 +60,24 @@ function plotHandle = plot_svm_decision_boundary_2d(figureHandle,svm,varargin)
     % reshape to same grid size as the input
     score = reshape(score(:,1), size(xGrid));
 
+    % find decision boundary surface
+    contourMatrix = contourc(xInterval,yInterval,score,[0 0]);
+
+    % process data
+    countourXY = [];
+    while(~isempty(contourMatrix))
+        index = contourMatrix(2)+1;
+        countourXY = [countourXY;contourMatrix(:,2:index)'];
+        contourMatrix(:,1:index) = [];
+    end
+
     % plot options
     defaultPlotOptions = {};
     [~,plotOptions] = merge_name_value_pair_argument(defaultPlotOptions,inputPlotOptions);
 
-    % plot decision boundary surface
     figure(figureHandle);
-    hold on
-    [~,plotHandle] = contour(xGrid,yGrid,score,[0 0],plotOptions{:});
+    hold on;
+    plotHandle = patch('XData',countourXY(:,1),'YData',countourXY(:,2),plotOptions{:});
 
     if(nargout<1)
         clear plotHandle
