@@ -9,8 +9,8 @@ function plotHandle = plot_convex_hull_2d(figureHandle,hullSample,convexHullInde
 %
 %   PLOT_CONVEX_HULL_2D(...,NAME,VALUE,...) also allows one to choose the 
 %   options of the plot done for the convex hull; these options refer to the 
-%   'plot' function. The one property with a default value is 'Color', which is 
-%   set to black ([0 0 0]); this can be changed, as well as any other 'plot' 
+%   'patch' function. The one property with a default value is 'Color', which is 
+%   set to black ([0 0 0]); this can be changed, as well as any other 'patch' 
 %   option.
 %
 %   PLOTHANDLE = PLOT_CONVEX_HULL_2D(...) returns the handle of the resulting
@@ -20,11 +20,11 @@ function plotHandle = plot_convex_hull_2d(figureHandle,hullSample,convexHullInde
 %       - FIGUREHANDLE : Figure
 %       - HULLSAMPLE : (nSample,2) double
 %       - CONVEXHULLINDEX : (nHull,2) integer
-%       - Name-value pair arguments : passed directly to 'plot'.
+%       - Name-value pair arguments : passed directly to 'patch'.
 %   Output:
 %       - PLOTHANDLE : Line
 %
-%   See also plot, convex_hull_face, legend, plot_convex_hull_3d.
+%   See also patch, convex_hull_face, legend, plot_convex_hull_3d.
 %
 %   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
@@ -43,7 +43,7 @@ function plotHandle = plot_convex_hull_2d(figureHandle,hullSample,convexHullInde
     
     inputPlotOptions = parser_variable_input_to_structure(varargin{:});
 
-    defaultPlotOptions = {'Color',[0 0 0]};
+    defaultPlotOptions = {'EdgeColor',[0 0 0],'FaceColor','none'};
     [~,plotOptions] = merge_name_value_pair_argument(defaultPlotOptions,inputPlotOptions);
 
     convHullIndexPlot = convexHullIndex;
@@ -55,7 +55,7 @@ function plotHandle = plot_convex_hull_2d(figureHandle,hullSample,convexHullInde
 
     figure(figureHandle);
     hold on;
-	plotHandle = plot(hullSample(convHullIndexPlot,1),hullSample(convHullIndexPlot,2),plotOptions{:});
+	plotHandle = patch('XData',hullSample(convHullIndexPlot,1),'YData',hullSample(convHullIndexPlot,2),plotOptions{:});
 
     if(nargout<1)
         clear plotHandle

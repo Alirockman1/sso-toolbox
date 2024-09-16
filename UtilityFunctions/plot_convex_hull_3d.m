@@ -9,22 +9,22 @@ function plotHandle = plot_convex_hull_3d(figureHandle,hullSample,convexHullInde
 %
 %   PLOT_CONVEX_HULL_3D(...,NAME,VALUE,...) also allows one to choose the 
 %   options of the plot done for the convex hull; these options refer to the 
-%   'trisurf' function. The one property with a default value is 'FaceColor', 
+%   'patch' function. The one property with a default value is 'FaceColor', 
 %   which is set to black ([0 0 0]); this can be changed, as well as any other 
-%   'trisurf' option.
+%   'patch' option.
 %
 %   PLOTHANDLE = PLOT_CONVEX_HULL_3D(...) returns the handle of the resulting
-%   plot from 'trisurf', which can be used later for 'legend', for example.
+%   plot from 'patch', which can be used later for 'legend', for example.
 %
 %   Input:
 %       - FIGUREHANDLE : Figure
 %       - HULLSAMPLE : (nSample,2) double
 %       - CONVEXHULLINDEX : (nHull,2) integer
-%       - Name-value pair arguments: passed directly to 'trisurf'.
+%       - Name-value pair arguments: passed directly to 'patch'.
 %   Output:
 %       - PLOTHANDLE : Line
 %
-%   See also trisurf, convex_hull_face, legend, plot_convex_hull_2d.
+%   See also patch, convex_hull_face, legend, plot_convex_hull_2d.
 %
 %   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
@@ -48,7 +48,7 @@ function plotHandle = plot_convex_hull_3d(figureHandle,hullSample,convexHullInde
 
     figure(figureHandle);
     hold on;
-	plotHandle = trisurf(convexHullIndex,hullSample(:,1),hullSample(:,2),hullSample(:,3),...
+	plotHandle = patch('Faces',convexHullIndex,'Vertices',hullSample,...
         plotOptions{:});
 
     if(nargout<1)
