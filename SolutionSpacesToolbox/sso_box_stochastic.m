@@ -339,6 +339,12 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
         % Count number of labels
         [nAcceptable,nUseful,nAcceptableUseful] = box_sso_count_label_acceptable_useful(isAcceptable,isUseful,console);
 
+        % No viable design found; throw error
+        if(nAcceptable==0 || nUseful==0 || nAcceptableUseful==0)
+            console.error('SSOOptBox:BadSampling',['No good/useful points found, ',...
+                'please retry process with different parameters / looser requirements.']);
+        end
+
         % Compute candidate box measure
         measure = box_sso_compute_candidate_box_measure(...
             candidateBox,...

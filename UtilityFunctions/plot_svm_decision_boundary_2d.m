@@ -72,4 +72,4 @@ function plotHandle = plot_svm_decision_boundary_2d(figureHandle,svm,varargin)
     if(nargout<1)
         clear plotHandle
     end
- end
+end
