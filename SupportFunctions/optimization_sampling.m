@@ -127,7 +127,7 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 		iEnd = min([iStart+options.GroupedEvaluations-1,options.MaxFunctionEvaluations]);
 		foundOptimal = false;
 		while(~foundOptimal && iStart<=options.MaxFunctionEvaluations)
-			iEvaluate = indStart:indEnd;
+			iEvaluate = iStart:iEnd;
 
 			objectiveValue(iEvaluate) = objectiveFunction(designSample(iEvaluate,:));
 			if(ismember(1,iEvaluate))
@@ -149,11 +149,14 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 			[objectiveOptimal,indexOptimalValid] = min(objectiveValue(validSample));
 			indexOptimal = convert_index_base(validSample,indexOptimalValid,'backward');
 			designOptimal = designSample(indexOptimal,:);
-			if(scoreOptiomal<=options.ObjectiveFunctionThresholdValue && satisfiesConstraint(indexOptimal))
+			if(objectiveOptimal<=options.ObjectiveFunctionThresholdValue && satisfiesConstraint(indexOptimal))
 				foundOptimal = true;
 				designSample(iEvaluate(end)+1:end,:) = [];
 				objectiveValue(iEvaluate(end)+1:end) = [];
 				constraintValue(iEvaluate(end)+1:end,:) = [];
+			else
+				iStart = iEnd+1;
+				iEnd = min([iStart+options.GroupedEvaluations-1,options.MaxFunctionEvaluations]);
 			end
 		end
 	end
