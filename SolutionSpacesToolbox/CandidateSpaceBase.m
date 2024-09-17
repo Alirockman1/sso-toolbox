@@ -152,17 +152,6 @@ classdef (Abstract) CandidateSpaceBase
         %
         %   See also SamplingBox, design_bounding_box.
         SamplingBoxSlack
-
-        %GROWTHDISTANCEOPTIONS Options when computing distances in the growth algorithm
-        %   GROWTHDISTANCEOPTIONS are the extra options to be used when finding the
-        %   distance between sample points in the growth algorithm. 
-        %   By default in its base implementation, these would be options for the 
-        %   'knnsearch' funciton.
-        %
-        %   GROWTHDISTANCEOPTIONS : (1,nOption) cell
-        %
-        %   See also grow_candidate_space, knnsearch.
-        GrowthDistanceOptions
     end
 
     methods (Abstract)
@@ -216,10 +205,8 @@ classdef (Abstract) CandidateSpaceBase
         %   
         %   See also is_in_design_box, is_in_convex_hull_with_plane.
         [isInside,score] = is_in_candidate_space(obj,designSample)
-    end
 
-    methods
-        function obj = grow_candidate_space(obj,growthRate)
+
         %GROW_CANDIDATE_SPACE Expansion of candidate space by given factor
         %   GROW_CANDIDATE_SPACE will grow the region considered inside the current 
         %   candidate space by the factor given. Said growth is done in a fixed rate 
@@ -238,46 +225,10 @@ classdef (Abstract) CandidateSpaceBase
         %       - OBJ : CandidateSpaceBase
         %   
         %   See also is_in_candidate_space.
+        obj = grow_candidate_space(obj,growthRate)
+    end
 
-            % grow designs in training data
-            centerActive = mean(obj.ActiveDesign,1);
-            
-            % find direction fo growth based on center of inside designs
-            distances = obj.DesignSampleDefinition - centerActive;
-            directionGrowth = distances./vecnorm(distances,1,2);
-            
-            % prepare for growth operation
-            designSpaceFactor = obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound;
-            designSpace = [obj.DesignSpaceLowerBound;obj.DesignSpaceUpperBound];
-
-            % grow the current samples
-            maxGrowthRate = region_limit_line_search([],obj.DesignSampleDefinition,designSpaceFactor.*directionGrowth,designSpace);
-            sampleGrowthRate = min(growthRate,maxGrowthRate);
-            grownSample = obj.DesignSampleDefinition + sampleGrowthRate.*designSpaceFactor.*directionGrowth;
-
-            % shrink the current samples
-            maxGrowthRate = region_limit_line_search([],obj.DesignSampleDefinition,designSpaceFactor.*(-directionGrowth),designSpace);
-            sampleGrowthRate = min(growthRate,maxGrowthRate);
-            shrunkSample = obj.DesignSampleDefinition + sampleGrowthRate.*designSpaceFactor.*(-directionGrowth);
-            
-            % limit new samples to design space
-            designSampleNew = [obj.DesignSampleDefinition;grownSample;shrunkSample];
-            designSampleNew = max(designSampleNew, obj.DesignSpaceLowerBound); % lower bound limit
-            designSampleNew = min(designSampleNew, obj.DesignSpaceUpperBound); % upper bound limit
-            designSampleNew = unique(designSampleNew,'rows');
-            
-            % see which samples are within a distance of growth rate of the previous inside region
-            referenceSample = obj.ActiveDesign./designSpaceFactor;
-            querySample = designSampleNew./designSpaceFactor;
-            % [~,distanceInside] = dsearchn(referenceSample,querySample);
-            [~,distanceInside] = knnsearch(referenceSample,querySample,...
-                'K',1,'IncludeTies',false,obj.GrowthDistanceOptions{:});
-            isInsideNew = (distanceInside <= growthRate);
-            
-            % train new candidate space
-            obj = obj.define_candidate_space(designSampleNew,isInsideNew);
-        end
-        
+    methods
         function plotHandle = plot_candidate_space(obj,figureHandle,varargin)
         %PLOT_CANDIDATE_SPACE Visualization of the boundary of the canidate space 2D/3D
         %   PLOT_CANDIDATE_SPACE allows for the visualization of the boundary of the

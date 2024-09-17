@@ -2,15 +2,15 @@ function plotHandle = plot_svm_decision_boundary_2d(figureHandle,svm,varargin)
 %PLOT_SVM_DECISION_BOUNDARY_2D Visualize the decision boundary of a SVM
 %   PLOT_SVM_DECISION_BOUNDARY_2D plots a visualization of a Support Vector 
 %   Machine decision boundary in 2D. It estimates where the boundary is via the
-%   scores applied to a large sample, and using contour to plot where that score 
-%   is closest to 0.
+%   scores applied to a large sample, using 'contourc' to find where that score 
+%   is closest to 0 and 'patch' to plot it.
 %
 %   PLOT_SVM_DECISION_BOUNDARY_2D(FIGUREHANDLE,SVM) plots in figure FIGUREHANDLE
 %   the decision boundary of Support Vector Machine SVM.
 %
 %   PLOT_SVM_DECISION_BOUNDARY_2D(...,NAME,VALUE,...) allows for setting
 %   additional options for the plot operation; said options should refer to the
-%   'contour' function.
+%   'patch' function.
 %
 %   PLOTHANDLE = PLOT_SVM_DECISION_BOUNDARY_2D(...) returns the handle of the
 %   generated plot PLOTHANDLE as a result of 'contour', which can be used later 
@@ -22,9 +22,9 @@ function plotHandle = plot_svm_decision_boundary_2d(figureHandle,svm,varargin)
 %       - Name-value pair arguments: passed directly to 'contour'.
 %
 %   Output:
-%       - PLOTHANDLE : Line
+%       - PLOTHANDLE : patch object
 %
-%   See also contour, ClassificationSVM, legend.
+%   See also patch, contourc, ClassificationSVM, legend.
 %
 %   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0

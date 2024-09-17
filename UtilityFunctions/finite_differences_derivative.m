@@ -21,7 +21,6 @@ function signalDerivative = finite_differences_derivative(signalValue,signalStep
 %   SIGNALDERIVATIVE = FINITE_DIFFERENCES_DERIVATIVE(SIGNALVALUE,SIGNALSTEP,
 %   DERIVATIVEORDER) allows one to choose the derivative order DERIVATIVEORDER
 %   of the output.
-%   
 %
 %   SIGNALDERIVATIVE = FINITE_DIFFERENCES_DERIVATIVE(SIGNALVALUE,SIGNALSTEP,
 %   DERIVATIVEORDER,NPOINT) allows one to choose how many points will be used in

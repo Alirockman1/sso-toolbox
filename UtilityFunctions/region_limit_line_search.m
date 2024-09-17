@@ -2,15 +2,18 @@ function [stepSizeLimitInside,stepSizeLimitOutside] = region_limit_line_search(r
 %REGION_LIMIT_LINE_SEARCH Find maximum step-sizes that remain inside region
 %   REGION_LIMIT_LINE_SEARCH finds the maximum step-size that can be used for 
 %   the given initial points and directions such that the new point is still 
-%   inside the given region (considered individually the same as initial point).
+%   inside the given region (considered individually the same as initial point)
+%   and inside the design space. If no region criterion is given, only the 
+%   design space is considered.
 %   
 %   STEPSIZELIMITINSIDE = REGION_LIMIT_LINE_SEARCH(REGIONCRITERION,INITIALPOINT,
 %   DIRECTION,DESIGNSPACE) finds the maximum step sizes STEPSIZELIMITINSIDE 
 %   such that, when starting from points INITIALPOINT and going in direction
 %   DIRECTION, the new point is still inside the region defined by 
-%   REGIONCRITERION (and also inside design space DESIGNSPACE). It performs
-%   20 iterations of both bracketing and bissectioning each to find said
-%   step sizes.
+%   REGIONCRITERION (and also inside design space DESIGNSPACE). If 
+%   REGIONCRITERION is empty, only the step size to remain inside the design
+%   space is computed. It performs 20 iterations of both bracketing and 
+%   bissectioning each to find said step sizes.
 %
 %   STEPSIZELIMITINSIDE = REGION_LIMIT_LINE_SEARCH(REGIONCRITERION,INITIALPOINT,
 %   DIRECTION,DESIGNSPACE,MAXITER) allows one to specify the maximum number of

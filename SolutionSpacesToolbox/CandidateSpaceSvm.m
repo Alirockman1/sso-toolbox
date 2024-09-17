@@ -137,6 +137,17 @@ classdef CandidateSpaceSvm < CandidateSpaceBase
         %
         %   See also fitcsvm, SvmTrainingOptions.
         InsidePriorityRatio
+
+        %GROWTHDISTANCEOPTIONS Options when computing distances in the growth algorithm
+        %   GROWTHDISTANCEOPTIONS are the extra options to be used when finding the
+        %   distance between sample points in the growth algorithm. 
+        %   By default in its base implementation, these would be options for the 
+        %   'knnsearch' funciton.
+        %
+        %   GROWTHDISTANCEOPTIONS : (1,nOption) cell
+        %
+        %   See also grow_candidate_space, knnsearch.
+        GrowthDistanceOptions
     end
     
     methods
@@ -302,6 +313,38 @@ classdef CandidateSpaceSvm < CandidateSpaceBase
             outsideTrainingData = ~is_in_design_box(designSample,boundingBox);
             isInside(outsideTrainingData) = false;
             score(outsideTrainingData) = abs(score(outsideTrainingData));
+        end
+
+        function obj = grow_candidate_space(obj,growthRate)
+        %GROW_CANDIDATE_SPACE Expansion of candidate space by given factor
+        %   GROW_CANDIDATE_SPACE will grow the region considered inside the current 
+        %   candidate space by the factor given. Said growth is done in a fixed rate 
+        %   defined by the input relative to the design space.
+        %
+        %   OBJ = OBJ.GROW_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
+        %   defined in OBJ by a factor of GROWTHRATE. This is an isotropic expansion of 
+        %   the candidate space by a factor of the growth rate times the size of the 
+        %   design space.
+        %
+        %   Inputs:
+        %       - OBJ : CandidateSpaceBase
+        %       - GROWTHRATE : double
+        %   
+        %   Outputs:
+        %       - OBJ : CandidateSpaceBase
+        %   
+        %   See also is_in_candidate_space.
+
+            [designSampleExpanded,labelExpanded] = grow_sample_region_positive_label(...
+                obj.DesignSampleDefinition,...
+                obj.IsInsideDefinition,...
+                obj.DesignSpaceLowerBound,...
+                obj.DesignSpaceUpperBound,...
+                growthRate,...
+                obj.GrowthDistanceOptions{:});
+            
+            % train new candidate space
+            obj = obj.define_candidate_space(designSampleExpanded,labelExpanded);
         end
 
         function plotHandle = plot_candidate_space(obj,figureHandle,varargin)

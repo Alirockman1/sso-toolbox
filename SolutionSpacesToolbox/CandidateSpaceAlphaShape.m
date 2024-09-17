@@ -56,17 +56,14 @@ classdef CandidateSpaceAlphaShape < CandidateSpaceBase
             parser.addRequired('designSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addRequired('designSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addParameter('SamplingBoxSlack',0.5,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
-            parser.addParameter('GrowthDistanceOptions',{});
             parser.addParameter('AlphaShapeOptions',{});
             parser.addParameter('CriticalAlphaType','one-region');
             parser.addParameter('FillHoles',true);
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
-
             
             obj.DesignSpaceLowerBound = parser.Results.designSpaceLowerBound;;
             obj.DesignSpaceUpperBound = parser.Results.designSpaceUpperBound;
             obj.SamplingBoxSlack = parser.Results.SamplingBoxSlack;
-            obj.GrowthDistanceOptions = parser.Results.GrowthDistanceOptions;
             obj.CriticalAlphaType = parser.Results.CriticalAlphaType;
 
             if(~parser.Results.FillHoles)

@@ -1,4 +1,68 @@
 classdef CandidateSpaceDelaunay < CandidateSpaceBase
+%CANDIDATESPACEDELAUNAY Candidate Space defined by delaunay triangulation
+%   CANDIDATESPACEDELAUNAY can be used to define candidate spaces for  
+%   component solution space computation. In this case, the candidate space is 
+%   defined by the result of a Delaunay triangulation where the triangulation
+%   is done with all the designs considered 'inside' and where the simpleces
+%   that contain designs considered 'outside' are removed.
+%
+%   This class is derived from CandidateSpaceBase.
+%
+%   CANDIDATESPACEDELAUNAY properties:
+%       - DesignSampleDefinition : design sample points used in the candidate 
+%       space definition.
+%       - IsInsideDefinition : logical labels of the design sample points used   
+%       in the candidate space definition regarding whether they are inside or 
+%       outside the candidate space (true = inside, false = outside).
+%       - IsShapeDefinition : logical labels of the design sample points used in 
+%       the candidate space definition regarding whether these designs are 
+%       directly related to the shape of the candidate space (or in other words,
+%       the design sample points that define the boundary itself and are used
+%       to identify if a design is inside/outside this space).
+%       - ActiveDesign : sample points that are labeled as inside.
+%       - Measure : measure of the candidate space (usually area/volume/etc).
+%       - SamplingBox : bounding box around the internal region of the candidate
+%       space that can be used to better attempt to sample inside said region.
+%       - SamplingBoxSlack : a value used to give the defined amount of slack
+%       for the SamplingBox, varying between the strict bounding box around the 
+%       internal region and a larger bounding box which may contain negative
+%       designs in its edges. 
+%       - DelaunayIndex : resulting indexing of the Delaunay triangulation after
+%       removing the simpleces with 'outside' designs in them.
+%       - DelaunaySimplex : all the simpleces which come as a result of the
+%       triangulation, including their vertices, hull index, face normals, face
+%       points, and measure.
+%       - DelaunaynOptions : options for when using 'delaunayn' to compute
+%       the triangulation.
+%       - SimplexConvexHullOptions : options for when using 'convex_hull_face'
+%       to compute the properties of individual simpleces.
+%
+%   CANDIDATESPACEDELAUNAY methods:
+%       - define_candidate_space : create a candidate space based on design 
+%       samples that are labeled as inside/outside.
+%       - grow_candidate_space : expand the candidate space by a given factor.
+%       - is_in_candidate_space : verify if given design samples are inside 
+%       the candidate space.
+%       - plot_candidate_space : visualize 1D/2D/3D candidate spaces in given
+%       figure.
+%
+%   See also CandidateSpaceBase.
+%
+%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   SPDX-License-Identifier: Apache-2.0
+
+%   Licensed under the Apache License, Version 2.0 (the "License");
+%   you may not use this file except in compliance with the License.
+%   You may obtain a copy of the License at
+% 
+%       http://www.apache.org/licenses/LICENSE-2.0
+% 
+%   Unless required by applicable law or agreed to in writing, software
+%   distributed under the License is distributed on an "AS IS" BASIS,
+%   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+%   See the License for the specific language governing permissions and
+%   limitations under the License.
+
 	properties (SetAccess = protected)
         %DESIGNSAMPLEDEFINITION Design sample points used in candidate space definition
         %   DESIGNSAMPLEDEFINITION are the sample points used in the definition of the 
@@ -23,13 +87,15 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %   ISSHAPEDEFINITION is a logical array where 'true' values indicate that that
         %   design point (in the respective row) from the definition sample actively 
         %   contributes to the shape of the candidate space. 
-        %   In this case, these are the convex hull index points.
+        %   In this case, these are the free boundary facets index points.
         %
         %   ISSHAPEDEFINITION : (nSample,1) logical
         %
-        %   See also DesignSampleDefinition, IsInsideDefinition.
+        %   See also DesignSampleDefinition, IsInsideDefinition, 
+        %   find_free_boundary_facets.
         IsShapeDefinition
         
+        %DELAUNAYINDEX 
         DelaunayIndex
 
         DelaunaySimplex
@@ -44,7 +110,8 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %   MEASURE is a value that works as the measure of the candidate space. This 
         %   may be its volume, or normalized volume relative to its design space, or
         %   some other metric.
-        %   In this case, this is the area/volume of the convex hull as computed.
+        %   In this case, this is the sum of areas/volumes/... of the simplices as 
+        %   computed.
         %
         %   MEASURE : double
         %
@@ -62,7 +129,6 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             parser.addParameter('DelaunaynOptions',{});
             parser.addParameter('SimplexConvexHullOptions',{});
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
-
             
             obj.DesignSpaceLowerBound = parser.Results.designSpaceLowerBound;
             obj.DesignSpaceUpperBound = parser.Results.designSpaceUpperBound;
@@ -70,7 +136,6 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             obj.DelaunaynOptions = parser.Results.DelaunaynOptions;
             obj.SimplexConvexHullOptions = parser.Results.SimplexConvexHullOptions;
 
-            obj.GrowthDistanceOptions = {};
             obj.DelaunayIndex = [];
             obj.DelaunaySimplex = struct(...
                 'Vertices',[],...

@@ -23,7 +23,7 @@ function plotHandle = plot_svm_decision_boundary_3d(fighan,svm,varargin)
 %       - Name-value pair arguments: passed directly to 'patch'.
 %
 %   Output:
-%       - PLOTHANDLE : Line
+%       - PLOTHANDLE : patch object
 %
 %   See also patch, ClassificationSVM, legend, isosurface.
 %
