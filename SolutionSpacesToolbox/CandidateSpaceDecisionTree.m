@@ -341,7 +341,18 @@ classdef CandidateSpaceDecisionTree < CandidateSpaceBase
             if(all(obj.IsInsideDefinition(1)==obj.IsInsideDefinition))
                 isShapeDefinition = true(size(obj.IsInsideDefinition,1),1);
             else
-                isShapeDefinition = design_find_boundary_samples(obj.DesignSampleDefinition,obj.IsInsideDefinition);
+                isInBoundary = design_find_boundary_samples(obj.DesignSampleDefinition,obj.IsInsideDefinition);
+
+                [~,iMinActiveDesignVariable] = min(obj.ActiveDesign,[],1);
+                [~,iMaxActiveDesignVariable] = max(obj.ActiveDesign,[],1);
+                nSample = size(obj.DesignSampleDefinition,1);
+                globalIndex = convert_index_base(...
+                    obj.IsInsideDefinition,...
+                    [iMinActiveDesignVariable';iMaxActiveDesignVariable'],...
+                    'backward');
+                isMaxMin = ismember((1:nSample)',globalIndex);
+
+                isShapeDefinition = isInBoundary | isMaxMin;
             end
         end
         

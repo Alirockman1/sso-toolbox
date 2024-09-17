@@ -98,24 +98,20 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             % create base delauney triangulation
             obj.DelaunayIndex = delaunayn(insideSample,obj.DelaunaynOptions{:});
 
+            % remove all simpleces with 'outside' designs inside them
             if(any(~isInside))
                 % find which simplices have 'outside' designs inside
                 outsideInsideSimplex = tsearchn(insideSample,obj.DelaunayIndex,designSample(~isInside,:));
                 isInsideWrong = unique(outsideInsideSimplex(~isnan(outsideInsideSimplex)));
-                boundarySimplex = unique(reshape(obj.DelaunayIndex(isInsideWrong,:),[],1));
-                
-                % shape is defined by these designs which force the exclusion / are excluded
-                obj.IsShapeDefinition = false(size(designSample,1),1);
-                obj.IsShapeDefinition(convert_index_base(~isInside,~isnan(outsideInsideSimplex),'backward')) = true;
-                obj.IsShapeDefinition(convert_index_base(isInside,boundarySimplex,'backward')) = true;
-                obj.IsShapeDefinition = obj.IsShapeDefinition | ...
-                    design_find_boundary_samples(obj.DesignSampleDefinition,obj.IsInsideDefinition);
     
                 % delete simplices where bad designs are inside
                 obj.DelaunayIndex(isInsideWrong,:) = [];
-            else
-                obj.IsShapeDefinition = true(size(designSample,1),1);
             end
+
+            % get free facets to also define shape
+            obj.IsShapeDefinition = false(size(designSample,1),1);
+            [~,freeBoundaryVertex] = find_free_boundary_facets(obj.DelaunayIndex);
+            obj.IsShapeDefinition(convert_index_base(isInside,freeBoundaryVertex,'backward')) = true;
 
             % treat each simplex as a convex hull
             nSimplex = size(obj.DelaunayIndex,1);
