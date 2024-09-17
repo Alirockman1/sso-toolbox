@@ -2,7 +2,8 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 %OPTIMIZATION_SAMPLING for bottom-up mapping / evaluator optimization
 %	OPTIMIZATION_SAMPLING uses a brute-force optimization approach where
 %	it samples the design space and returns the best value from the tested
-%	options.
+%	options. It is also possible to directly give points to be evaluated, in 
+%	which case no sampling takes place, but the rest remains the same.
 %
 %	DESIGNOPTIMAL = OPTIMIZATION_SAMPLING(OBJECTIVEFUNCTION,INITIALDESIGN,
 %	DESIGNSPACELOWERBOUND,DESIGNSPACEUPPERBOUND,CONSTRAINTFUNCTION) minimizes 
@@ -33,14 +34,16 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 %		Default: @sampling_latin_hypercube.
 %		- 'SamplingOptions' : options to be used with the sampling function.
 %		Default is empty.
+%		- 'PointsToEvaluate' : allows specification of points to be evaluated
+%		directly; if set, no sampling takes place, and only these points are
+%		evaluated. If empty, sampling is done as said above. Default is empty.
 %
-%	[DESIGNOPTIMAL,OBJECTIVEOPTIMAL] = OPTIMIZATION_SAMPLING(...) also
-%	returns the value of the objective function OBJECTIVEOPTIMAL for the optimal
-%	design.
+%	[DESIGNOPTIMAL,OBJECTIVEOPTIMAL] = OPTIMIZATION_SAMPLING(...) also returns
+%	the value of the objective function OBJECTIVEOPTIMAL for the optimal design.
 %
 %	[DESIGNOPTIMAL,OBJECTIVEOPTIMAL,OPTIMIZATIONOUTPUT] = 
-%	OPTIMIZATION_SAMPLING(...) returns additional information regarding
-%	the optimization procedure. In particular:
+%	OPTIMIZATION_SAMPLING(...) returns additional information regarding the
+%	optimization procedure. In particular:
 %		- EvaluatedSamples : design sample points evaluated
 %		- ObjectiveValue : objective value for each design sample point
 %		- ConstraintValue : constraint values for each design sample point
@@ -56,6 +59,7 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 %		- 'GroupedEvaluations' : integer
 %		- 'SamplingFunction' : function_handle
 %		- 'SamplingOptions' : (1,nOptions) cell
+%		- 'PointsToEvaluate' : (nSample,nDesignVariable) double
 %
 %   Output:
 %		- DESIGNOPTIMAL : (1,nDesignVariable) double
@@ -89,18 +93,27 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 	parser.addParameter('GroupedEvaluations',[]);
 	parser.addParameter('SamplingFunction',@sampling_latin_hypercube);
 	parser.addParameter('SamplingOptions',{});
+	parser.addParameter('PointsToEvaluate',[]);
 
 	parser.parse(varargin{:});
     options = parser.Results;
 
-    if(isempty(options.GroupedEvaluations))
-    	options.GroupedEvaluations = ceil(sqrt(options.MaxFunctionEvaluations));
-   	end
+   	if(isempty(options.PointsToEvaluate))
+	   	nSample = options.MaxFunctionEvaluations;
+		designSample = [...
+			initialDesign;...
+			options.SamplingFunction(...
+				[designSpaceLowerBound;designSpaceUpperBound],...
+				nSample-1,...
+				options.SamplingOptions{:})];
+	else
+		designSample = options.PointsToEvaluate;
+		nSample = size(designSample,1);
+	end
 
-   	nSample = options.MaxFunctionEvaluations;
-	designSample = options.SamplingFunction([designSpaceLowerBound;designSpaceUpperBound],...
-		nSample-1,options.SamplingOptions{:});
-	designSample = [initialDesign;designSample];
+	if(isempty(options.GroupedEvaluations))
+    	options.GroupedEvaluations = ceil(sqrt(nSample));
+   	end
 
 	if(isinf(options.ObjectiveFunctionThresholdValue) || ...
 		isempty(options.ObjectiveFunctionThresholdValue) || ...
@@ -124,9 +137,9 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 		constraintValue = [];
 
 		iStart = 1;
-		iEnd = min([iStart+options.GroupedEvaluations-1,options.MaxFunctionEvaluations]);
+		iEnd = min([iStart+options.GroupedEvaluations-1,nSample]);
 		foundOptimal = false;
-		while(~foundOptimal && iStart<=options.MaxFunctionEvaluations)
+		while(~foundOptimal && iStart<=nSample)
 			iEvaluate = iStart:iEnd;
 
 			objectiveValue(iEvaluate) = objectiveFunction(designSample(iEvaluate,:));
@@ -142,8 +155,10 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 
 			satisfiesConstraint = all(constraintValue<=0,2);
 			if(~any(satisfiesConstraint))
+				% if nothing satisfied constraint, keep all for choosing best
 				validSample = true(nSample,1);
 			else
+				% keep only those that satisfy constraints
 				validSample = satisfiesConstraint;
 			end
 			[objectiveOptimal,indexOptimalValid] = min(objectiveValue(validSample));
@@ -156,7 +171,7 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 				constraintValue(iEvaluate(end)+1:end,:) = [];
 			else
 				iStart = iEnd+1;
-				iEnd = min([iStart+options.GroupedEvaluations-1,options.MaxFunctionEvaluations]);
+				iEnd = min([iStart+options.GroupedEvaluations-1,nSample]);
 			end
 		end
 	end
