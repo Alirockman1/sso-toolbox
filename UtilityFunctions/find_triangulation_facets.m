@@ -1,25 +1,31 @@
-function [freeBoundaryFacet,freeBoundaryVertex] = find_free_boundary_facets(delaunayIndex)
-%FIND_FREE_BOUNDARY_FACETS Find boundary facets of delaunay triangulation
-%   FIND_FREE_BOUNDARY_FACETS finds the facets of a triangulation which are 
-%   boundary facets; this is determined by checking how many simpleces from the
-%   triangulation contain each facet, and if it is only one, than that facet
-%   is a free boundary facet. This is a generalization for any number of 
-%   dimensions of 'freeBoundary'.
+function [uniqueFacet,isFreeBoundaryFacet,freeBoundaryVertex] = find_triangulation_facets(delaunayIndex)
+%FIND_TRIANGULATION_FACETS Unique facets of delaunay triangulation with boundary
+%   FIND_TRIANGULATION_FACETS finds the unique facets of a triangulation, also 
+%   taking note of those which are boundary facets; this last part is determined
+%   by checking how many simpleces from the triangulation contain each facet, 
+%   and if it is only one, than that facet is a free boundary facet. This is a 
+%   generalization for any number of dimensions of 'freeBoundary'.
 %
-%   FREEBOUNDARYFACET = FIND_FREE_BOUNDARY_FACETS(DELAUNAYINDEX) receives the 
-%   delaunay triangulation index DELAUNAYINDEX and returns the facet indices 
-%   that are on the boundary FREEBOUNDARYFACET.
+%   UNIQUEFACET = FIND_TRIANGULATION_FACETS(DELAUNAYINDEX) receives the 
+%   delaunay triangulation index DELAUNAYINDEX and returns the unique facets  
+%   (expressed as vertex indices) that on UNIQUEFACET.
 %
-%   [FREEBOUNDARYFACET,FREEBOUNDARYVERTEX] = FIND_FREE_BOUNDARY_FACETS(...) 
-%   additionally returns the indices of vertices that are on those said facet
-%   boundaries FREEBOUNDARYVERTEX.
+%   [UNIQUEFACET,ISFREEBOUNDARYFACET] = FIND_TRIANGULATION_FACETS(...) 
+%   additionally returns a logical label for each unique facet which determines
+%   if the facet is a boundary free facet (true) or not (false) 
+%   ISFREEBOUNDARYFACET.
+%
+%   [UNIQUEFACET,ISFREEBOUNDARYFACET,FREEBOUNDARYVERTEX] = 
+%   FIND_TRIANGULATION_FACETS(...) additionally returns the indices of vertices
+%   which belong to the free boundary facets FREEBOUNDARYVERTEX.
 %
 %   Inputs:
 %       - DELAUNAYINDEX : (nSimplex,nSimplexVertex) integer
 %
 %   Output:
-%       - FREEBOUNDARYFACET : (nFreeBoundaryFacet,nFacetVertex) integer
-%       - FREEBOUNDARYVERTEX : (nVertexUnique,1) integer
+%       - UNIQUEFACET : (nFacet,nVertexPerFacet) integer
+%       - ISFREEBOUNDARYFACET : (nFacet,1) logical
+%       - FREEBOUNDARYVERTEX : (nBoundaryVertexUnique,1) integer
 %
 %   See also: delaunay, delaunayn, CandidateSpaceDelaunay, freeBoundary.
 %
@@ -55,7 +61,7 @@ function [freeBoundaryFacet,freeBoundaryVertex] = find_free_boundary_facets(dela
     end
     clear verticesLocalIndex facetIndex nVertexPerSimplex
 
-    % second, build faces based on index
+    % second, build facets based on index
     verticesGlobalIndex = sort(delaunayIndex,2);
     triangulationFacet = nan(nSimplex*nFacetPerSimplex,nDimension);
     for i = 1:nSimplex
@@ -65,15 +71,20 @@ function [freeBoundaryFacet,freeBoundaryVertex] = find_free_boundary_facets(dela
     end
     clear verticesGlobalIndex simplexFacet simplexIndex nDimension nSimplex nFacetPerSimplex nVertexPerFacet
 
-    % third, find unique facets and in how many simpleces they appear
+    % third, find unique facets
     [uniqueFacet, ~, iUniqueToTriangulation] = unique(triangulationFacet, 'rows');
-    nSimplexWithFacet = accumarray(iUniqueToTriangulation,1);
-
-    % finally, facets that appear only once are free-boundary facets
-    freeBoundaryFacet = uniqueFacet(nSimplexWithFacet==1, :);
 
     if(nargout>1)
-        % if necessary, also find all vertex indices that are part of these boundaries
-        freeBoundaryVertex = unique(freeBoundaryFacet(:));
+        % find in how many simpleces each facet appears
+        nSimplexWithFacet = accumarray(iUniqueToTriangulation,1);
+
+        % facets that appear only once are free-boundary facets
+        isFreeBoundaryFacet = (nSimplexWithFacet==1);
+
+        if(nargout>2)
+            % if necessary, also find all vertex indices that are part of these boundaries
+            freeBoundaryFacet = uniqueFacet(isFreeBoundaryFacet,:);
+            freeBoundaryVertex = unique(freeBoundaryFacet(:));
+        end
     end
 end

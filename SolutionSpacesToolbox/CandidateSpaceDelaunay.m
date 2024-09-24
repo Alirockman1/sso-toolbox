@@ -30,12 +30,11 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
 %       - DelaunayIndex : resulting indexing of the Delaunay triangulation after
 %       removing the simpleces with 'outside' designs in them.
 %       - DelaunaySimplex : all the simpleces which come as a result of the
-%       triangulation, including their vertices, hull index, face normals, face
-%       points, and measure.
+%       triangulation, including their vertices, hull index, and measure.
 %       - DelaunaynOptions : options for when using 'delaunayn' to compute
 %       the triangulation.
-%       - SimplexConvexHullOptions : options for when using 'convex_hull_face'
-%       to compute the properties of individual simpleces.
+%       - SimplexConvexHullOptions : options for when using 
+%       'compute_convex_hull' to compute the properties of individual simpleces.
 %
 %   CANDIDATESPACEDELAUNAY methods:
 %       - define_candidate_space : create a candidate space based on design 
@@ -95,13 +94,42 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %   find_free_boundary_facets.
         IsShapeDefinition
         
-        %DELAUNAYINDEX 
+        %DELAUNAYINDEX Simplex vertices index resulting from Delaunay triangulation
+        %   DELAUNAYINDEX is the tesselation index given by 'delaunayn'.
+        %
+        %   DELAUNAYINDEX : (nSimplex,nDimension+1) integer
+        %   
+        %   See also delaunayn.
         DelaunayIndex
 
+        %DELAUNAYSIMPLEX Simpleces information (each regarded as a convex hull)
+        %   DELAUNAYSIMPLEX saves the relevant information of each simplex individually,
+        %   where they are regarded as separate convex hulls.
+        %
+        %   DELAUNAYSIMPLEX : (nSimplex,1) structure
+        %       - Vertices : (nVertexPerSimplex,nDimension+1) double
+        %       - HullIndex : (nFacePerSimplex,nDimension) double
+        %       - Measure : double
+        %
+        %   See also delaunayn, compute_convex_hull.
         DelaunaySimplex
 
+        %DELAUNAYNOPTIONS Options when computing 'delaunayn'
+        %   DELAUNAYNOPTIONS are extra options which may be used when computing the 
+        %   delaunay tesselation using 'delaunayn'.
+        %
+        %   DELAUNAYNOPTIONS : (1,nOptions) cell
+        %
+        %   See also delaunayn.
         DelaunaynOptions
-
+        
+        %SIMPLEXCONVEXHULLOPTIONS Options when computing convex hull of each simplex
+        %   SIMPLEXCONVEXHULLOPTIONS are extra options which may be used when computing  
+        %   the convex hull of each simplex using 'compute_convex_hull'.
+        %
+        %   SIMPLEXCONVEXHULLOPTIONS : (1,nOptions) cell
+        %   
+        %   See also compute_convex_hull.
         SimplexConvexHullOptions
     end
 
@@ -121,6 +149,39 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
 
     methods
     	function obj = CandidateSpaceDelaunay(designSpaceLowerBound,designSpaceUpperBound,varargin)
+        %CANDIDATESPACEDELAUNAY Constructor
+        %   CANDIDATESPACEDELAUNAY is a constructor initializes an object of this class.
+        %   
+        %   OBJ = CANDIDATESPACEDELAUNAY(DESIGNSPACELOWERBOUND,
+        %   DESIGNSPACEUPPERBOUND) creates an object of the CandidateSpaceDelaunay
+        %   class and sets its design space boundaries to its input values 
+        %   DESIGNSPACELOWERBOUND and DESIGNSPACEUPPERBOUND. Other properties are set to
+        %   empty.
+        %
+        %   OBJ = CANDIDATESPACEDELAUNAY(...,NAME,VALUE,...) also allows one to set
+        %   specific options for the object. This can be 
+        %       - 'SamplingBoxSlack' : where the boundaries of the sampling box 
+        %       will be relative to the strictest bounding box and the most relaxed
+        %       bounding box. A value of 0 means no slack and therefore the sampling
+        %       box will be the most strict one possible, and 1 means the sampling
+        %       box will be the most relaxed.
+        %       - 'DelaunaynOptions' : options for the computation of the Delaunay 
+        %       tesselation using 'delaunayn'. Default is empty.
+        %       - 'SimplexConvexHullOptions' : options for the computation of the convex
+        %       hull of each simplex using 'compute_convex_hull'. Default is empty.
+        %
+        %   Inputs:
+        %       - DESIGNSPACELOWERBOUND : (1,nDesignVariable) double
+        %       - DESIGNSPACEUPPERBOUND : (1,nDesignVariable) double
+        %       - 'SamplingBoxSlack' : double
+        %       - 'DelaunaynOptions' : (1,nOptionsDelaunayn) cell
+        %       - 'SimplexConvexHullOptions' : (1.nOptionsConvexHull) cell
+        %
+        %   Outputs:
+        %       - OBJ : CandidateSpaceDelaunay
+        %
+        %   See also delaunayn, compute_convex_hull.
+
             % parse inputs
             parser = inputParser;
             parser.addRequired('designSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
@@ -140,12 +201,34 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             obj.DelaunaySimplex = struct(...
                 'Vertices',[],...
             	'HullIndex',[],...
-            	'Measure',[],...
-            	'FacePoint',[],...
-            	'FaceNormal',[]);
+            	'Measure',[]);
         end
 
         function obj = define_candidate_space(obj,designSample,isInside)
+        %DEFINE_CANDIDATE_SPACE Initial definition of the candidate space
+        %   DEFINE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
+        %   outside regions of the candidate space. For CandidateSpaceDelaunay, this
+        %   creates a tesselation with all designs labeled as 'inside', and removes any
+        %   simplices which contain designs labeled 'outside'.
+        %
+        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
+        %   points in DESIGNSAMPLE and returns a candidate space object OBJ with the new
+        %   definition, assuming all designs are inside the candidate space.
+        %
+        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
+        %   receives the inside/outside (true/false) labels of each design point in 
+        %   ISINSIDE.
+        %
+        %   Inputs:
+        %       - OBJ : CandidateSpaceDelaunay
+        %       - DESIGNSAMPLE : (nSample,nDesignVariable) double
+        %       - ISINSIDE : (nSample,1) logical
+        %   
+        %   Outputs:
+        %       - OBJ : CandidateSpaceDelaunay
+        %   
+        %   See also delaunayn, compute_convex_hull, find_triangulation_facets.
+
         	if(nargin<3)
                 isInside = true(size(designSample,1),1);
             end
@@ -175,26 +258,45 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
 
             % get free facets to also define shape
             obj.IsShapeDefinition = false(size(designSample,1),1);
-            [~,freeBoundaryVertex] = find_free_boundary_facets(obj.DelaunayIndex);
+            [~,~,freeBoundaryVertex] = find_triangulation_facets(obj.DelaunayIndex);
             obj.IsShapeDefinition(convert_index_base(isInside,freeBoundaryVertex,'backward')) = true;
 
             % treat each simplex as a convex hull
             nSimplex = size(obj.DelaunayIndex,1);
             for i=1:nSimplex
             	simplexPoint = insideSample(obj.DelaunayIndex(i,:),:);
-            	[convexHullIndex,measure,convexHullFacePoint,convexHullFaceNormal] = ...
-            		convex_hull_face(simplexPoint,obj.SimplexConvexHullOptions{:});
+            	[convexHullIndex,measure] = compute_convex_hull(simplexPoint,obj.SimplexConvexHullOptions{:});
 
             	obj.DelaunaySimplex(i) = struct(...
             		'Vertices',simplexPoint,...
             		'HullIndex',convexHullIndex,...
-            		'Measure',measure,...
-            		'FacePoint',convexHullFacePoint,...
-            		'FaceNormal',convexHullFaceNormal);
+            		'Measure',measure);
             end
         end
 
         function obj = grow_candidate_space(obj,growthRate)
+        %GROW_CANDIDATE_SPACE Expansion of candidate space by given factor
+        %   GROW_CANDIDATE_SPACE will grow the region considered inside the current 
+        %   candidate space by the factor given. Said growth is done in a fixed rate 
+        %   defined by the input relative to the design space.
+        %   This is done by finding the center of each simplex that forms the 
+        %   tesselation and expanding its vertices opposite to that; this is similar to  
+        %   same process with the convex hull, but each simplex is treated separately.
+        %
+        %   OBJ = OBJ.GROW_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
+        %   defined in OBJ by a factor of GROWTHRATE. This is an isotropic expansion of 
+        %   the candidate space by a factor of the growth rate times the size of the 
+        %   design space.
+        %
+        %   Inputs:
+        %       - OBJ : CandidateSpaceDelaunay
+        %       - GROWTHRATE : double
+        %   
+        %   Outputs:
+        %       - OBJ : CandidateSpaceDelaunay
+        %   
+        %   See also define_candidate_space, is_in_candidate_space.
+
             nSimplex = size(obj.DelaunayIndex,1);
             nDimension = size(obj.DesignSampleDefinition,2);
             designSampleNew = nan(nSimplex*(nDimension+1),nDimension);
@@ -218,15 +320,12 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
                 verticesNew = min(verticesNew, obj.DesignSpaceUpperBound); % upper bound limit
                 verticesNew = unique(verticesNew,'rows');
                 
-                [convexHullIndex,measure,convexHullFacePoint,convexHullFaceNormal] = ...
-                    convex_hull_face(verticesNew,obj.SimplexConvexHullOptions{:});
+                [convexHullIndex,measure] = compute_convex_hull(verticesNew,obj.SimplexConvexHullOptions{:});
 
                 obj.DelaunaySimplex(i) = struct(...
                     'Vertices',verticesNew,...
                     'HullIndex',convexHullIndex,...
-                    'Measure',measure,...
-                    'FacePoint',convexHullFacePoint,...
-                    'FaceNormal',convexHullFaceNormal);
+                    'Measure',measure);
 
                 simplexIndex = 1 + (nDimension+1)*(i-1) + [0:nDimension];
                 designSampleNew(simplexIndex,:) = verticesNew;
@@ -241,31 +340,71 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         end
 
         function [label, score] = is_in_candidate_space(obj,designSample)
+        %IS_IN_CANDIDATE_SPACE Verification if given design samples are inside
+        %   IS_IN_CANDIDATE_SPACE uses the currently defined candidate space to 
+        %   determine if given design sample points are inside or outside the candidate 
+        %   space.
+        %
+        %   ISINSIDE = OBJ.IS_IN_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design
+        %   samples in DESIGNSAMPLE and returns whether or not they are inside the 
+        %   candidate space in ISINSIDE. For ISINSIDE values of 'true', it means the 
+        %   respective design is inside the candidate space, while 'false' means it is 
+        %   outside.
+        %
+        %   [ISINSIDE,SCORE] = OBJ.IS_IN_CANDIDATE_SPACE(...) also returns a SCORE value
+        %   for each sample point; negative values of SCORE indicate the design sample 
+        %   is inside the candidate space, and positive values indicate it is outside. 
+        %   Designs with lower/higher SCORE are further from the boundary, with 0 
+        %   representing that they are exactly at the boundary.
+        %
+        %   Inputs:
+        %       - OBJ : CandidateSpaceDelaunay
+        %       - DESIGNSAMPLE : (nSample,nDesignVariable) double
+        %
+        %   Outputs:
+        %       - ISINSIDE : (nSample,1) logical
+        %       - SCORE : (nSample,1) double
+        %   
+        %   See also tsearchn.
+
             [insideSimplex,barycentricCoordinate] = tsearchn(obj.ActiveDesign,obj.DelaunayIndex,designSample);
             isInsideSpace = ~isnan(insideSimplex);
-            isInBoundary = ismember(designSample,obj.ActiveDesign,'rows');
+            isInBoundary = ismember(designSample,obj.DesignSampleDefinition(obj,IsShapeDefinition,:),'rows');
             label = isInsideSpace | isInBoundary;
 
             if(nargout>1)
-        	    nSample = size(designSample,1);
-        	    nSimplex = size(obj.DelaunayIndex,1);
-        	    scoreSimplex = nan(nSample,nSimplex);
-                scoreSimplex(isInBoundary,1) = 0;
-                scoreSimplex(isInsideSpace,1) = max(barycentricCoordinate(isInsideSpace,:)-1,[],2);
-        	    
-                outsideSample = designSample(~label,:);
-        	    for i=1:nSimplex
-        		    [~,score] = is_in_convex_hull_with_face(...
-        			    obj.DelaunaySimplex(i).FacePoint,...
-        			    obj.DelaunaySimplex(i).FaceNormal,...
-        			    outsideSample);
-				    scoreSimplex(~label,i) = score;
-                end
-        	    score = min(scoreSimplex,[],2);
+        	    nSample = size(designSample,1);;
+        	    score = nan(nSample,1);
+                score(isInBoundary) = 0;
+                score(isInsideSpace) = max(barycentricCoordinate(isInsideSpace,:)-1,[],2);
+                %TODO: barycentric coordinate perhaps not most appropriate, as that only tells
+                %how 'inside' that is of the particular simplex, not the tesselation as a whole
+                score(~label) = 1;
             end
         end
 
         function plotHandle = plot_candidate_space(obj,figureHandle,varargin)
+        %PLOT_CANDIDATE_SPACE Visualization of the boundary of the canidate space 2D/3D
+        %   PLOT_CANDIDATE_SPACE allows for the visualization of the boundary of the
+        %   candidate space in the given figure. 
+        %
+        %   PLOTHANDLE = OBJ.PLOT_CANDIDATE_SPACE(FIGUREHANDLE) plots the boundary of
+        %   the candidate space in figure FIGUREHANDLE, returning the handle of the 
+        %   object plot PLOTHANDLE.
+        %
+        %   PLOTHANDLE = OBJ.PLOT_CANDIDATE_SPACE(...,NAME,VALUE) allows the 
+        %   specification for additional options in the process. These options should 
+        %   refer to 'patch'.
+        %
+        %   Input:
+        %       - OBJ : CandidateSpaceDelaunay
+        %       - FIGUREHANDLE : Figure
+        %
+        %   Output:
+        %       - PLOTHANDLE : patch object
+        %
+        %   See also patch.
+
         	figure(figureHandle);
             nDimension = size(obj.DesignSampleDefinition,2);
         	if((nDimension==2) || (nDimension==3))

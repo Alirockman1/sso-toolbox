@@ -217,9 +217,18 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             obj.IsInsideDefinition = isInside;
             convexHullPoint = designSample(isInside,:);
             
-            [obj.ConvexHullIndex,obj.Measure,obj.ConvexHullFacePoint,obj.ConvexHullFaceNormal] = ...
-                convex_hull_face(convexHullPoint);
+            % compute convex hull and find reference points / normals to each facet
+            [obj.ConvexHullIndex,obj.Measure] = compute_convex_hull(convexHullPoint);
+            [obj.ConvexHullFacePoint,obj.ConvexHullFaceNormal] = find_facet_reference_point_normal(convexHullPoint,obj.ConvexHullIndex);
 
+            % make sure normal vectors are pointing inside
+            convexHullCenter = mean(convexHullPoint,1);
+            distanceCenterToVertice = obj.ConvexHullFacePoint - convexHullCenter;
+            dotProduct = dot(distanceCenterToVertice,obj.ConvexHullFaceNormal,2);
+            wrongOrientation = (dotProduct>0);
+            obj.ConvexHullFaceNormal(wrongOrientation,:) = -obj.ConvexHullFaceNormal(wrongOrientation,:);
+
+            % label designs which contribute to shape definition
             nSample = size(designSample,1);
             globalConvexHullIndex = convert_index_base(isInside,obj.ConvexHullIndex(:),'backward');
             obj.IsShapeDefinition = ismember((1:nSample)',globalConvexHullIndex);
@@ -293,7 +302,7 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         %   
         %   See also is_in_convex_hull_with_plane.
 
-            [label,score] = is_in_convex_hull_with_face(obj.ConvexHullFacePoint,obj.ConvexHullFaceNormal,designSample);
+            [label,score] = is_in_convex_hull_with_facet_normal(obj.ConvexHullFacePoint,obj.ConvexHullFaceNormal,designSample);
             isInBoundary = ismember(designSample,obj.ActiveDesign,'rows');
             label = label | isInBoundary;
             score(isInBoundary) = -abs(score(isInBoundary));
@@ -330,10 +339,6 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             else
                 plotHandle = [];
             end
-        end
-        
-        function isShapeDefinition = get.IsShapeDefinition(obj)
-            isShapeDefinition = obj.IsShapeDefinition;
         end
     end
 end

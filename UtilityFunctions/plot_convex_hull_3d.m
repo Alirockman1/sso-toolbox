@@ -24,7 +24,7 @@ function plotHandle = plot_convex_hull_3d(figureHandle,hullSample,convexHullInde
 %   Output:
 %       - PLOTHANDLE : Line
 %
-%   See also patch, convex_hull_face, legend, plot_convex_hull_2d.
+%   See also patch, compute_convex_hull, legend, plot_convex_hull_2d.
 %
 %   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
