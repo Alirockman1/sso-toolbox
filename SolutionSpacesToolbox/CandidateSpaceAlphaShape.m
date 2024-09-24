@@ -27,6 +27,9 @@ classdef CandidateSpaceAlphaShape < CandidateSpaceBase
 %       for the SamplingBox, varying between the strict bounding box around the 
 %       internal region and a larger bounding box which may contain negative
 %       designs in its edges. 
+%       - GrowthDistanceOptions : options to be used when computing the distance 
+%       that the candidate space will grow to. In its default base 
+%       implementation, these are options to 'knnsearch'.
 %       - AlphaShapeOptions : additional options when training the alphaShape 
 %       object. 
 %       - CriticalAlphaType : criterion for the minimum value of alpha radius
@@ -87,6 +90,17 @@ classdef CandidateSpaceAlphaShape < CandidateSpaceBase
         %
         %   See also DesignSampleDefinition, IsInsideDefinition.
         IsShapeDefinition
+
+        %GROWTHDISTANCEOPTIONS Options when computing distances in the growth algorithm
+        %   GROWTHDISTANCEOPTIONS are the extra options to be used when finding the
+        %   distance between sample points in the growth algorithm. 
+        %   By default in its base implementation, these would be options for the 
+        %   'knnsearch' funciton.
+        %
+        %   GROWTHDISTANCEOPTIONS : (1,nOption) cell
+        %
+        %   See also grow_candidate_space, knnsearch.
+        GrowthDistanceOptions
         
         %ALPHASHAPEOBJECT alphaShape object to be used for candidate space definition
         %   ALPHASHAPEOBJECT contains the alphaShape which can be used to determine
@@ -177,12 +191,14 @@ classdef CandidateSpaceAlphaShape < CandidateSpaceBase
             parser.addParameter('AlphaShapeOptions',{});
             parser.addParameter('CriticalAlphaType','one-region');
             parser.addParameter('FillHoles',true);
+            parser.addParameter('GrowthDistanceOptions',{});
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
             
             obj.DesignSpaceLowerBound = parser.Results.designSpaceLowerBound;;
             obj.DesignSpaceUpperBound = parser.Results.designSpaceUpperBound;
             obj.SamplingBoxSlack = parser.Results.SamplingBoxSlack;
             obj.CriticalAlphaType = parser.Results.CriticalAlphaType;
+            obj.GrowthDistanceOptions = parser.Results.GrowthDistanceOptions;
 
             if(~parser.Results.FillHoles)
                 defaultAlphaShapeOptions = {};
@@ -319,6 +335,38 @@ classdef CandidateSpaceAlphaShape < CandidateSpaceBase
     		[~,score] = obj.AlphaShapeObject.nearestNeighbor(designSample);
     		score(label) = -score(label);
     	end
+
+        function obj = grow_candidate_space(obj,growthRate)
+        %GROW_CANDIDATE_SPACE Expansion of candidate space by given factor
+        %   GROW_CANDIDATE_SPACE will grow the region considered inside the current 
+        %   candidate space by the factor given. Said growth is done in a fixed rate 
+        %   defined by the input relative to the design space.
+        %
+        %   OBJ = OBJ.GROW_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
+        %   defined in OBJ by a factor of GROWTHRATE. This is an isotropic expansion of 
+        %   the candidate space by a factor of the growth rate times the size of the 
+        %   design space.
+        %
+        %   Inputs:
+        %       - OBJ : CandidateSpaceBase
+        %       - GROWTHRATE : double
+        %   
+        %   Outputs:
+        %       - OBJ : CandidateSpaceBase
+        %   
+        %   See also is_in_candidate_space.
+
+            [designSampleExpanded,labelExpanded] = grow_sample_region_positive_label(...
+                obj.DesignSampleDefinition,...
+                obj.IsInsideDefinition,...
+                obj.DesignSpaceLowerBound,...
+                obj.DesignSpaceUpperBound,...
+                growthRate,...
+                obj.GrowthDistanceOptions{:});
+            
+            % train new candidate space
+            obj = obj.define_candidate_space(designSampleExpanded,labelExpanded);
+        end
 
     	function plotHandle = plot_candidate_space(obj,figureHandle,varargin)
         %PLOT_CANDIDATE_SPACE Visualization of the boundary of the canidate space 2D/3D
