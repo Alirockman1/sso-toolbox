@@ -1,4 +1,4 @@
-function performanceMeasure = truss_six_bar_2d_moving_node(designSample,systemParameter)
+function performanceMeasure = truss_nine_bar_3d_moving_node(designSample,systemParameter)
 %TRUSS_SIX_BAR_2D_MOVING_NODE Bottom-Up Mapping (2D Node Position Problem)
 %	TRUSS_SIX_BAR_2D_MOVING_NODE uses a pre-defined truss and determines the
 %	total vertical displacement of the tip and stresses in the bars for 
@@ -54,18 +54,49 @@ function performanceMeasure = truss_six_bar_2d_moving_node(designSample,systemPa
 %   See the License for the specific language governing permissions and
 %   limitations under the License.
 
-	nodePosition = [0 0; 0 1; nan nan; nan nan; 2 0.5]; % assumed [mm]
-	fixedDegreesOfFreedom = [true true; true true; false false; false false; false false];
-	nodeForce = [0 0; 0 0; 0 0; 0 0; 0 -1000]; % assumed [N]
-	nodeElement = [1 3; 2 4; 2 3; 3 4; 3 5; 4 5];
+	nodePosition = [...
+          0   0   0; % (1)
+        nan nan nan; % (2)
+          2   0 0.5; % (3)
+        nan nan nan; % (4)
+          0   0   1; % (5) 
+        nan nan nan; % (6)
+          0   1   1]; % (7)
+    fixedDegreesOfFreedom = [...
+        true true true; % (1) 
+        false false false; % (2)
+        false false false; % (3)
+        false false false; % (4)
+        true true true; % (5)
+        false false false; % (6)
+        true true true]; % (7)
+    nodeForce = [...
+        0 0     0; % (1)
+        0 0     0; % (2)
+        0 0     0; % (3)
+        0 0     0; % (4)
+        0 0 -1000; % (5)
+        0 0     0; % (6)
+        0 0     0]; % (7)
+    nodeElement = [...
+        1 2; % (1)
+        2 3; % (2)
+        3 4; % (3)
+        4 5; % (4)
+        2 4; % (5)
+        2 5; % (6)
+        6 3; % (7)
+        6 4; % (8)
+        6 7]; % (9)
 	elementCrossSectionArea = systemParameter(:,1); % assumed [mm^2]
 	elementYoungsModulus = systemParameter(:,2); % assumed [MPa]
 
 	nSample = size(designSample,1);
-	performanceMeasure = nan(nSample,7);
+	performanceMeasure = nan(nSample,13);
 	for i=1:nSample
-		nodePosition(3,:) = designSample(i,[1,2]);
-		nodePosition(4,:) = designSample(i,[3,4]);
+		nodePosition(2,:) = designSample(i,[1,2,3]);
+		nodePosition(4,:) = designSample(i,[4,5,6]);
+        nodePosition(6,:) = designSample(i,[7,8,9]);
 
 		[nodeDisplacement,~,elementAxialForce] = ...
 			truss_analysis(...
@@ -77,6 +108,6 @@ function performanceMeasure = truss_six_bar_2d_moving_node(designSample,systemPa
 				elementYoungsModulus);
 		elementStress = truss_deformed_stress(elementAxialForce,elementCrossSectionArea);
 
-		performanceMeasure(i,:) = [-nodeDisplacement(5,2),abs(elementStress')];
+		performanceMeasure(i,:) = [-nodeDisplacement(5,3),abs(elementStress')];
 	end
 end

@@ -341,7 +341,7 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
 
         % No viable design found; throw error
         if(nAcceptable==0 || nUseful==0 || nAcceptableUseful==0)
-            console.error('SSOOptBox:BadSampling',['No good/useful points found, ',...
+            console.critical('SSOOptBox:BadSampling',['No good/useful points found, ',...
                 'please retry process with different parameters / looser requirements.']);
         end
 

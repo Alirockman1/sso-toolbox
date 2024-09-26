@@ -369,7 +369,7 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
 
             [insideSimplex,barycentricCoordinate] = tsearchn(obj.ActiveDesign,obj.DelaunayIndex,designSample);
             isInsideSpace = ~isnan(insideSimplex);
-            isInBoundary = ismember(designSample,obj.DesignSampleDefinition(obj,IsShapeDefinition,:),'rows');
+            isInBoundary = ismember(designSample,obj.DesignSampleDefinition(obj.IsShapeDefinition,:),'rows');
             label = isInsideSpace | isInBoundary;
 
             if(nargout>1)

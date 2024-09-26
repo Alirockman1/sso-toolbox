@@ -183,39 +183,43 @@ view(3);
 
 %% twelve-bar 3D truss 
 % information
-nodePosition = [0 0 0; % (1)
-                0 0 1; % (2)
-                0 1 0; % (3)
-                1 0 0; % (4)
-                1 0 1; % (5) 
-                1 1 0; % (6)
-                2 0.5 0.5]; % (7)
-fixedDegreesOfFreedom = [true true true; % (1) 
-                         true true true; % (2)
-                         true true true; % (3)
-                         false false false; % (4)
-                         false false false; % (5)
-                         false false false; % (6)
-                         false false false]; % (7)
-nodeForce = [0 0 0; % (1)
-             0 0 0; % (2)
-             0 0 0; % (3)
-             0 0 0; % (4)
-             0 0 0; % (5)
-             0 0 0; % (6)
-             0 0 -1000]; % (7)
-nodeElement = [1 4; % (1)
-               2 5; % (2)
-               3 6; % (3)
-               1 5; % (4)
-               3 4; % (5)
-               3 5; % CONFIRM WITH ZM
-               4 5; % (6)
-               5 6; % (7)
-               4 6; % (8)
-               4 7; % (9)
-               5 7; % (10)
-               6 7]; % (11)
+nodePosition = [...
+	0 0 0; % (1)
+    0 0 1; % (2)
+    0 1 0; % (3)
+    1 0 0; % (4)
+    1 0 1; % (5) 
+    1 1 0; % (6)
+    2 0.5 0.5]; % (7)
+fixedDegreesOfFreedom = [...
+	true true true; % (1) 
+    true true true; % (2)
+    true true true; % (3)
+    false false false; % (4)
+    false false false; % (5)
+    false false false; % (6)
+    false false false]; % (7)
+nodeForce = [...
+	0 0 0; % (1)
+    0 0 0; % (2)
+    0 0 0; % (3)
+    0 0 0; % (4)
+    0 0 0; % (5)
+    0 0 0; % (6)
+    0 0 -1000]; % (7)
+nodeElement = [...
+	1 4; % (1)
+    2 5; % (2)
+    3 6; % (3)
+    1 5; % (4)
+    3 4; % (5)
+    3 5; % CONFIRM WITH ZM
+    4 5; % (6)
+    5 6; % (7)
+    4 6; % (8)
+    4 7; % (9)
+    5 7; % (10)
+    6 7]; % (11)
 
 
 % function call
@@ -232,6 +236,72 @@ fprintf('TWELVE-BAR 3D TRUSS\n');
 elementStrain = truss_deformed_strain(nodePosition,nodeDisplacement,nodeElement) % display
 elementStress = truss_deformed_stress(elementAxialForce,elementCrossSectionArea) % display
 
+% plot results
+figure;
+[handleUndeformed,handleDeformed] = plot_truss_deformation(gcf,nodePosition,nodeElement,nodeDisplacement,...
+    'DisplacementScaleFactor',1000);
+grid minor;
+legend([handleUndeformed,handleDeformed],{'Undeformed Truss','Deformed Truss'},'location','northeast');
+xlabel('X');
+ylabel('Y');
+zlabel('Z');
+view(3);
+
+plot_truss_element_response(nodePosition,nodeElement,elementStrain);
+title('Strain');
+grid minor;
+xlabel('X');
+ylabel('Y');
+zlabel('Z');
+view(3);
+
+plot_truss_element_response(nodePosition,nodeElement,elementStress);
+title('Stress');
+grid minor;
+xlabel('X');
+ylabel('Y');
+zlabel('Z');
+view(3);
+
+
+%% six-bar 3D truss
+%https://engineering.purdue.edu/~aprakas/CE297/CE297-Ch6.pdf
+nodePosition = [...
+         0 4.8    0; % (1)
+      -0.8   0  2.1; % (2)
+         2   0    0; % (3)
+      -0.8   0 -2.1]; % (4)
+fixedDegreesOfFreedom = [...
+    false false false; % (1) 
+    true true true; % (2)
+    false true false; % (3)
+    true true false]; % (4)
+nodeForce = [...
+    0 -2184 0; % (1)
+    0     0 0; % (2)
+    0     0 0; % (3)
+    0     0 0]; % (4)
+nodeElement = [...
+    1 2; % (1)
+    1 3; % (2)
+    1 4; % (3)
+    2 3; % (4)
+    2 4; % (5)
+    3 4]; % (6)
+
+% function call
+fprintf([repelem('=',80),'\n']);
+fprintf('NINE-BAR 3D TRUSS\n');
+[nodeDisplacement,nodeReactionForce,elementAxialForce] = ...
+	truss_analysis(...
+		nodePosition,...
+		fixedDegreesOfFreedom,...
+		nodeForce,...
+		nodeElement,...
+		elementCrossSectionArea,...
+		elementYoungsModulus) % display
+elementStrain = truss_deformed_strain(nodePosition,nodeDisplacement,nodeElement) % display
+elementStress = truss_deformed_stress(elementAxialForce,elementCrossSectionArea) % display
 
 % plot results
 figure;

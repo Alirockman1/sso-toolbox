@@ -86,7 +86,7 @@ function performanceMeasure = truss_two_bar_hollow_circle(designSample,systemPar
 %           -- (28) normal-stiffness of bar 2 (k2)
 %           -- (29) compliance of total structure (NF)
 %
-%   See also truss_six_bar_2d_moving_node.
+%   See also truss_six_bar_2d_two_moving_node.
 %
 %   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
