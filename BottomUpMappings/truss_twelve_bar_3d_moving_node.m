@@ -55,9 +55,9 @@ function performanceMeasure = truss_twelve_bar_3d_moving_node(designSample,syste
 %   limitations under the License.
 
 	nodePosition = [...
-          0     0   0; % (1)
-          0   0.5   1; % (2)
-          0     1   0; % (3)
+          0   0   0; % (1)
+          0   0   1; % (2)
+          0   1   0; % (3)
         nan nan nan; % (4)
         nan nan nan; % (5) 
         nan nan nan; % (6)
@@ -83,13 +83,12 @@ function performanceMeasure = truss_twelve_bar_3d_moving_node(designSample,syste
         2 5; % (2)
         3 6; % (3)
         1 5; % (4)
+        3 4; % (5)
         3 5; % CONFIRM WITH ZM
-        2 4; % (6)
-        2 6; % (7)
-        4 5;
+        4 5; % (6)
+        5 6; % (7)
         4 6; % (8)
         4 7; % (9)
-        5 6;
         5 7; % (10)
         6 7]; % (11)
 	elementCrossSectionArea = systemParameter(:,1); % assumed [mm^2]
