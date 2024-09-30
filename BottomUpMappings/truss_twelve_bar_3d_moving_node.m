@@ -55,9 +55,9 @@ function performanceMeasure = truss_twelve_bar_3d_moving_node(designSample,syste
 %   limitations under the License.
 
 	nodePosition = [...
-          0   0   0; % (1)
-          0   0   1; % (2)
-          0   1   0; % (3)
+          0     0   0; % (1)
+          0   0.5   1; % (2)
+          0     1   0; % (3)
         nan nan nan; % (4)
         nan nan nan; % (5) 
         nan nan nan; % (6)
@@ -83,24 +83,28 @@ function performanceMeasure = truss_twelve_bar_3d_moving_node(designSample,syste
         2 5; % (2)
         3 6; % (3)
         1 5; % (4)
-        3 4; % (5)
         3 5; % CONFIRM WITH ZM
-        4 5; % (6)
-        5 6; % (7)
+        2 4; % (6)
+        2 6; % (7)
+        4 5;
         4 6; % (8)
         4 7; % (9)
+        5 6;
         5 7; % (10)
         6 7]; % (11)
 	elementCrossSectionArea = systemParameter(:,1); % assumed [mm^2]
 	elementYoungsModulus = systemParameter(:,2); % assumed [MPa]
+    momentOfInertia = systemParameter(:,3); % assumed [MPa]
 
 	nSample = size(designSample,1);
-	performanceMeasure = nan(nSample,13);
+    nElement = size(nodeElement,1);
+	performanceMeasure = nan(nSample,1+2*nElement);
 	for i=1:nSample
 		nodePosition(4,:) = designSample(i,[1,2,3]);
 		nodePosition(5,:) = designSample(i,[4,5,6]);
         nodePosition(6,:) = designSample(i,[7,8,9]);
 
+        % find displacement
 		[nodeDisplacement,~,elementAxialForce] = ...
 			truss_analysis(...
 				nodePosition,...
@@ -109,8 +113,16 @@ function performanceMeasure = truss_twelve_bar_3d_moving_node(designSample,syste
 				nodeElement,...
 				elementCrossSectionArea,...
 				elementYoungsModulus);
+
+        % find stresses
 		elementStress = truss_deformed_stress(elementAxialForce,elementCrossSectionArea);
 
-		performanceMeasure(i,:) = [-nodeDisplacement(7,3),abs(elementStress')];
+        % find buckling
+        nodeDistance = nodePosition(nodeElement(:,2),:)-nodePosition(nodeElement(:,1),:);
+	    elementLength = vecnorm(nodeDistance,2,2);
+        bucklingCriticalLoad = pi^2.*elementYoungsModulus.*momentOfInertia./(elementLength.^2);
+        bucklingFactor = elementAxialForce(:,1)./bucklingCriticalLoad;
+
+		performanceMeasure(i,:) = [-nodeDisplacement(7,3),abs(elementStress'),bucklingFactor'];
 	end
 end
