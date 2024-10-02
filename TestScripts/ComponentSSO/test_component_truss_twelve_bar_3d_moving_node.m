@@ -17,6 +17,7 @@
 %   See the License for the specific language governing permissions and
 %   limitations under the License.
 
+
 %% Cleanup
 fclose all;
 close all;
@@ -40,39 +41,30 @@ figureSize = [goldenRatio 1]*8.5;
 %% function call
 %
 systemFunction = @truss_twelve_bar_3d_moving_node;
-systemParameter = [100,210e3,795]; % [mm^2],[MPa],[mm^4]
+systemParameter = [100,210e3,795,7850e-9]; % [mm^2],[MPa],[mm^4],[kg/mm^3]
 %                         x1   y1   z1  x2   y2  z2  x3  y3   z3
 designSpaceLowerBound = [0.5 -0.5 -1.0 0.1 -0.5 0.5 0.1 0.0 -1.0];
 designSpaceUpperBound = [2.0  0.5  0.5 2.0  0.5 1.5 2.0 2.0  1.0];
 Components = {[1,2,3]',[4,5,6]',[7,8,9]'};
 %
 performanceLowerLimit = -inf;
-performanceUpperLimit = [nan repmat(250,1,12) ones(1,12)];
+performanceUpperLimit = [nan nan repmat(250,1,12) ones(1,12)];
 %                x1 y1 z1 x2  y2 z2 x3 y3 z3
 initialDesign = [ 1  0  0  1   0  1  1  1  0];
-
-figureIncludeLegendHeadline = false;
-findOptimalSolution = true;
 
 
 %% find optimum
 bottomUpMapping = BottomUpMappingFunction(systemFunction,systemParameter);
 
-if(findOptimalSolution)
-    [nodePositionOptimal,displacementOptimal] = design_optimize_quantities_of_interest(...
-        bottomUpMapping,...
-        initialDesign,...
-        designSpaceLowerBound,...
-        designSpaceUpperBound,...
-        @(performanceMeasure)[performanceMeasure(1)],...
-        'InequalityConstraintFunction',@(performanceMeasure)[performanceMeasure(2:end)-performanceUpperLimit(2:end)],...
-        'OptimizationMethodFunction',@optimization_ga_wrapper,...
-        'OptimizationMethodOptions',{'Display','iter'});
-else
-    nodePositionOptimal = initialDesign;
-    systemResponse = bottomUpMapping.response(nodePositionOptimal);
-    displacementOptimal = systemResponse(1);
-end
+[nodePositionOptimal,displacementOptimal] = design_optimize_quantities_of_interest(...
+    bottomUpMapping,...
+    initialDesign,...
+    designSpaceLowerBound,...
+    designSpaceUpperBound,...
+    @(performanceMeasure)[performanceMeasure(1)],...
+    'InequalityConstraintFunction',@(performanceMeasure)[performanceMeasure(3:end)-performanceUpperLimit(3:end)],...
+    'OptimizationMethodFunction',@optimization_ga_wrapper,...
+    'OptimizationMethodOptions',{'Display','iter'});
 
 
 %% plot optimum and deformations
@@ -116,77 +108,26 @@ nodeElement = [...
 elementCrossSectionArea = systemParameter(1); % [mm^2]
 elementYoungsModulus = systemParameter(2); % [MPa]
 
-nodePositionInitial = baseNode; % (3)
+% initial truss
+plot_results_truss_twelve_bar_3d_moving_node(baseNode,nodeElement,...
+    'NodePositionInitial',initialDesign);
+save_print_figure(gcf,[saveFolder,'InitialTruss']);
+rotating_video(gcf,[saveFolder,'InitialTruss']);
+rotating_gif(gcf,[saveFolder,'InitialTruss']);
+
+% initial truss + optimized truss
+plot_results_truss_twelve_bar_3d_moving_node(baseNode,nodeElement,...
+    'NodePositionInitial',initialDesign,...
+    'NodePositionOptimal',nodePositionOptimal);
+save_print_figure(gcf,[saveFolder,'InitialOptimizedTruss']);
+rotating_video(gcf,[saveFolder,'InitialOptimizedTruss']);
+rotating_gif(gcf,[saveFolder,'InitialOptimizedTruss']);
+
+% deformed trusses
+nodePositionInitial = baseNode;
 nodePositionInitial(4,:) = initialDesign(1:3);
 nodePositionInitial(5,:) = initialDesign(4:6);
 nodePositionInitial(6,:) = initialDesign(7:9);
-
-nodePositionOptimized = baseNode; % (3)
-nodePositionOptimized(4,:) = nodePositionOptimal(1:3);
-nodePositionOptimized(5,:) = nodePositionOptimal(4:6);
-nodePositionOptimized(6,:) = nodePositionOptimal(7:9);
-
-[wallY,wallZ] = meshgrid(-0.5:1.5);
-wallX = zeros(size(wallY));
-
-
-% initial truss
-figure;
-hold all;
-handleInitial = plot_truss_deformation(gcf,nodePositionInitial,nodeElement,'ColorUndeformed',[0.8 0.8 0.8],'MaximumLinewidth',4.0);
-handleWall = surf(wallX,wallY,wallZ,'FaceColor',[0.7 0.7 0.7],'EdgeColor','none','FaceAlpha',0.9);
-handleForce = quiver3(2,0.5,0.5,0,0,-0.5,'Color','r','LineWidth',4.0);
-grid minor;
-if(figureIncludeLegendHeadline)
-    legend([handleInitial,handleWall,handleForce],...
-        {'Initial Truss','Wall','Applied Force'},...
-        'location','west');
-end
-xlabel('x');
-ylabel('y');
-zlabel('z');
-axis('equal');
-axis('vis3d');
-camproj('perspective');
-save_print_figure(gcf,[saveFolder,'InitialTruss']);
-
-
-% initial + optimized truss
-figure;
-hold all;
-handleWall = surf(wallX,wallY,wallZ,'FaceColor',[0.7 0.7 0.7],'EdgeColor','none','FaceAlpha',0.9);
-handleForce = quiver3(2,0.5,0.5,0,0,-0.5,'Color','r','LineWidth',4.0);
-handleInitial = plot_truss_deformation(gcf,nodePositionInitial,nodeElement,'ColorUndeformed',[0.8 0.8 0.8],'MaximumLinewidth',4.0,'DisplacementScaleFactor',1000);
-handleOptimal = plot_truss_deformation(gcf,nodePositionOptimized,nodeElement,'ColorUndeformed','b','MaximumLinewidth',4.0,'DisplacementScaleFactor',1000);
-grid minor;
-if(figureIncludeLegendHeadline)
-    legend([...
-            handleInitial,...
-            handleWall,...
-            handleForce,...
-            handleOptimal,...
-            ],...
-        {...
-            'Initial Truss',...
-            'Initial Truss (Deformed)',...
-            'Wall',...
-            'Applied Force',...
-            'Optimized Truss',...
-            'Optimized Truss (Deformed)'...
-            },...
-        'FontSize',12);
-end
-xlabel('x');
-ylabel('y');
-zlabel('z');
-axis('equal');
-axis('vis3d');
-camproj('perspective');
-save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussDeformation']);
-
-
-
-% deformed trusses
 nodeDisplacementInitial = ...
 	truss_analysis(...
 		nodePositionInitial,...
@@ -195,6 +136,11 @@ nodeDisplacementInitial = ...
 		nodeElement,...
 		elementCrossSectionArea,...
 		elementYoungsModulus);
+
+nodePositionOptimized = baseNode;
+nodePositionOptimized(4,:) = nodePositionOptimal(1:3);
+nodePositionOptimized(5,:) = nodePositionOptimal(4:6);
+nodePositionOptimized(6,:) = nodePositionOptimal(7:9);
 nodeDisplacementOptimal = ...
     truss_analysis(...
 	    nodePositionOptimized,...
@@ -204,50 +150,35 @@ nodeDisplacementOptimal = ...
 	    elementCrossSectionArea,...
 	    elementYoungsModulus);
 
-figure;
-hold all;
-[handleInitial,handleInitialDeformed] = plot_truss_deformation(gcf,nodePositionInitial,nodeElement,nodeDisplacementInitial,'ColorUndeformed',[0.8 0.8 0.8],'ColorDeformed','c','MaximumLinewidth',4.0,'DisplacementScaleFactor',1000);
-[handleOptimal,handleOptimizedDeformed] = plot_truss_deformation(gcf,nodePositionOptimized,nodeElement,nodeDisplacementOptimal,'ColorUndeformed','b','ColorDeformed','m','MaximumLinewidth',4.0,'DisplacementScaleFactor',1000);
-handleWall = surf(wallX,wallY,wallZ,'FaceColor',[0.7 0.7 0.7],'EdgeColor','none','FaceAlpha',0.9);
-handleForce = quiver3(2,0.5,0.5,0,0,-0.5,'Color','r','LineWidth',4.0);
-grid minor;
-if(figureIncludeLegendHeadline)
-    legend([...
-            handleInitial,...
-            handleInitialDeformed,...
-            handleWall,...
-            handleForce,...
-            handleOptimal,...
-            handleOptimizedDeformed...
-            ],...
-        {...
-            'Initial Truss',...
-            'Initial Truss (Deformed)',...
-            'Wall',...
-            'Applied Force',...
-            'Optimized Truss',...
-            'Optimized Truss (Deformed)'...
-            },...
-        'FontSize',12);
-end
-xlabel('x');
-ylabel('y');
-zlabel('z');
-axis('equal');
-axis('vis3d');
-camproj('perspective');
+plot_results_truss_twelve_bar_3d_moving_node(baseNode,nodeElement,...
+    'NodePositionInitial',initialDesign,...
+    'NodePositionOptimal',nodePositionOptimal,...
+    'NodeDisplacementInitial',nodeDisplacementInitial,...
+    'NodeDisplacementOptimal',nodeDisplacementOptimal);
 save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussDeformation']);
+rotating_video(gcf,[saveFolder,'InitialOptimizedTrussDeformation']);
+rotating_gif(gcf,[saveFolder,'InitialOptimizedTrussDeformation']);
 
 
-%% box opt
-% update uppwer limit based on optimal value
-performanceUpperLimit(1) = displacementOptimal*1.1;
+%% establish upper performance limits
+% update uppwer limit based on either optimal value or initial value
+performanceMeasureInitial = bottomUpMapping.response(initialDesign);
+
+% displacement
+performanceUpperLimit(1) = performanceMeasureInitial(1);
+...performanceUpperLimit(1) = displacementOptimal*1.1;
+
+% mass
+...performanceUpperLimit(2) = performanceMeasureInitial(2);
+
 designEvaluator = DesignEvaluatorBottomUpMapping(...
         bottomUpMapping,...
         performanceLowerLimit,...
         performanceUpperLimit);
 
-tic
+
+%% Box Opt
+timeElapsedBox = tic;
 optionsBox = sso_stochastic_options('box',...
     'NumberSamplesPerIterationExploration',300,...
     'NumberSamplesPerIterationConsolidation',300,...
@@ -258,16 +189,17 @@ optionsBox = sso_stochastic_options('box',...
     'UseAdaptiveGrowthRate',false,...
     'GrowthRate',0.1,...
     'ApplyLeanness','never',...
-    'TrimmingOperationOptions',{'PassesCriterion','full'},...
+    'TrimmingOperationOptions',{'PassesCriterion','reduced'},...
     'TrimmingOrderOptions',{'OrderPreference','score'});
 
+rng(rngState);
 [solutionSpaceBox,problemDataBox,iterDataBox] = sso_box_stochastic(designEvaluator,...
-    nodePositionOptimal,designSpaceLowerBound,designSpaceUpperBound,optionsBox);
-toc
+    initialDesign,designSpaceLowerBound,designSpaceUpperBound,optionsBox);
+toc(timeElapsedBox)
 
 
 %% component opt
-tic
+timeElapsedComponent = tic;
 options = sso_stochastic_options('component',...
     'NumberSamplesPerIterationExploration',300,...
     'NumberSamplesPerIterationConsolidation',300,...
@@ -291,208 +223,62 @@ options = sso_stochastic_options('component',...
     'TrimmingOperationOptions',{'PassesCriterion','reduced'},...
     'TrimmingOrderOptions',{'OrderPreference','score'});
 
+rng(rngState);
 [componentSolutionSpace,problemData,iterData] = sso_component_stochastic(designEvaluator,...
-    nodePositionOptimal,designSpaceLowerBound,designSpaceUpperBound,Components,options);
-toc
+    initialDesign,designSpaceLowerBound,designSpaceUpperBound,Components,options);
+toc(timeElapsedComponent)
+
+
+%% measure comparison
+measureComponent1 = componentSolutionSpace(1).Measure;
+measureComponent2 = componentSolutionSpace(2).Measure;
+measureComponent3 = componentSolutionSpace(3).Measure;
+measureBox1 = prod(solutionSpaceBox(2,[1,2,3])-solutionSpaceBox(1,[1,2,3]));
+measureBox2 = prod(solutionSpaceBox(2,[4,5,6])-solutionSpaceBox(1,[4,5,6]));
+measureBox3 = prod(solutionSpaceBox(2,[7,8,9])-solutionSpaceBox(1,[7,8,9]));
+fprintf('\nVolume Increases - Node 1: %.3gx ; Node 2: %.gx ; Node 3: %.gx\n',...
+    measureComponent1/measureBox1,measureComponent2/measureBox2,measureComponent3/measureBox3);
 
 
 %% Plot Visualization
 % initial truss + component solution spaces
-figure;
-hold all;
-handleInitial = plot_truss_deformation(gcf,nodePositionInitial,nodeElement,'ColorUndeformed',[0.8 0.8 0.8],'MaximumLinewidth',4.0);
-handleWall = surf(wallX,wallY,wallZ,'FaceColor',[0.7 0.7 0.7],'EdgeColor','none','FaceAlpha',0.9);
-handleForce = quiver3(2,0.5,0.5,0,0,-0.5,'Color','r','LineWidth',4.0);
-handleToleranceNode1Component = componentSolutionSpace(1).plot_candidate_space(gcf,'FaceAlpha',0.2,'FaceColor','g');
-handleToleranceNode2Component = componentSolutionSpace(2).plot_candidate_space(gcf,'FaceAlpha',0.2,'FaceColor','g');
-handleToleranceNode3Component = componentSolutionSpace(3).plot_candidate_space(gcf,'FaceAlpha',0.2,'FaceColor','g');
-grid minor;
-if(figureIncludeLegendHeadline)
-    legend([handleInitial,handleWall,handleForce,handleToleranceNode1Component],...
-        {'Initial Truss','Wall','Applied Force','Tolerance Region for Each Node (Component)'},...
-        'location','west');
-end
-xlabel('x');
-ylabel('y');
-zlabel('z');
-axis('equal');
-axis('vis3d');
-camproj('perspective');
+plot_results_truss_twelve_bar_3d_moving_node(baseNode,nodeElement,...
+    'NodePositionInitial',initialDesign,...
+    'ComponentSolutionSpace',componentSolutionSpace);
 save_print_figure(gcf,[saveFolder,'InitialTrussComponent']);
+rotating_video(gcf,[saveFolder,'InitialTrussComponent']);
+rotating_gif(gcf,[saveFolder,'InitialTrussComponent']);
 
 % initial truss + optimized truss + box solution space + component solution spaces
-figure;
-hold all;
-handleInitial = plot_truss_deformation(gcf,nodePositionInitial,nodeElement,'ColorUndeformed',[0.8 0.8 0.8],'MaximumLinewidth',4.0);
-handleOptimal = plot_truss_deformation(gcf,nodePositionOptimized,nodeElement,'ColorUndeformed','b','MaximumLinewidth',4.0);
-handleWall = surf(wallX,wallY,wallZ,'FaceColor',[0.7 0.7 0.7],'EdgeColor','none','FaceAlpha',0.9);
-handleForce = quiver3(2,0.5,0.5,0,0,-0.5,'Color','r','LineWidth',4.0);
-handleToleranceNode1Box = plot_design_box_3d(gcf,solutionSpaceBox(:,[1,2,3]),'FaceAlpha',0.2,'FaceColor','c');
-handleToleranceNode2Box = plot_design_box_3d(gcf,solutionSpaceBox(:,[4,5,6]),'FaceAlpha',0.2,'FaceColor','c');
-handleToleranceNode3Box = plot_design_box_3d(gcf,solutionSpaceBox(:,[7,8,9]),'FaceAlpha',0.2,'FaceColor','c');
-handleToleranceNode1Component = componentSolutionSpace(1).plot_candidate_space(gcf,'FaceAlpha',0.2,'FaceColor','g');
-handleToleranceNode2Component = componentSolutionSpace(2).plot_candidate_space(gcf,'FaceAlpha',0.2,'FaceColor','g');
-handleToleranceNode3Component = componentSolutionSpace(3).plot_candidate_space(gcf,'FaceAlpha',0.2,'FaceColor','g');
-grid minor;
-if(figureIncludeLegendHeadline)
-    legend([...
-            handleInitial,...
-            handleOptimal,...
-            handleWall,...
-            handleForce,...
-            handleToleranceNode1Box,...
-            handleToleranceNode1Component,...
-            ... handleToleranceNode1Box,...
-            ... handleToleranceNode2Box,...
-            ... handleToleranceNode3Box,...
-            ... handleToleranceNode1Component,...
-            ... handleToleranceNode2Component,...
-            ... handleToleranceNode3Component...
-            ],...
-        {...
-            'Initial Truss',...
-            'Optimized Truss',...
-            'Wall',...
-            'Applied Force',...
-            'Tolerance Region for Each Node (Box)',...
-            'Tolerance Region for Each Node (Component)',...
-            ... 'Tolerance Region for Node 1 (Box)',...
-            ... 'Tolerance Region for Node 2 (Box)',...
-            ... 'Tolerance Region for Node 3 (Box)',...
-            ... 'Tolerance Region for Node 1 (Component)',...
-            ... 'Tolerance Region for Node 2 (Component)',...
-            ... 'Tolerance Region for Node 3 (Component)'...
-            },...
-        'FontSize',12);
-    measureComponent1 = componentSolutionSpace(1).Measure;
-    measureComponent2 = componentSolutionSpace(2).Measure;
-    measureComponent3 = componentSolutionSpace(3).Measure;
-    measureBox1 = prod(solutionSpaceBox(2,[1,2,3])-solutionSpaceBox(1,[1,2,3]));
-    measureBox2 = prod(solutionSpaceBox(2,[4,5,6])-solutionSpaceBox(1,[4,5,6]));
-    measureBox3 = prod(solutionSpaceBox(2,[7,8,9])-solutionSpaceBox(1,[7,8,9]));
-    sgtitle(sprintf('Volume Increases - Node 1: %.3gx ; Node 2: %.3gx ; Node 3: %.3gx',...
-        measureComponent1/measureBox1,...
-        measureComponent2/measureBox2,...
-        measureComponent3/measureBox3));
-end
-xlabel('x');
-ylabel('y');
-zlabel('z');
-axis('equal');
-axis('vis3d');
-camproj('perspective');
-cameratoolbar; % better adjust angle/perspective
+plot_results_truss_twelve_bar_3d_moving_node(baseNode,nodeElement,...
+    'NodePositionInitial',initialDesign,...
+    'NodePositionOptimal',nodePositionOptimal,...
+    'BoxSolutionSpace',solutionSpaceBox,...
+    'ComponentSolutionSpace',componentSolutionSpace);
 save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussBoxComponent']);
+rotating_video(gcf,[saveFolder,'InitialOptimizedTrussBoxComponent']);
+rotating_gif(gcf,[saveFolder,'InitialOptimizedTrussBoxComponent']);
 
 % initial truss + box solution space + component solution spaces
-figure;
-hold all;
-handleInitial = plot_truss_deformation(gcf,nodePositionInitial,nodeElement,'ColorUndeformed',[0.8 0.8 0.8],'MaximumLinewidth',4.0);
-handleWall = surf(wallX,wallY,wallZ,'FaceColor',[0.7 0.7 0.7],'EdgeColor','none','FaceAlpha',0.9);
-handleForce = quiver3(2,0.5,0.5,0,0,-0.5,'Color','r','LineWidth',4.0);
-handleToleranceNode1Box = plot_design_box_3d(gcf,solutionSpaceBox(:,[1,2,3]),'FaceAlpha',0.2,'FaceColor','c');
-handleToleranceNode2Box = plot_design_box_3d(gcf,solutionSpaceBox(:,[4,5,6]),'FaceAlpha',0.2,'FaceColor','c');
-handleToleranceNode3Box = plot_design_box_3d(gcf,solutionSpaceBox(:,[7,8,9]),'FaceAlpha',0.2,'FaceColor','c');
-handleToleranceNode1Component = componentSolutionSpace(1).plot_candidate_space(gcf,'FaceAlpha',0.2,'FaceColor','g');
-handleToleranceNode2Component = componentSolutionSpace(2).plot_candidate_space(gcf,'FaceAlpha',0.2,'FaceColor','g');
-handleToleranceNode3Component = componentSolutionSpace(3).plot_candidate_space(gcf,'FaceAlpha',0.2,'FaceColor','g');
-grid minor;
-if(figureIncludeLegendHeadline)
-    legend([...
-            handleInitial,...
-            handleWall,...
-            handleForce,...
-            handleToleranceNode1Box,...
-            handleToleranceNode1Component,...
-            ... handleToleranceNode1Box,...
-            ... handleToleranceNode2Box,...
-            ... handleToleranceNode3Box,...
-            ... handleToleranceNode1Component,...
-            ... handleToleranceNode2Component,...
-            ... handleToleranceNode3Component...
-            ],...
-        {...
-            'Initial Truss',...
-            'Wall',...
-            'Applied Force',...
-            'Tolerance Region for Each Node (Box)',...
-            'Tolerance Region for Each Node (Component)',...
-            ... 'Tolerance Region for Node 1 (Box)',...
-            ... 'Tolerance Region for Node 2 (Box)',...
-            ... 'Tolerance Region for Node 3 (Box)',...
-            ... 'Tolerance Region for Node 1 (Component)',...
-            ... 'Tolerance Region for Node 2 (Component)',...
-            ... 'Tolerance Region for Node 3 (Component)'...
-            },...
-        'FontSize',12);
-    measureComponent1 = componentSolutionSpace(1).Measure;
-    measureComponent2 = componentSolutionSpace(2).Measure;
-    measureComponent3 = componentSolutionSpace(3).Measure;
-    measureBox1 = prod(solutionSpaceBox(2,[1,2,3])-solutionSpaceBox(1,[1,2,3]));
-    measureBox2 = prod(solutionSpaceBox(2,[4,5,6])-solutionSpaceBox(1,[4,5,6]));
-    measureBox3 = prod(solutionSpaceBox(2,[7,8,9])-solutionSpaceBox(1,[7,8,9]));
-    sgtitle(sprintf('Volume Increases - Node 1: %.3gx ; Node 2: %.3gx ; Node 3: %.3gx',...
-        measureComponent1/measureBox1,...
-        measureComponent2/measureBox2,...
-        measureComponent3/measureBox3));
-end
-xlabel('x');
-ylabel('y');
-zlabel('z');
-axis('equal');
-axis('vis3d');
-camproj('perspective');
+plot_results_truss_twelve_bar_3d_moving_node(baseNode,nodeElement,...
+    'NodePositionInitial',initialDesign,...
+    'BoxSolutionSpace',solutionSpaceBox,...
+    'ComponentSolutionSpace',componentSolutionSpace);
 save_print_figure(gcf,[saveFolder,'InitialTrussBoxComponent']);
-
+rotating_video(gcf,[saveFolder,'InitialTrussBoxComponent']);
+rotating_gif(gcf,[saveFolder,'InitialTrussBoxComponent']);
 
 % initial truss + sample trusses + component solution space
 nRandomTruss = 5;
 randomTrussMovingNode = candidate_space_sampling_individual_feasible(componentSolutionSpace,Components,nRandomTruss);
 
-figure;
-hold all;
-handleInitial = plot_truss_deformation(gcf,nodePositionInitial,nodeElement,'ColorUndeformed',[0.8 0.8 0.8],'MaximumLinewidth',4.0);
-handleWall = surf(wallX,wallY,wallZ,'FaceColor',[0.7 0.7 0.7],'EdgeColor','none','FaceAlpha',0.9);
-handleForce = quiver3(2,0.5,0.5,0,0,-0.5,'Color','r','LineWidth',4.0);
-handleToleranceNode1Component = componentSolutionSpace(1).plot_candidate_space(gcf,'FaceAlpha',0.2,'FaceColor','g');
-handleToleranceNode2Component = componentSolutionSpace(2).plot_candidate_space(gcf,'FaceAlpha',0.2,'FaceColor','g');
-handleToleranceNode3Component = componentSolutionSpace(3).plot_candidate_space(gcf,'FaceAlpha',0.2,'FaceColor','g');
-for i=1:nRandomTruss
-    randomNodePosition = nodePositionInitial;
-    randomNodePosition(4,:) = randomTrussMovingNode(i,[1,2,3]);
-    randomNodePosition(5,:) = randomTrussMovingNode(i,[4,5,6]);
-    randomNodePosition(6,:) = randomTrussMovingNode(i,[7,8,9]);
-    handleRandom(i) = plot_truss_deformation(gcf,randomNodePosition,nodeElement,'ColorUndeformed',rand(1,3),'MaximumLinewidth',3.0);
-end
-grid minor;
-if(figureIncludeLegendHeadline)
-    legend([...
-            handleInitial,...
-            handleWall,...
-            handleForce,...
-            handleToleranceNode1Component,...
-            ... handleToleranceNode1Component,...
-            ... handleToleranceNode2Component,...
-            ... handleToleranceNode3Component...
-            ],...
-        {...
-            'Initial Truss',...
-            'Wall',...
-            'Applied Force',...
-            'Tolerance Region for Each Node (Component)',...
-            ... 'Tolerance Region for Node 1 (Component)',...
-            ... 'Tolerance Region for Node 2 (Component)',...
-            ... 'Tolerance Region for Node 3 (Component)'...
-            },...
-        'FontSize',12);
-end
-xlabel('x');
-ylabel('y');
-zlabel('z');
-axis('equal');
-axis('vis3d');
-camproj('perspective');
+plot_results_truss_twelve_bar_3d_moving_node(baseNode,nodeElement,...
+    'NodePositionInitial',initialDesign,...
+    'NodePositionRandom',randomTrussMovingNode,...
+    'ComponentSolutionSpace',componentSolutionSpace);
 save_print_figure(gcf,[saveFolder,'InitialRandomTrussComponent']);
+rotating_video(gcf,[saveFolder,'InitialRandomTrussComponent']);
+rotating_gif(gcf,[saveFolder,'InitialRandomTrussComponent']);
 
 
 %% plot candidate spaces samples
@@ -560,3 +346,254 @@ plot_sso_component_stochastic_metrics(algoData,'SaveFolder',saveFolder,'CloseFig
 save([saveFolder,'Data.mat']);
 diary off;
 
+
+%% subfunction: plot truss
+function figureHandle = plot_results_truss_twelve_bar_3d_moving_node(baseNode,nodeElement,varargin)
+    parser = inputParser;
+    parser.addParameter('NodePositionInitial',[]);
+    parser.addParameter('NodePositionOptimal',[]);
+    parser.addParameter('NodePositionRandom',[]);
+    parser.addParameter('NodeDisplacementInitial',[]);
+    parser.addParameter('NodeDisplacementOptimal',[]);
+    parser.addParameter('BoxSolutionSpace',[]);
+    parser.addParameter('ComponentSolutionSpace',[]);
+    parser.addParameter('IncludeWall',true);
+    parser.addParameter('IncludeAppliedForce',false);
+    parser.addParameter('IncludeAxesInformation',false);
+    parser.addParameter('IncludeLegend',false);
+    parser.addParameter('WallOptions',{});
+    parser.addParameter('AppliedForceOptions',{});
+    parser.addParameter('InitialTrussOptions',{});
+    parser.addParameter('OptimalTrussOptions',{});
+    parser.addParameter('RandomTrussOptions',{});
+    parser.addParameter('BoxSolutionSpaceOptions',{});
+    parser.addParameter('ComponentSolutionSpaceOptions',{});
+    parser.addParameter('LegendOptions',{});
+    parser.parse(varargin{:});
+    options = parser.Results;
+
+    [wallY,wallZ] = meshgrid(-0.5:1.5);
+    wallX = zeros(size(wallY));
+
+    defaultInitialTrussOptions = {'ColorUndeformed',[0.8 0.8 0.8],'ColorDeformed','c','MaximumLinewidth',4.0,'DisplacementScaleFactor',500};
+    [~,initialTrussOptions] = merge_name_value_pair_argument(defaultInitialTrussOptions,options.InitialTrussOptions);
+
+    defaultOptimalTrussOptions = {'ColorUndeformed','b','ColorDeformed','m','MaximumLinewidth',4.0,'DisplacementScaleFactor',500};
+    [~,optimalTrussOptions] = merge_name_value_pair_argument(defaultOptimalTrussOptions,options.OptimalTrussOptions);
+
+    defaultRandomTrussOptions = {'MaximumLinewidth',4.0};
+    [~,randomTrussOptions] = merge_name_value_pair_argument(defaultRandomTrussOptions,options.RandomTrussOptions);
+
+    defaultWallOptions = {'FaceColor',[0.7 0.7 0.7],'EdgeColor','none','FaceAlpha',0.9};
+    [~,wallOptions] = merge_name_value_pair_argument(defaultWallOptions,options.WallOptions);
+
+    defaultAppliedForceOptions = {'Color','r','LineWidth',3.0};
+    [~,appliedForceOptions] = merge_name_value_pair_argument(defaultAppliedForceOptions,options.AppliedForceOptions);
+
+    defaultBoxSolutionOptions = {'FaceAlpha',0.2,'FaceColor','c'};
+    [~,boxSolutionOptions] = merge_name_value_pair_argument(defaultBoxSolutionOptions,options.BoxSolutionSpaceOptions);
+
+    defaultComponentSolutionOptions = {'FaceAlpha',0.2,'FaceColor','g'};
+    [~,componentSolutionOptions] = merge_name_value_pair_argument(defaultComponentSolutionOptions,options.ComponentSolutionSpaceOptions);
+
+    defaultLegendOptions = {'location','west'};
+    [~,legendOptions] = merge_name_value_pair_argument(defaultLegendOptions,options.LegendOptions);
+
+    figureHandle = figure;
+    hold all;
+    
+    % initial truss
+    handleInitial = [];
+    handleInitialDeformed = [];
+    if(~isempty(options.NodePositionInitial))
+        nodePositionInitial = baseNode;
+        nodePositionInitial(4,:) = options.NodePositionInitial(:,[1,2,3]);
+        nodePositionInitial(5,:) = options.NodePositionInitial(:,[4,5,6]);
+        nodePositionInitial(6,:) = options.NodePositionInitial(:,[7,8,9]);
+
+        [handleInitial,handleInitialDeformed] = plot_truss_deformation(gcf,nodePositionInitial,nodeElement,options.NodeDisplacementInitial,initialTrussOptions{:});
+    end
+
+    % optimal truss
+    handleOptimal = [];
+    handleOptimizedDeformed = [];
+    if(~isempty(options.NodePositionOptimal))
+        nodePositionOptimized = baseNode;
+        nodePositionOptimized(4,:) = options.NodePositionOptimal(:,[1,2,3]);
+        nodePositionOptimized(5,:) = options.NodePositionOptimal(:,[4,5,6]);
+        nodePositionOptimized(6,:) = options.NodePositionOptimal(:,[7,8,9]);
+
+        [handleOptimal,handleOptimizedDeformed] = plot_truss_deformation(gcf,nodePositionOptimized,nodeElement,options.NodeDisplacementOptimal,optimalTrussOptions{:});
+    end
+
+    % box-shaped solution space
+    handleToleranceNodeBox = [];
+    if(~isempty(options.BoxSolutionSpace))
+        plot_design_box_3d(gcf,options.BoxSolutionSpace(:,[1,2,3]),boxSolutionOptions{:});
+        plot_design_box_3d(gcf,options.BoxSolutionSpace(:,[4,5,6]),boxSolutionOptions{:});
+        handleToleranceNodeBox = plot_design_box_3d(gcf,options.BoxSolutionSpace(:,[7,8,9]),boxSolutionOptions{:});
+    end
+
+    % component solution space
+    handleToleranceNodeComponent = [];
+    if(~isempty(options.ComponentSolutionSpace))
+        options.ComponentSolutionSpace(1).plot_candidate_space(gcf,componentSolutionOptions{:});
+        options.ComponentSolutionSpace(2).plot_candidate_space(gcf,componentSolutionOptions{:});
+        handleToleranceNodeComponent = options.ComponentSolutionSpace(3).plot_candidate_space(gcf,componentSolutionOptions{:});
+    end
+
+    % random trusses
+    handleRandom = [];
+    if(~isempty(options.NodePositionRandom))
+        nRandomTruss = size(options.NodePositionRandom,1);
+        trussColor = rand(nRandomTruss,3);
+        for i=1:nRandomTruss
+            randomNodePosition = baseNode;
+            randomNodePosition(4,:) = options.NodePositionRandom(i,[1,2,3]);
+            randomNodePosition(5,:) = options.NodePositionRandom(i,[4,5,6]);
+            randomNodePosition(6,:) = options.NodePositionRandom(i,[7,8,9]);
+            handleRandom(i) = plot_truss_deformation(gcf,randomNodePosition,nodeElement,'ColorUndeformed',trussColor(i,:),randomTrussOptions{:});
+        end
+    end
+
+    % wall
+    handleWall = [];
+    if(options.IncludeWall)
+        handleWall = surf(wallX,wallY,wallZ,wallOptions{:});
+    end
+
+    % applied force
+    handleForce = [];
+    if(options.IncludeAppliedForce)
+        handleForce = quiver3(2,0.5,0.5,0,0,-0.5,appliedForceOptions{:});
+    end
+
+    % axis
+    grid minor;
+    if(~options.IncludeAxesInformation)
+        set(gca,'XColor', 'none','YColor','none','ZColor','none');
+    else
+        xlabel('x');
+        ylabel('y');
+        zlabel('z');
+    end
+
+    % adjust perspective
+    axis('equal');
+    axis('vis3d');
+    camproj('perspective');
+    cameratoolbar; % better adjust angle/perspective
+
+    % legend
+    if(options.IncludeLegend)
+        handleObjectAll = {...
+            handleInitial,...
+            handleInitialDeformed,...
+            handleOptimal,...
+            handleOptimizedDeformed,...
+            handleWall,...
+            handleForce,...
+            handleToleranceNodeBox,...
+            handleToleranceNodeComponent};
+
+        legendTextAll = {...
+            'Initial Truss',...
+            'Initial Truss (Deformed)',...
+            'Optimized Truss',...
+            'Optimized Truss (Deformed)',...
+            'Wall',...
+            'Applied Force',...
+            'Tolerance Region for the Node (Box)',...
+            'Tolerance Region for the Node (Component)'};
+        
+        handleObject = [handleObjectAll{:}];
+        legentText = {legendTextAll{~cellfun(@isempty,handleObjectAll)}};
+
+        legend(handleObject,legentText,legendOptions{:});
+    end
+
+    if(nargout<1)
+        clear figureHandle;
+    end
+end
+
+function rotating_video(figureHandle,filename,varargin)
+    parser = inputParser;
+    parser.addParameter('Duration',5);
+    parser.addParameter('FramesPerSecond',60);
+    parser.addParameter('VideoWriterProfile','Motion JPEG 2000');
+    parser.addParameter('VideoWriterOptions',{});
+    parser.parse(varargin{:});
+    options = parser.Results;
+
+    defaultVideoWriterOptions = {'LosslessCompression',true,'FrameRate',options.FramesPerSecond};
+    [~,videoWriterOptions] = merge_name_value_pair_argument(defaultVideoWriterOptions,options.VideoWriterOptions);
+
+    % activate figure
+    figure(figureHandle);
+    [defaultAzimuth,defaultElevation] = view(3);
+
+    % prepare angles for each frame
+    totalFrame = options.FramesPerSecond*options.Duration;
+    azimuthVideo = mod(defaultAzimuth + linspace(0,360,totalFrame),360);
+
+    % initialize video object + process options
+    videoHandle = VideoWriter(filename,options.VideoWriterProfile);
+    for i=1:2:length(videoWriterOptions)
+        videoHandle.(videoWriterOptions{i}) = videoWriterOptions{i+1};
+    end
+
+    % make video with each frame
+    open(videoHandle);
+    for i=1:totalFrame
+        view(azimuthVideo(i),defaultElevation);
+        currentFrame = getframe(gcf);
+        writeVideo(videoHandle,currentFrame);
+    end
+    close(videoHandle);
+end
+
+function rotating_gif(figureHandle,filename,varargin)
+    parser = inputParser;
+    parser.addParameter('Duration',5);
+    parser.addParameter('FramesPerSecond',60);
+    parser.addParameter('ExportgraphicsOptions',{})
+    parser.parse(varargin{:});
+    options = parser.Results;
+
+    defaultExportgraphicsOptions = {};
+    [~,exportgraphicsOptions] = merge_name_value_pair_argument(defaultExportgraphicsOptions,options.ExportgraphicsOptions);
+
+    % activate figure
+    figure(figureHandle);
+    set(figureHandle, 'MenuBar', 'none');
+    set(figureHandle, 'ToolBar', 'none');
+    [defaultAzimuth,defaultElevation] = view(3);
+
+    % prepare angles for each frame
+    totalFrame = options.FramesPerSecond*options.Duration;
+    azimuthVideo = mod(defaultAzimuth + linspace(0,360,totalFrame),360);
+    frameDelay = 1/options.FramesPerSecond;
+
+    % make gif with each frame
+    for i=1:totalFrame
+        view(azimuthVideo(i),defaultElevation);
+        [A,map] = rgb2ind(frame2im(getframe(gcf)),256);
+
+        if(i==1)
+            imwrite(A,map,...
+                [filename,'.gif'],'gif',...
+                'LoopCount',inf,...
+                'DelayTime',frameDelay);
+        else
+            imwrite(A,map,...
+                [filename,'.gif'],'gif',...
+                'WriteMode','append', ...
+                'DelayTime',frameDelay);
+        end
+    end
+
+    % reset menu/tool bars
+    set(figureHandle, 'MenuBar', 'figure');
+    set(figureHandle, 'ToolBar', 'auto');
+end

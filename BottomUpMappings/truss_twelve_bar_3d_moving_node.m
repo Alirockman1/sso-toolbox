@@ -94,10 +94,11 @@ function performanceMeasure = truss_twelve_bar_3d_moving_node(designSample,syste
 	elementCrossSectionArea = systemParameter(:,1); % assumed [mm^2]
 	elementYoungsModulus = systemParameter(:,2); % assumed [MPa]
     momentOfInertia = systemParameter(:,3); % assumed [MPa]
+    elementDensity = systemParameter(:,4); % assumed [MPa]
 
 	nSample = size(designSample,1);
     nElement = size(nodeElement,1);
-	performanceMeasure = nan(nSample,1+2*nElement);
+	performanceMeasure = nan(nSample,2+2*nElement);
 	for i=1:nSample
 		nodePosition(4,:) = designSample(i,[1,2,3]);
 		nodePosition(5,:) = designSample(i,[4,5,6]);
@@ -122,6 +123,8 @@ function performanceMeasure = truss_twelve_bar_3d_moving_node(designSample,syste
         bucklingCriticalLoad = pi^2.*elementYoungsModulus.*momentOfInertia./(elementLength.^2);
         bucklingFactor = elementAxialForce(:,1)./bucklingCriticalLoad;
 
-		performanceMeasure(i,:) = [-nodeDisplacement(7,3),abs(elementStress'),bucklingFactor'];
+        totalMass = sum(elementDensity.*elementLength.*elementCrossSectionArea);
+
+		performanceMeasure(i,:) = [-nodeDisplacement(7,3),totalMass,abs(elementStress'),bucklingFactor'];
 	end
 end

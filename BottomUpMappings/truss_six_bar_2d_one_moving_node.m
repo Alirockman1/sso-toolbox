@@ -55,11 +55,11 @@ function performanceMeasure = truss_six_bar_2d_one_moving_node(designSample,syst
 %   limitations under the License.
 
 	nodePosition = [...
-		0 0; ...
-		1 0; ...
-		2 0.5; ...
-		nan nan; ...
-		0 1]; % assumed [mm]
+		0 0; ... % (1)
+		1 0; ... % (2)
+		2 0.5; ... % (3)
+		nan nan; ... % (4)
+		0 1]; % (5) - assumed [mm]
 	fixedDegreesOfFreedom = [...
 		true true; ...
 		false false; ...
@@ -81,9 +81,10 @@ function performanceMeasure = truss_six_bar_2d_one_moving_node(designSample,syst
 		2 4];
 	elementCrossSectionArea = systemParameter(:,1); % assumed [mm^2]
 	elementYoungsModulus = systemParameter(:,2); % assumed [MPa]
+	elementDensity = systemParameter(:,3); % assumed [MPa]
 
 	nSample = size(designSample,1);
-	performanceMeasure = nan(nSample,7);
+	performanceMeasure = nan(nSample,8);
 	for i=1:nSample
 		nodePosition(4,:) = designSample(i,[1,2]);
 
@@ -97,6 +98,10 @@ function performanceMeasure = truss_six_bar_2d_one_moving_node(designSample,syst
 				elementYoungsModulus);
 		elementStress = truss_deformed_stress(elementAxialForce,elementCrossSectionArea);
 
-		performanceMeasure(i,:) = [-nodeDisplacement(3,2),abs(elementStress')];
+		nodeDistance = nodePosition(nodeElement(:,2),:)-nodePosition(nodeElement(:,1),:);
+	    elementLength = vecnorm(nodeDistance,2,2);
+		totalMass = sum(elementDensity.*elementLength.*elementCrossSectionArea);
+
+		performanceMeasure(i,:) = [-nodeDisplacement(3,2),totalMass,abs(elementStress')];
 	end
 end
