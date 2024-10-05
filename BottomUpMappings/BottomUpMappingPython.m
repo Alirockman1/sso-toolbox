@@ -128,23 +128,23 @@ classdef BottomUpMappingPython < BottomUpMappingBase
 	end
 
 	methods
-        function obj = BottomUpMappingPython(SystemfunctionName,varargin)
+        function obj = BottomUpMappingPython(systemFunctionName,varargin)
 		%BOTTOMUPMAPPINGPYTHON Constructor
 		%   BOTTOMUPMAPPINGPYTHON uses a given Python function (specified with its name
 		%	as a string) and other parameters to create a bottom-up mapping. 
         %
-        %   OBJ = BOTTOMUPMAPPINGPYTHON(SystemFUNCTIONNAME) receives the defined function 
-        %	in SystemFUNCTIONNAME and returns a BottomUpMappingPython object in OBJ. In 
-        %	said case, all other input arguments are assumed to have their default 
-        %	values.
+        %   OBJ = BOTTOMUPMAPPINGPYTHON(SYSTEMFUNCTIONNAME) receives the defined  
+        %	function in SYSTEMFUNCTIONNAME and returns a BottomUpMappingPython object in 
+        %	OBJ. In said case, all other input arguments are assumed to have their  
+        %	default values.
         %
-        %   OBJ = BOTTOMUPMAPPINGPYTHON(SystemFUNCTIONNAME,PARAMETER) also allows the use of 
-        %	constant system parameters when computing with the main function, passed in 
-        %	PARAMETER. Default value is empty.
+        %   OBJ = BOTTOMUPMAPPINGPYTHON(SYSTEMFUNCTIONNAME,PARAMETER) also allows the 
+        %	use of constant system parameters when computing with the main function, 
+        %	passed in PARAMETER. Default value is empty.
         %
-        %   OBJ = BOTTOMUPMAPPINGPYTHON(...,NAME1,VALUE1,...) also allows
-        %   for setting custom options for the computation procedure, passed as 
-        %   name-value pairs. These are:
+        %   OBJ = BOTTOMUPMAPPINGPYTHON(...,NAME,VALUE,...) also allows for setting 
+        %   custom options for the computation procedure, passed as name-value pairs. 
+        %	These are:
         %       - 'PhysicalFeasibilityDefaultValue' : default value used for the measure
         %		when no information regarding physical feasibility is available. 
         %		Default: -1.
@@ -176,7 +176,7 @@ classdef BottomUpMappingPython < BottomUpMappingBase
 			parser.addParameter('PhysicalFeasibilityParameter',[]);
 			parser.parse(varargin{:});
 
-			obj.SystemFunctionName = erase(SystemfunctionName,'.py');
+			obj.SystemFunctionName = erase(systemFunctionName,'.py');
     		pyMod = py.importlib.import_module(obj.SystemFunctionName);
     		obj.PyModSystem = py.importlib.reload(pyMod);
 

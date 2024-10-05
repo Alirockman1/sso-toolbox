@@ -68,7 +68,7 @@ function [designSampleExpanded,labelExpanded] = grow_sample_region_positive_labe
     sampleGrowthRate = min(growthRate,maxGrowthRate);
     shrunkSample = designSample + sampleGrowthRate.*designSpaceFactor.*(-directionGrowth);
     
-    % limit new samples to design space
+    % only get unique entries (remove duplicates)
     designSampleExpanded = [designSample;grownSample;shrunkSample];
     designSampleExpanded = max(designSampleExpanded, designSpaceLowerBound); % lower bound limit
     designSampleExpanded = min(designSampleExpanded, designSpaceUpperBound); % upper bound limit

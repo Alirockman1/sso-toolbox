@@ -42,13 +42,15 @@ figureSize = [goldenRatio 1]*8.5;
 %
 systemFunction = @truss_six_bar_2d_two_moving_node;
 systemParameter = [10,210e3,7850e-9]; % [mm^2],[MPa],[kg/mm^3]
-%                         x1   y1  x2  y2
-designSpaceLowerBound = [0.1 -0.5 0.9 0.5];
-designSpaceUpperBound = [1.5  0.5 2.0 1.5];
+%                                     x1   y1  x2  y2
+designSpaceLowerBoundDisplacement = [0.1 -0.5 0.9 0.5];
+designSpaceUpperBoundDisplacement = [1.5  0.5 2.0 1.5];
+designSpaceLowerBoundMass = [0 -0.5 0 -0.5];
+designSpaceUpperBoundMass = [2  1.5 2  1.5];
 Components = {[1,2]',[3,4]'};
 %
 performanceLowerLimit = -inf;
-performanceUpperLimit = [nan nan repmat(250,1,6)];
+performanceUpperLimit = [nan nan repmat(inf,1,6)];
 %
 initialDesign = [1,0,1,1];
 
@@ -56,14 +58,27 @@ initialDesign = [1,0,1,1];
 %% find optimum
 bottomUpMapping = BottomUpMappingFunction(systemFunction,systemParameter);
 
-[nodePositionOptimal,displacementOptimal] = design_optimize_quantities_of_interest(...
+[nodePositionOptimalDisplacement,displacementOptimal] = design_optimize_quantities_of_interest(...
     bottomUpMapping,...
     initialDesign,...
-    designSpaceLowerBound,...
-    designSpaceUpperBound,...
+    designSpaceLowerBoundDisplacement,...
+    designSpaceUpperBoundDisplacement,...
     @(performanceMeasure)[performanceMeasure(1)],...
-    'InequalityConstraintFunction',@(performanceMeasure)[performanceMeasure(3:end)-performanceUpperLimit(3:end)],...
-    'OptimizationMethodOptions',{'Display','iter-detailed'});
+    ...'InequalityConstraintFunction',@(performanceMeasure)[performanceMeasure(3:end)-performanceUpperLimit(3:end)],...
+    'OptimizationMethodFunction',@optimization_ga_wrapper,...
+    'OptimizationMethodOptions',{'Display','diagnose'});
+
+warning('off');
+[nodePositionOptimalMass,massOptimal] = design_optimize_quantities_of_interest(...
+    bottomUpMapping,...
+    initialDesign,...
+    designSpaceLowerBoundMass,...
+    designSpaceUpperBoundMass,...
+    @(performanceMeasure)[performanceMeasure(2)],...
+    ...'InequalityConstraintFunction',@(performanceMeasure)[performanceMeasure(3:end)-performanceUpperLimit(3:end)],...
+    'OptimizationMethodFunction',@optimization_ga_wrapper,...
+    'OptimizationMethodOptions',{'Display','diagnose'});
+warning('on');
 
 
 %% plot optimum and deformations
@@ -103,8 +118,15 @@ save_print_figure(gcf,[saveFolder,'InitialTruss']);
 % initial truss + optimized truss
 plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
-    'NodePositionOptimal',nodePositionOptimal);
+    'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement);
 save_print_figure(gcf,[saveFolder,'InitialOptimizedTruss']);
+
+% initial truss + optimized displacment truss + optimized mass truss
+plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+    'NodePositionInitial',initialDesign,...
+    'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
+    'NodePositionOptimalMass',nodePositionOptimalMass);
+save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussWithMass']);
 
 
 % deformed trusses
@@ -121,8 +143,8 @@ nodeDisplacementInitial = ...
 		elementYoungsModulus);
 
 nodePositionOptimized = baseNode;
-nodePositionOptimized(2,:) = nodePositionOptimal(:,[1,2]);
-nodePositionOptimized(4,:) = nodePositionOptimal(:,[3,4]);
+nodePositionOptimized(2,:) = nodePositionOptimalDisplacement(:,[1,2]);
+nodePositionOptimized(4,:) = nodePositionOptimalDisplacement(:,[3,4]);
 nodeDisplacementOptimal = ...
     truss_analysis(...
 	    nodePositionOptimized,...
@@ -134,27 +156,31 @@ nodeDisplacementOptimal = ...
 
 plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
-    'NodePositionOptimal',nodePositionOptimal,...
-    'NodeDisplacementInitial',nodeDisplacementInitial,...
-    'NodeDisplacementOptimal',nodeDisplacementOptimal);
+    'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
+    'DeformationInitial',nodeDisplacementInitial,...
+    'DeformationOptimalDisplacement',nodeDisplacementOptimal);
 save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussDeformation']);
 
 
 %% establish upper performance limits
 % update uppwer limit based on either optimal value or initial value
 performanceMeasureInitial = bottomUpMapping.response(initialDesign);
+performanceUpperLimitDisplacement = performanceUpperLimit;
+performanceUpperLimitMass = performanceUpperLimit;
 
 % displacement
-performanceUpperLimit(1) = performanceMeasureInitial(1);
-...performanceUpperLimit(1) = displacementOptimal*1.1;
+performanceUpperLimitDisplacement(1) = performanceMeasureInitial(1);
+designEvaluatorDisplacement = DesignEvaluatorBottomUpMapping(...
+    bottomUpMapping,...
+    performanceLowerLimit,...
+    performanceUpperLimitDisplacement);
 
 % mass
-...performanceUpperLimit(2) = performanceMeasureInitial(2);
-
-designEvaluator = DesignEvaluatorBottomUpMapping(...
-        bottomUpMapping,...
-        performanceLowerLimit,...
-        performanceUpperLimit);
+performanceUpperLimitMass(2) = performanceMeasureInitial(2);
+designEvaluatorMass = DesignEvaluatorBottomUpMapping(...
+    bottomUpMapping,...
+    performanceLowerLimit,...
+    performanceUpperLimitMass);
 
 
 %% Box Opt
@@ -173,8 +199,27 @@ optionsBox = sso_stochastic_options('box',...
     'TrimmingOrderOptions',{'OrderPreference','score'});
 
 rng(rngState);
-[solutionSpaceBox,problemDataBox,iterDataBox] = sso_box_stochastic(designEvaluator,...
-    initialDesign,designSpaceLowerBound,designSpaceUpperBound,optionsBox);
+[solutionSpaceBoxDisplacement,problemDataBoxDisplacement,iterDataBoxDisplacement] = sso_box_stochastic(designEvaluatorDisplacement,...
+    initialDesign,designSpaceLowerBoundDisplacement,designSpaceUpperBoundDisplacement,optionsBox);
+toc(timeElapsedBox)
+
+timeElapsedBox = tic;
+optionsBox = sso_stochastic_options('box',...
+    'NumberSamplesPerIterationExploration',300,...
+    'NumberSamplesPerIterationConsolidation',300,...
+    'FixIterNumberExploration',true,...
+    'FixIterNumberConsolidation',true,...
+    'MaxIterExploration',30,...
+    'MaxIterConsolidation',30,...
+    'UseAdaptiveGrowthRate',false,...
+    'GrowthRate',0.05,...
+    'ApplyLeanness','never',...
+    'TrimmingOperationOptions',{'PassesCriterion','full'},...
+    'TrimmingOrderOptions',{'OrderPreference','score'});
+
+rng(rngState);
+[solutionSpaceBoxMass,problemDataBoxMass,iterDataBoxMass] = sso_box_stochastic(designEvaluatorMass,...
+    initialDesign,designSpaceLowerBoundMass,designSpaceUpperBoundMass,optionsBox);
 toc(timeElapsedBox)
 
 
@@ -201,16 +246,42 @@ optionsComponent = sso_stochastic_options('component',...
     'TrimmingOrderOptions',{'OrderPreference','score'});
 
 rng(rngState);
-[componentSolutionSpace,problemDataComponent,iterDataComponent] = sso_component_stochastic(designEvaluator,...
-    initialDesign,designSpaceLowerBound,designSpaceUpperBound,Components,optionsComponent);
+[componentSolutionSpaceDisplacement,problemDataComponentDisplacement,iterDataComponentDisplacement] = sso_component_stochastic(designEvaluatorDisplacement,...
+    initialDesign,designSpaceLowerBoundDisplacement,designSpaceUpperBoundDisplacement,Components,optionsComponent);
+toc(timeElapsedComponent)
+
+timeElapsedComponent = tic;
+optionsComponent = sso_stochastic_options('component',...
+    'NumberSamplesPerIterationExploration',300,...
+    'NumberSamplesPerIterationConsolidation',300,...
+    'FixIterNumberExploration',true,...
+    'FixIterNumberConsolidation',true,...
+    'MaxIterExploration',30,...
+    'MaxIterConsolidation',30,...
+    'CandidateSpaceConstructorExploration',@CandidateSpaceConvexHull,...
+    'CandidateSpaceConstructorConsolidation',@CandidateSpaceConvexHull,...
+    'TrimmingMethodFunction',@component_trimming_method_planar_trimming,...
+    ... 'TrimmingMethodOptions',{'ReferenceDesigns','boundary-center'},...
+    'UseAdaptiveGrowthRate',false,...
+    'GrowthRate',0.04,...
+    'ApplyLeanness','never',...
+    'UsePaddingSamplesInTrimming',true,...
+    'UsePreviousEvaluatedSamplesConsolidation',false,...
+    'UsePreviousPaddingSamplesConsolidation',false,...
+    'TrimmingOperationOptions',{'PassesCriterion','reduced'},...
+    'TrimmingOrderOptions',{'OrderPreference','score'});
+
+rng(rngState);
+[componentSolutionSpaceMass,problemDataComponentMass,iterDataComponentMass] = sso_component_stochastic(designEvaluatorMass,...
+    initialDesign,designSpaceLowerBoundMass,designSpaceUpperBoundMass,Components,optionsComponent);
 toc(timeElapsedComponent)
 
 
 %% measure comparison
-measureComponent1 = componentSolutionSpace(1).Measure;
-measureComponent2 = componentSolutionSpace(2).Measure;
-measureBox1 = prod(solutionSpaceBox(2,[1,2])-solutionSpaceBox(1,[1,2]));
-measureBox2 = prod(solutionSpaceBox(2,[3,4])-solutionSpaceBox(1,[3,4]));
+measureComponent1 = componentSolutionSpaceDisplacement(1).Measure;
+measureComponent2 = componentSolutionSpaceDisplacement(2).Measure;
+measureBox1 = prod(solutionSpaceBoxDisplacement(2,[1,2])-solutionSpaceBoxDisplacement(1,[1,2]));
+measureBox2 = prod(solutionSpaceBoxDisplacement(2,[3,4])-solutionSpaceBoxDisplacement(1,[3,4]));
 fprintf('\nVolume Increases - Node 1: %.3gx ; Node 2: %.gx\n',measureComponent1/measureBox1,measureComponent2/measureBox2);
 
 
@@ -218,41 +289,84 @@ fprintf('\nVolume Increases - Node 1: %.3gx ; Node 2: %.gx\n',measureComponent1/
 % initial truss + component solution spaces
 plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
-    'ComponentSolutionSpace',componentSolutionSpace);
+    'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
 save_print_figure(gcf,[saveFolder,'InitialTrussComponent']);
+
+% initial truss + component solution spaces + mass
+plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+    'NodePositionInitial',initialDesign,...
+    'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement,...
+    'ComponentSolutionSpaceMass',componentSolutionSpaceMass);
+save_print_figure(gcf,[saveFolder,'InitialTrussComponentWithMass']);
+
+% initial truss + optimized truss + component solution spaces
+plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+    'NodePositionInitial',initialDesign,...
+    'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
+    'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
+save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussComponent']);
+
+% initial truss + optimized truss + component solution spaces + mass
+plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+    'NodePositionInitial',initialDesign,...
+    'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
+    'NodePositionOptimalMass',nodePositionOptimalMass,...
+    'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement,...
+    'ComponentSolutionSpaceMass',componentSolutionSpaceMass);
+save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussComponentWithMass']);
 
 % initial truss + optimized truss + box solution space + component solution spaces
 plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
-    'NodePositionOptimal',nodePositionOptimal,...
-    'BoxSolutionSpace',solutionSpaceBox,...
-    'ComponentSolutionSpace',componentSolutionSpace);
+    'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
+    'BoxSolutionSpaceDisplacement',solutionSpaceBoxDisplacement,...
+    'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
 save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussBoxComponent']);
+
+% initial truss + optimized truss + box solution space + component solution spaces + mass
+plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+    'NodePositionInitial',initialDesign,...
+    'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
+    'NodePositionOptimalMass',nodePositionOptimalMass,...
+    'BoxSolutionSpaceDisplacement',solutionSpaceBoxDisplacement,...
+    'BoxSolutionSpaceMass',solutionSpaceBoxMass,...
+    'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement,...
+    'ComponentSolutionSpaceMass',componentSolutionSpaceMass);
+save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussBoxComponentWithMass']);
 
 % initial truss + box solution space + component solution spaces
 plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
-    'BoxSolutionSpace',solutionSpaceBox,...
-    'ComponentSolutionSpace',componentSolutionSpace);
+    'BoxSolutionSpaceDisplacement',solutionSpaceBoxDisplacement,...
+    'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
 save_print_figure(gcf,[saveFolder,'InitialTrussBoxComponent']);
+
+% initial truss + box solution space + component solution spaces + mass
+plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+    'NodePositionInitial',initialDesign,...
+    'BoxSolutionSpaceDisplacement',solutionSpaceBoxDisplacement,...
+    'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement,...
+    'BoxSolutionSpaceMass',solutionSpaceBoxMass,...
+    'ComponentSolutionSpaceMass',componentSolutionSpaceMass);
+save_print_figure(gcf,[saveFolder,'InitialTrussBoxComponentWithMass']);
 
 % initial truss + sample trusses + component solution space
 nRandomTruss = 5;
-randomTrussMovingNode = candidate_space_sampling_individual_feasible(componentSolutionSpace,Components,nRandomTruss);
+randomTrussMovingNode = candidate_space_sampling_individual_feasible(componentSolutionSpaceDisplacement,Components,nRandomTruss);
 
 plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
-    'NodePositionRandom',randomTrussMovingNode,...
-    'ComponentSolutionSpace',componentSolutionSpace);
+    'NodePositionRandomDisplacement',randomTrussMovingNode,...
+    'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
 save_print_figure(gcf,[saveFolder,'InitialRandomTrussComponent']);
 
 
 %% plot candidate spaces samples
 % candidate space 1
-designSample = componentSolutionSpace(1).DesignSampleDefinition;
-labelSample = componentSolutionSpace(1).IsInsideDefinition;
+designSample = componentSolutionSpaceDisplacement(1).DesignSampleDefinition;
+labelSample = componentSolutionSpaceDisplacement(1).IsInsideDefinition;
 figure;
-componentSolutionSpace(1).plot_candidate_space(gcf,'EdgeColor','none','FaceColor','g','FaceAlpha',0.5,'Linewidth',2.0);
+componentSolutionSpaceDisplacement(1).plot_candidate_space(gcf,'EdgeColor','none','FaceColor','g','FaceAlpha',0.5,'Linewidth',2.0);
 hold all;
 plot(designSample(labelSample,1),designSample(labelSample,2),'g.');
 plot(designSample(~labelSample,1),designSample(~labelSample,2),'r.');
@@ -260,10 +374,10 @@ grid minor;
 save_print_figure(gcf,[saveFolder,'ComponentSpace1TrimmingPlot']);
 
 % candidate space 2
-designSample = componentSolutionSpace(2).DesignSampleDefinition;
-labelSample = componentSolutionSpace(2).IsInsideDefinition;
+designSample = componentSolutionSpaceDisplacement(2).DesignSampleDefinition;
+labelSample = componentSolutionSpaceDisplacement(2).IsInsideDefinition;
 figure;
-componentSolutionSpace(2).plot_candidate_space(gcf,'EdgeColor','none','FaceColor','g','FaceAlpha',0.5,'Linewidth',2.0);
+componentSolutionSpaceDisplacement(2).plot_candidate_space(gcf,'EdgeColor','none','FaceColor','g','FaceAlpha',0.5,'Linewidth',2.0);
 hold all;
 plot(designSample(labelSample,1),designSample(labelSample,2),'g.');
 plot(designSample(~labelSample,1),designSample(~labelSample,2),'r.');
@@ -272,10 +386,10 @@ save_print_figure(gcf,[saveFolder,'ComponentSpace2TrimmingPlot']);
 
 
 %% 
-algoDataBox = postprocess_sso_box_stochastic(problemDataBox,iterDataBox);
+algoDataBox = postprocess_sso_box_stochastic(problemDataBoxDisplacement,iterDataBoxDisplacement);
 plot_sso_box_stochastic_metrics(algoDataBox,'SaveFolder',saveFolder,'CloseFigureAfterSaving',true);
 
-algoDataComponent = postprocess_sso_component_stochastic(problemDataComponent,iterDataComponent);
+algoDataComponent = postprocess_sso_component_stochastic(problemDataComponentDisplacement,iterDataComponentDisplacement);
 plot_sso_component_stochastic_metrics(algoDataComponent,'SaveFolder',saveFolder,'CloseFigureAfterSaving',true);
 
 
@@ -289,12 +403,17 @@ diary off;
 function figureHandle = plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,varargin)
     parser = inputParser;
     parser.addParameter('NodePositionInitial',[]);
-    parser.addParameter('NodePositionOptimal',[]);
-    parser.addParameter('NodePositionRandom',[]);
-    parser.addParameter('NodeDisplacementInitial',[]);
-    parser.addParameter('NodeDisplacementOptimal',[]);
-    parser.addParameter('BoxSolutionSpace',[]);
-    parser.addParameter('ComponentSolutionSpace',[]);
+    parser.addParameter('NodePositionOptimalDisplacement',[]);
+    parser.addParameter('NodePositionOptimalMass',[]);
+    parser.addParameter('NodePositionRandomDisplacement',[]);
+    parser.addParameter('NodePositionRandomMass',[]);
+    parser.addParameter('DeformationInitial',[]);
+    parser.addParameter('DeformationOptimalDisplacement',[]);
+    parser.addParameter('DeformationOptimalMass',[]);
+    parser.addParameter('BoxSolutionSpaceDisplacement',[]);
+    parser.addParameter('ComponentSolutionSpaceDisplacement',[]);
+    parser.addParameter('BoxSolutionSpaceMass',[]);
+    parser.addParameter('ComponentSolutionSpaceMass',[]);
     parser.addParameter('IncludeWall',true);
     parser.addParameter('IncludeAppliedForce',false);
     parser.addParameter('IncludeAxesInformation',false);
@@ -302,10 +421,14 @@ function figureHandle = plot_results_truss_six_bar_2d_two_moving_node(baseNode,n
     parser.addParameter('WallOptions',{});
     parser.addParameter('AppliedForceOptions',{});
     parser.addParameter('InitialTrussOptions',{});
-    parser.addParameter('OptimalTrussOptions',{});
-    parser.addParameter('RandomTrussOptions',{});
-    parser.addParameter('BoxSolutionSpaceOptions',{});
-    parser.addParameter('ComponentSolutionSpaceOptions',{});
+    parser.addParameter('OptimalTrussDisplacementOptions',{});
+    parser.addParameter('OptimalTrussMassOptions',{});
+    parser.addParameter('RandomTrussDisplacementOptions',{});
+    parser.addParameter('RandomTrussMassOptions',{});
+    parser.addParameter('BoxSolutionSpaceDisplacementOptions',{});
+    parser.addParameter('ComponentSolutionSpaceDisplacementOptions',{});
+    parser.addParameter('BoxSolutionSpaceMassOptions',{});
+    parser.addParameter('ComponentSolutionSpaceMassOptions',{});
     parser.addParameter('LegendOptions',{});
     parser.parse(varargin{:});
     options = parser.Results;
@@ -316,11 +439,17 @@ function figureHandle = plot_results_truss_six_bar_2d_two_moving_node(baseNode,n
     defaultInitialTrussOptions = {'ColorUndeformed',[0.8 0.8 0.8],'ColorDeformed','c','MaximumLinewidth',3.0,'DisplacementScaleFactor',500};
     [~,initialTrussOptions] = merge_name_value_pair_argument(defaultInitialTrussOptions,options.InitialTrussOptions);
 
-    defaultOptimalTrussOptions = {'ColorUndeformed','b','ColorDeformed','m','MaximumLinewidth',3.0,'DisplacementScaleFactor',500};
-    [~,optimalTrussOptions] = merge_name_value_pair_argument(defaultOptimalTrussOptions,options.OptimalTrussOptions);
+    defaultOptimalTrussDisplacementOptions = {'ColorUndeformed','b','ColorDeformed','m','MaximumLinewidth',3.0,'DisplacementScaleFactor',500};
+    [~,optimalTrussDisplacementOptions] = merge_name_value_pair_argument(defaultOptimalTrussDisplacementOptions,options.OptimalTrussDisplacementOptions);
 
-    defaultRandomTrussOptions = {'MaximumLinewidth',3.0};
-    [~,randomTrussOptions] = merge_name_value_pair_argument(defaultRandomTrussOptions,options.RandomTrussOptions);
+    defaultOptimalTrussMassOptions = {'ColorUndeformed','y','ColorDeformed','k','MaximumLinewidth',3.0,'DisplacementScaleFactor',500};
+    [~,optimalTrussMassOptions] = merge_name_value_pair_argument(defaultOptimalTrussMassOptions,options.OptimalTrussMassOptions);
+
+    defaultRandomTrussDisplacementOptions = {'MaximumLinewidth',3.0};
+    [~,randomTrussDisplacementOptions] = merge_name_value_pair_argument(defaultRandomTrussDisplacementOptions,options.RandomTrussDisplacementOptions);
+
+    defaultRandomTrussMassOptions = {'MaximumLinewidth',3.0};
+    [~,randomTrussMassOptions] = merge_name_value_pair_argument(defaultRandomTrussMassOptions,options.RandomTrussMassOptions);
 
     defaultWallOptions = {'Linewidth',8.0,'Color',[0.7 0.7 0.7]};
     [~,wallOptions] = merge_name_value_pair_argument(defaultWallOptions,options.WallOptions);
@@ -328,11 +457,17 @@ function figureHandle = plot_results_truss_six_bar_2d_two_moving_node(baseNode,n
     defaultAppliedForceOptions = {'Color','r','LineWidth',3.0};
     [~,appliedForceOptions] = merge_name_value_pair_argument(defaultAppliedForceOptions,options.AppliedForceOptions);
 
-    defaultBoxSolutionOptions = {'EdgeColor','c','Linewidth',2.0};
-    [~,boxSolutionOptions] = merge_name_value_pair_argument(defaultBoxSolutionOptions,options.BoxSolutionSpaceOptions);
+    defaultBoxSolutionDisplacementOptions = {'EdgeColor','c','Linewidth',2.0};
+    [~,boxSolutionDisplacementOptions] = merge_name_value_pair_argument(defaultBoxSolutionDisplacementOptions,options.BoxSolutionSpaceDisplacementOptions);
 
-    defaultComponentSolutionOptions = {'EdgeColor','g','FaceColor','none','FaceAlpha',0.5,'Linewidth',2.0};
-    [~,componentSolutionOptions] = merge_name_value_pair_argument(defaultComponentSolutionOptions,options.ComponentSolutionSpaceOptions);
+    defaultBoxSolutionMassOptions = {'EdgeColor',[0.9290 0.6940 0.1250],'Linewidth',2.0};
+    [~,boxSolutionMassOptions] = merge_name_value_pair_argument(defaultBoxSolutionMassOptions,options.BoxSolutionSpaceMassOptions);
+
+    defaultComponentSolutionDisplacementOptions = {'EdgeColor','g','FaceColor','none','FaceAlpha',0.5,'Linewidth',2.0};
+    [~,componentSolutionDisplacementOptions] = merge_name_value_pair_argument(defaultComponentSolutionDisplacementOptions,options.ComponentSolutionSpaceDisplacementOptions);
+
+    defaultComponentSolutionMassOptions = {'EdgeColor','k','FaceColor','none','FaceAlpha',0.5,'Linewidth',2.0};
+    [~,componentSolutionMassOptions] = merge_name_value_pair_argument(defaultComponentSolutionMassOptions,options.ComponentSolutionSpaceMassOptions);
 
     defaultLegendOptions = {'location','west'};
     [~,legendOptions] = merge_name_value_pair_argument(defaultLegendOptions,options.LegendOptions);
@@ -348,44 +483,82 @@ function figureHandle = plot_results_truss_six_bar_2d_two_moving_node(baseNode,n
         nodePositionInitial(2,:) = options.NodePositionInitial(:,[1,2]);
         nodePositionInitial(4,:) = options.NodePositionInitial(:,[3,4]);
 
-        [handleInitial,handleInitialDeformed] = plot_truss_deformation(gcf,nodePositionInitial,nodeElement,options.NodeDisplacementInitial,initialTrussOptions{:});
+        [handleInitial,handleInitialDeformed] = plot_truss_deformation(gcf,nodePositionInitial,nodeElement,options.DeformationInitial,initialTrussOptions{:});
     end
 
-    % optimal truss
-    handleOptimal = [];
-    handleOptimizedDeformed = [];
-    if(~isempty(options.NodePositionOptimal))
+    % optimal truss  - displacement 
+    handleOptimalDisplacement = [];
+    handleOptimizedDisplacementDeformed = [];
+    if(~isempty(options.NodePositionOptimalDisplacement))
         nodePositionOptimized = baseNode;
-        nodePositionOptimized(2,:) = options.NodePositionOptimal(:,[1,2]);
-        nodePositionOptimized(4,:) = options.NodePositionOptimal(:,[3,4]);
+        nodePositionOptimized(2,:) = options.NodePositionOptimalDisplacement(:,[1,2]);
+        nodePositionOptimized(4,:) = options.NodePositionOptimalDisplacement(:,[3,4]);
 
-        [handleOptimal,handleOptimizedDeformed] = plot_truss_deformation(gcf,nodePositionOptimized,nodeElement,options.NodeDisplacementOptimal,optimalTrussOptions{:});
+        [handleOptimalDisplacement,handleOptimizedDisplacementDeformed] = plot_truss_deformation(gcf,nodePositionOptimized,nodeElement,options.DeformationOptimalDisplacement,optimalTrussDisplacementOptions{:});
     end
 
-    % box-shaped solution space
-    handleToleranceNodeBox = [];
-    if(~isempty(options.BoxSolutionSpace))
-        plot_design_box_2d(gcf,options.BoxSolutionSpace(:,[1,2]),boxSolutionOptions{:});
-        handleToleranceNodeBox = plot_design_box_2d(gcf,options.BoxSolutionSpace(:,[3,4]),boxSolutionOptions{:});
+    % optimal truss - mass 
+    handleOptimalMass = [];
+    handleOptimizedMassDeformed = [];
+    if(~isempty(options.NodePositionOptimalMass))
+        nodePositionOptimized = baseNode;
+        nodePositionOptimized(2,:) = options.NodePositionOptimalMass(:,[1,2]);
+        nodePositionOptimized(4,:) = options.NodePositionOptimalMass(:,[3,4]);
+
+        [handleOptimalMass,handleOptimizedMassDeformed] = plot_truss_deformation(gcf,nodePositionOptimized,nodeElement,options.DeformationOptimalMass,optimalTrussMassOptions{:});
     end
 
-    % component solution space
-    handleToleranceNodeComponent = [];
-    if(~isempty(options.ComponentSolutionSpace))
-        options.ComponentSolutionSpace(1).plot_candidate_space(gcf,componentSolutionOptions{:});
-        handleToleranceNodeComponent = options.ComponentSolutionSpace(2).plot_candidate_space(gcf,componentSolutionOptions{:});
+    % box-shaped solution space  - displacement 
+    handleToleranceNodeDisplacementBox = [];
+    if(~isempty(options.BoxSolutionSpaceDisplacement))
+        plot_design_box_2d(gcf,options.BoxSolutionSpaceDisplacement(:,[1,2]),boxSolutionDisplacementOptions{:});
+        handleToleranceNodeDisplacementBox = plot_design_box_2d(gcf,options.BoxSolutionSpaceDisplacement(:,[3,4]),boxSolutionDisplacementOptions{:});
     end
 
-    % random trusses
-    handleRandom = [];
-    if(~isempty(options.NodePositionRandom))
-        nRandomTruss = size(options.NodePositionRandom,1);
+    % box-shaped solution space - mass
+    handleToleranceNodeMassBox = [];
+    if(~isempty(options.BoxSolutionSpaceMass))
+        plot_design_box_2d(gcf,options.BoxSolutionSpaceMass(:,[1,2]),boxSolutionMassOptions{:});
+        handleToleranceNodeMassBox = plot_design_box_2d(gcf,options.BoxSolutionSpaceMass(:,[3,4]),boxSolutionMassOptions{:});
+    end
+
+    % component solution space - displacement
+    handleToleranceNodeDisplacementComponent = [];
+    if(~isempty(options.ComponentSolutionSpaceDisplacement))
+        options.ComponentSolutionSpaceDisplacement(1).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
+        handleToleranceNodeDisplacementComponent = options.ComponentSolutionSpaceDisplacement(2).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
+    end
+
+    % component solution space - mass
+    handleToleranceNodeMassComponent = [];
+    if(~isempty(options.ComponentSolutionSpaceMass))
+        options.ComponentSolutionSpaceMass(1).plot_candidate_space(gcf,componentSolutionMassOptions{:});
+        handleToleranceNodeMassComponent = options.ComponentSolutionSpaceMass(2).plot_candidate_space(gcf,componentSolutionMassOptions{:});
+    end
+
+    % random trusses - displacement
+    handleRandomDisplacement = [];
+    if(~isempty(options.NodePositionRandomDisplacement))
+        nRandomTruss = size(options.NodePositionRandomDisplacement,1);
         trussColor = rand(nRandomTruss,3);
         for i=1:nRandomTruss
             randomNodePosition = baseNode;
-            randomNodePosition(2,:) = options.NodePositionRandom(i,[1,2]);
-            randomNodePosition(4,:) = options.NodePositionRandom(i,[3,4]);
-            handleRandom(i) = plot_truss_deformation(gcf,randomNodePosition,nodeElement,'ColorUndeformed',trussColor(i,:),randomTrussOptions{:});
+            randomNodePosition(2,:) = options.NodePositionRandomDisplacement(i,[1,2]);
+            randomNodePosition(4,:) = options.NodePositionRandomDisplacement(i,[3,4]);
+            handleRandomDisplacement(i) = plot_truss_deformation(gcf,randomNodePosition,nodeElement,'ColorUndeformed',trussColor(i,:),randomTrussDisplacementOptions{:});
+        end
+    end
+
+    % random trusses - mass
+    handleRandomMass = [];
+    if(~isempty(options.NodePositionRandomMass))
+        nRandomTruss = size(options.NodePositionRandomMass,1);
+        trussColor = rand(nRandomTruss,3);
+        for i=1:nRandomTruss
+            randomNodePosition = baseNode;
+            randomNodePosition(2,:) = options.NodePositionRandomMass(i,[1,2]);
+            randomNodePosition(4,:) = options.NodePositionRandomMass(i,[3,4]);
+            handleRandomMass(i) = plot_truss_deformation(gcf,randomNodePosition,nodeElement,'ColorUndeformed',trussColor(i,:),randomTrussMassOptions{:});
         end
     end
 
@@ -412,22 +585,30 @@ function figureHandle = plot_results_truss_six_bar_2d_two_moving_node(baseNode,n
         handleObjectAll = {...
             handleInitial,...
             handleInitialDeformed,...
-            handleOptimal,...
-            handleOptimizedDeformed,...
+            handleOptimalDisplacement,...
+            handleOptimizedDisplacementDeformed,...
+            handleOptimalMass,...
+            handleOptimizedMassDeformed,...
             handleWall,...
             handleForce,...
-            handleToleranceNodeBox,...
-            handleToleranceNodeComponent};
+            handleToleranceNodeDisplacementBox,...
+            handleToleranceNodeDisplacementComponent,...
+            handleToleranceNodeMassBox,...
+            handleToleranceNodeMassComponent};
 
         legendTextAll = {...
             'Initial Truss',...
             'Initial Truss (Deformed)',...
-            'Optimized Truss',...
-            'Optimized Truss (Deformed)',...
+            'Optimized Truss - Displacement',...
+            'Optimized Truss (Deformed) - Displacement',...
+            'Optimized Truss - Mass',...
+            'Optimized Truss (Deformed) - Mass',...
             'Wall',...
             'Applied Force',...
-            'Tolerance Region for the Node (Box)',...
-            'Tolerance Region for the Node (Component)'};
+            'Tolerance Region for the Node (Box) - Displacement',...
+            'Tolerance Region for the Node (Component) - Displacement',...
+            'Tolerance Region for the Node (Box) - Mass',...
+            'Tolerance Region for the Node (Component) - Mass'};
         
         handleObject = [handleObjectAll{:}];
         legentText = {legendTextAll{~cellfun(@isempty,handleObjectAll)}};

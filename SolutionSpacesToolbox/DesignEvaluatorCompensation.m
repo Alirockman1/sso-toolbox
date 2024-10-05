@@ -386,6 +386,16 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
                 % if full sample was given, use that for the initial design of B-space
                 if(isFullSpaceSample)
                     bspaceInitial = bspaceInitialSample(iCurrent,:);
+                elseif(i~=1) % not full sample, and has evaluated at least once
+                    % see which designs have been evaluated
+                    hasBeenEvaluated = ~isnan(scoreOptimal);
+
+                    % see which already evaluated design is closest to design to be evaluated
+                    iLocalClosest = knnsearch(designSample(hasBeenEvaluated,:),designSample(iCurrent,:),obj.AspaceOrderKnnsearchOptions{:});
+
+                    % use that optimum as initial guess
+                    iClosestEvaluated = convert_index_base(hasBeenEvaluated,iLocalClosest,'backward');
+                    bspaceInitial = bspaceOptimal(iClosestEvaluated,:);
                 end
 
                 initialDesign = nan(1,size(obj.CompensationAspaceIndex,2));
@@ -405,12 +415,6 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
                 scoreOptimal(iCurrent) = scoreOptimalCurrent;
                 optimizationOutput{iCurrent} = optimizationOutputCurrent;
                 evaluatorOutput{iCurrent} = evaluatorOutputCurrent;
-
-                % start next iteration already where you are
-                % --> with A-space ordered, this should improve convergence time
-                if(~isFullSpaceSample)
-                    bspaceInitial = bspaceOptimal(iCurrent,:);
-                end
             end
 
             % evaluate optimal designs

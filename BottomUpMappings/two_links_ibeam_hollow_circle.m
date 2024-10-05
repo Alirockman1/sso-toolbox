@@ -35,12 +35,12 @@ function [performanceMeasure,physicalFeasibilityMeasure] = two_links_ibeam_hollo
 %   DESIGNSAMPLE and computes the total displacement and structural mass, 
 %   returning both in PERFORMANCEMEASURE. 
 %
-%   PERFORMANCEMEASURE = 
-%   TWO_LINKS_IBEAM_HOLLOW_CIRCLE(DESIGNSAMPLE,SYSTEMPARAMETER) also allows one
-%   to choose how to handle physically infeasible designs in SYSTEMPARAMETER.
-%   If set to 'true' and the design is physically infeasible, calculations are 
-%   skipped and +inf displacement and mass are returned for that design. If
-%   set to 'false', calculations proceed as normal. Default value is 'true'.
+%   PERFORMANCEMEASURE = TWO_LINKS_IBEAM_HOLLOW_CIRCLE(DESIGNSAMPLE,
+%   SYSTEMPARAMETER) also allows one to choose how to handle physically 
+%   infeasible designs in SYSTEMPARAMETER. If set to 'true' and the design is 
+%   physically infeasible, calculations are skipped and +inf displacement and 
+%   mass are returned for that design. If set to 'false', calculations proceed 
+%   as normal. Default value is 'true'.
 %
 %   [PERFORMANCEMEASURE,PHYSICALFEASIBILITYMEASURE] = 
 %   TWO_LINKS_IBEAM_HOLLOW_CIRCLE(...) also returns the physical feasibility 

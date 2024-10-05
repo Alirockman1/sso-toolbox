@@ -1,6 +1,6 @@
 function performanceMeasure = truss_two_bar_hollow_circle(designSample,systemParameter)
-%TWO_BAR_TRUSS_HOLLOW_CIRCLE Bottom-Up Mapping (Bar Selection Problem)
-%   TWO_BAR_TRUSS_HOLLOW_CIRCLE is a bottom-up mapping for a two-bar
+%TRUSS_TWO_BAR_HOLLOW_CIRCLE Bottom-Up Mapping (Bar Selection Problem)
+%   TRUSS_TWO_BAR_HOLLOW_CIRCLE is a bottom-up mapping for a two-bar
 %   truss system (cross-sections for the bars: hollow circle) with a force   
 %   applied at the tip.
 %     |\
@@ -19,7 +19,7 @@ function performanceMeasure = truss_two_bar_hollow_circle(designSample,systemPar
 %     | /
 %     |/
 %
-%   PERFORMANCEMEASURE = TWO_BAR_TRUSS_HOLLOW_CIRCLE(DESIGNSAMPLE,
+%   PERFORMANCEMEASURE = TRUSS_TWO_BAR_HOLLOW_CIRCLE(DESIGNSAMPLE,
 %   SYSTEMPARAMETER) receives the thickness, outer diameter and length of each 
 %   of two truss bars in DESIGNSAMPLE, their properties and force applied in 
 %   SYSTEMPARAMETER, and calculates the overall system performance 
@@ -34,7 +34,7 @@ function performanceMeasure = truss_two_bar_hollow_circle(designSample,systemPar
 %                               70e9 2700  100e6... % (E,rho,sigmaY) bar 2 - aluminum
 %                                  1 1000... % 1m distance; 1kN force
 %                             ];
-%           performanceMeasure = TWO_BAR_TRUSS_HOLLOW_CIRCLE(DV,PARAM);
+%           performanceMeasure = TRUSS_TWO_BAR_HOLLOW_CIRCLE(DV,PARAM);
 %
 %   Inputs:
 %       - DESIGNSAMPLE : (nSample,6) double 

@@ -64,7 +64,7 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_ga_w
 %   See the License for the specific language governing permissions and
 %   limitations under the License.
 
-	options = optimoptions('ga',varargin{:});
+	options = optimoptions('ga','InitialPopulationMatrix',initialDesign,varargin{:});
 
 	nDesignVariable = size(initialDesign,2);
 	[designOptimal,objectiveOptimal,exitflag,output,population,scores] = ga(...

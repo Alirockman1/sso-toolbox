@@ -51,7 +51,7 @@ classdef BottomUpMappingFunction < BottomUpMappingBase
 		%SYSTEMPARAMETER Constant system parameters
 		%	SYSTEMPARAMETER is a generic variable that is used to store constant system 
 		%	parameters, or in other words, values that do not change within the analysis
-		%	of one system.
+		%	of one system and are the same independent of the design sample points.
 		%	SYSTEMPARAMETER can have any variable type. It is given during initilization
 		%	to the constructor.
 		%
@@ -114,9 +114,9 @@ classdef BottomUpMappingFunction < BottomUpMappingBase
         %   the use of constant system parameters when computing with the main function, 
         %	passed in SYSTEMPARAMETER. Default value is empty.
         %
-        %   OBJ = BOTTOMUPMAPPINGFUNCTION(...,NAME1,VALUE1,...) also allows
-        %   for setting custom options for the computation procedure, passed as 
-        %   name-value pair arguments. These are:
+        %   OBJ = BOTTOMUPMAPPINGFUNCTION(...,NAME,VALUE,...) also allows for setting 
+        %   custom options for the computation procedure, passed as name-value pair 
+        %	arguments. These are:
         %       - 'PhysicalFeasibilityDefaultValue' : default value used for the measure
         %		when no information regarding physical feasibility is available.
         %		Default: -1.
