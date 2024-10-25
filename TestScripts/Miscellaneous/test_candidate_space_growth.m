@@ -22,7 +22,7 @@ figureSize = [goldenratio 1]*8.5;
 designSpaceLowerBound = [0 0];
 designSpaceUpperBound = [1 1];
 
-designSample = designSpaceLowerBound + rand(10000,2).*(designSpaceUpperBound-designSpaceLowerBound);
+designSample = designSpaceLowerBound + rand(1000,2).*(designSpaceUpperBound-designSpaceLowerBound);
 
 systemFunction = @distance_to_center;
 systemParameter = [0.5 0.5];

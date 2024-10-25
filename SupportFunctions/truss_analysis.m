@@ -106,7 +106,7 @@ function [nodeDisplacement,nodeReactionForce,elementAxialForce] = truss_analysis
         error('TrussAnalysis:WrongSizeInput:Elasticity','Size of array with Young''s Modulus incompatible with defined elements.');
     end
 
-    % convert input into separate information: whether it is ifxed or not, and
+    % convert input into separate information: whether it is fixed or not, and
     % the prescribed displacement
     if(all(islogical(nodeFixedDegreesOfFreedom)))
     	isFixed = nodeFixedDegreesOfFreedom;
@@ -120,6 +120,9 @@ function [nodeDisplacement,nodeReactionForce,elementAxialForce] = truss_analysis
     	prescribedDisplacement = nodeFixedDegreesOfFreedom;
     end
 
+    % find node cartesian distances for each element
+	nodeDistance = nodePosition(nodeElement(:,2),:)-nodePosition(nodeElement(:,1),:);
+
 	% start by building global stiffness matrix
 	nSystemDegreesOfFreedom = nNode * nDimension;
 	globalStiffness = zeros(nSystemDegreesOfFreedom,nSystemDegreesOfFreedom);
@@ -128,7 +131,7 @@ function [nodeDisplacement,nodeReactionForce,elementAxialForce] = truss_analysis
 	for i=1:nElement
 		[elementLocalStiffness,localToGlobalSpatialTransformation] = ...
 			truss_local_stiffness_global_transformation(...
-				nodePosition([nodeElement(i,1);nodeElement(i,2)],:),...
+				nodeDistance(i,:),...
 				elementYoungsModulus(i),...
 				elementCrossSectionArea(i));
 
@@ -140,8 +143,8 @@ function [nodeDisplacement,nodeReactionForce,elementAxialForce] = truss_analysis
 			localToGlobalSpatialTransformation;
 
 		% add that contribution to the global stiffness matrix
-		iGlobalNode1 = [0:(nDimension-1)] + nDimension*(nodeElement(i,1)-1)+1;
-		iGlobalNode2 = [0:(nDimension-1)] + nDimension*(nodeElement(i,2)-1)+1;
+		iGlobalNode1 = [0:(nDimension-1)] + nDimension*(nodeElement(i,1)-1) + 1;
+		iGlobalNode2 = [0:(nDimension-1)] + nDimension*(nodeElement(i,2)-1) + 1;
 		iGlobalElement = [iGlobalNode1,iGlobalNode2];
 		globalStiffness(iGlobalElement,iGlobalElement) = ...
 			globalStiffness(iGlobalElement,iGlobalElement) + ...
@@ -171,7 +174,7 @@ function [nodeDisplacement,nodeReactionForce,elementAxialForce] = truss_analysis
 	for i=1:nElement
 		[elementLocalStiffness,localToGlobalSpatialTransformation] = ...
 			truss_local_stiffness_global_transformation(...
-				nodePosition([nodeElement(i,1);nodeElement(i,2)],:),...
+				nodeDistance(i,:),...
 				elementYoungsModulus(i),...
 				elementCrossSectionArea(i));
 
@@ -184,10 +187,8 @@ function [nodeDisplacement,nodeReactionForce,elementAxialForce] = truss_analysis
 	end
 end
 
-function [elementLocalStiffness,localToGlobalSpatialTransformation] = truss_local_stiffness_global_transformation(nodePosition,elementYoungsModulus,elementCrossSectionArea)
-	nDimension = size(nodePosition,2);
-
-	nodeDistance = nodePosition(2,:)-nodePosition(1,:);
+function [elementLocalStiffness,localToGlobalSpatialTransformation] = truss_local_stiffness_global_transformation(nodeDistance,elementYoungsModulus,elementCrossSectionArea)
+	nDimension = size(nodeDistance,2);
 	elementLength = vecnorm(nodeDistance,2,2);
 
 	% truss element stiffness in local coordinates

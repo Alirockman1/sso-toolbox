@@ -40,19 +40,20 @@ figureSize = [goldenRatio 1]*8.5;
 
 %% function call
 %
-systemFunction = @truss_six_bar_2d_two_moving_node;
+systemFunction = @truss_eighteen_bar_2d_eight_moving_node;
 systemParameter = [10,210e3,7850e-9]; % [mm^2],[MPa],[kg/mm^3]
-%                                     x1   y1  x2  y2
-designSpaceLowerBoundDisplacement = [0.1 -0.5 0.9 0.5];
-designSpaceUpperBoundDisplacement = [1.5  0.5 2.0 1.5];
-designSpaceLowerBoundMass = [0 -0.5 0 -0.5];
-designSpaceUpperBoundMass = [2  1.5 2  1.5];
-Components = {[1,2]',[3,4]'};
+%                x1 y1 x2 y2 x3 y3 x4 y4 x5 y5 x6 y6 x7 y7 x8 y8
+initialDesign = [ 1, 1, 1, 0, 2, 1, 2, 0, 3, 1, 3, 0, 4, 1, 4, 0];
+%                                     x1   y1  x2  y2  x3   y3   x4  y4   x5   y5  x6  y6   x7   y7  x8  y8
+designSpaceLowerBoundDisplacement = initialDesign-0.9;
+designSpaceUpperBoundDisplacement = initialDesign+0.9;
+designSpaceLowerBoundMass = [0 -0.5 0 -0.5 0 -0.5 0 -0.5 0 -0.5 0 -0.5 0 -0.5 0 -0.5];
+designSpaceUpperBoundMass = [5  1.5 5  1.5 5  1.5 5  1.5 5  1.5 5  1.5 5  1.5 5  1.5];
+Components = {[1,2]',[3,4]',[5,6]',[7,8]',[9,10]',[11,12]',[13,14]',[15,16]'};
 %
 performanceLowerLimit = -inf;
-performanceUpperLimit = [nan nan repmat(inf,1,6)];
-%
-initialDesign = [1,0,1,1];
+performanceUpperLimit = [nan nan repmat(inf,1,18)];
+
 
 
 %% find optimum
@@ -83,46 +84,76 @@ warning('on');
 
 %% plot optimum and deformations
 baseNode = [...
-    0 0;  ...
-    nan nan; ...
-    2 0.5; ...
-    nan nan; ...
-    0 1];
+	nan nan; ... % (1)
+    nan nan; ... % (2)
+    nan nan; ... % (3)
+    nan nan; ... % (4)
+    nan nan; ... % (5)
+    nan nan; ... % (6)
+    nan nan; ... % (7)
+    nan nan; ... % (8)
+      5 0.5; ... % (9)
+      0   0; ... % (10)
+      0   1];    % (11)
 fixedDegreesOfFreedom = [...
-    true true; ...
-    false false; ...
-    false false; ...
-    false false; ...
-    true true];
+	false false; ... % (1)
+	false false; ... % (2)
+	false false; ... % (3)
+	false false; ... % (4)
+	false false; ... % (5)
+	false false; ... % (6)
+    false false; ... % (7)
+	false false; ... % (8)
+	false false; ... % (9)
+	 true  true;...  % (10)
+     true  true];    % (11)
 nodeForce = [...
-    0 0; ...
-    0 0; ...
-    0 -1000; ...
-    0 0; ...
-    0 0];
+	0 0; ... % (1)
+	0 0; ... % (2)
+    0 0; ... % (3)
+	0 0; ... % (4)
+    0 0; ... % (5)
+	0 0; ... % (6)
+    0 0; ... % (7)
+	0 0; ... % (8)
+	0 -1000; ... % (9)
+	0 0; ... % (10)
+	0 0]; % (11) assumed [N]
 nodeElement = [...
-    1 2; ...
-    2 3; ...
-    3 4; ...
-    4 5; ...
-    2 5; ...
-    2 4];
+	11 1; ... % (1)
+    11 2; ... % (2)
+    10 2; ... % (3)
+    1 2; ... % (4)
+    1 4; ... % (5)
+    1 3; ... % (6)
+    2 4; ... % (7)
+    3 4; ... % (8)
+    3 6; ... % (9)
+    3 5; ... % (10)
+    4 6; ... % (11)
+    5 6; ... % (12)
+    5 8; ... % (13)
+    5 7; ... % (14)
+    6 8; ... % (15)
+    7 8; ... % (16)
+    7 9; ... % (17)
+    8 9]; % (18)
 elementCrossSectionArea = systemParameter(1); % [mm^2]
 elementYoungsModulus = systemParameter(2); % [MPa]
 
 % initial truss
-plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign);
 save_print_figure(gcf,[saveFolder,'InitialTruss']);
 
 % initial truss + optimized truss
-plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
     'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement);
 save_print_figure(gcf,[saveFolder,'InitialOptimizedTruss']);
 
 % initial truss + optimized displacment truss + optimized mass truss
-plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
     'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
     'NodePositionOptimalMass',nodePositionOptimalMass);
@@ -131,8 +162,14 @@ save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussWithMass']);
 
 % deformed trusses
 nodePositionInitial = baseNode;
-nodePositionInitial(2,:) = initialDesign(:,[1,2]);
-nodePositionInitial(4,:) = initialDesign(:,[3,4]);
+nodePositionInitial(1,:) = initialDesign(:,[1,2]);
+nodePositionInitial(2,:) = initialDesign(:,[3,4]);
+nodePositionInitial(3,:) = initialDesign(:,[5,6]);
+nodePositionInitial(4,:) = initialDesign(:,[7,8]);
+nodePositionInitial(5,:) = initialDesign(:,[9,10]);
+nodePositionInitial(6,:) = initialDesign(:,[11,12]);
+nodePositionInitial(7,:) = initialDesign(:,[13,14]);
+nodePositionInitial(8,:) = initialDesign(:,[15,16]);
 nodeDisplacementInitial = ...
 	truss_analysis(...
 		nodePositionInitial,...
@@ -143,8 +180,14 @@ nodeDisplacementInitial = ...
 		elementYoungsModulus);
 
 nodePositionOptimized = baseNode;
-nodePositionOptimized(2,:) = nodePositionOptimalDisplacement(:,[1,2]);
-nodePositionOptimized(4,:) = nodePositionOptimalDisplacement(:,[3,4]);
+nodePositionOptimized(1,:) = nodePositionOptimalDisplacement(:,[1,2]);
+nodePositionOptimized(2,:) = nodePositionOptimalDisplacement(:,[3,4]);
+nodePositionOptimized(3,:) = nodePositionOptimalDisplacement(:,[5,6]);
+nodePositionOptimized(4,:) = nodePositionOptimalDisplacement(:,[7,8]);
+nodePositionOptimized(5,:) = nodePositionOptimalDisplacement(:,[9,10]);
+nodePositionOptimized(6,:) = nodePositionOptimalDisplacement(:,[11,12]);
+nodePositionOptimized(7,:) = nodePositionOptimalDisplacement(:,[13,14]);
+nodePositionOptimized(8,:) = nodePositionOptimalDisplacement(:,[15,16]);
 nodeDisplacementOptimal = ...
     truss_analysis(...
 	    nodePositionOptimized,...
@@ -154,7 +197,7 @@ nodeDisplacementOptimal = ...
 	    elementCrossSectionArea,...
 	    elementYoungsModulus);
 
-plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
     'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
     'DeformationInitial',nodeDisplacementInitial,...
@@ -195,7 +238,7 @@ optionsBox = sso_stochastic_options('box',...
     'UseAdaptiveGrowthRate',false,...
     'GrowthRate',0.2,...
     'ApplyLeanness','never',...
-    'TrimmingOperationOptions',{'PassesCriterion','full'},...
+    'TrimmingOperationOptions',{'PassesCriterion','reduced'},...
     'TrimmingOrderOptions',{'OrderPreference','score'});
 
 rng(rngState);
@@ -214,7 +257,7 @@ optionsBox = sso_stochastic_options('box',...
     'UseAdaptiveGrowthRate',false,...
     'GrowthRate',0.05,...
     'ApplyLeanness','never',...
-    'TrimmingOperationOptions',{'PassesCriterion','full'},...
+    'TrimmingOperationOptions',{'PassesCriterion','reduced'},...
     'TrimmingOrderOptions',{'OrderPreference','score'});
 
 rng(rngState);
@@ -232,9 +275,9 @@ optionsComponent = sso_stochastic_options('component',...
     'FixIterNumberConsolidation',true,...
     'MaxIterExploration',30,...
     'MaxIterConsolidation',30,...
-    'CandidateSpaceConstructorExploration',@CandidateSpaceDelaunay,...
-    'CandidateSpaceConstructorConsolidation',@CandidateSpaceDelaunay,...
-    'TrimmingMethodFunction',@component_trimming_method_corner_box_removal,...
+    'CandidateSpaceConstructorExploration',@CandidateSpaceConvexHull,...
+    'CandidateSpaceConstructorConsolidation',@CandidateSpaceConvexHull,...
+    'TrimmingMethodFunction',@component_trimming_method_planar_trimming,...
     ... 'TrimmingMethodOptions',{'ReferenceDesigns','boundary-center'},...
     'UseAdaptiveGrowthRate',false,...
     'GrowthRate',0.2,...
@@ -258,9 +301,9 @@ optionsComponent = sso_stochastic_options('component',...
     'FixIterNumberConsolidation',true,...
     'MaxIterExploration',30,...
     'MaxIterConsolidation',30,...
-    'CandidateSpaceConstructorExploration',@CandidateSpaceDelaunay,...
-    'CandidateSpaceConstructorConsolidation',@CandidateSpaceDelaunay,...
-    'TrimmingMethodFunction',@component_trimming_method_corner_box_removal,...
+    'CandidateSpaceConstructorExploration',@CandidateSpaceConvexHull,...
+    'CandidateSpaceConstructorConsolidation',@CandidateSpaceConvexHull,...
+    'TrimmingMethodFunction',@component_trimming_method_planar_trimming,...
     ... 'TrimmingMethodOptions',{'ReferenceDesigns','boundary-center'},...
     'UseAdaptiveGrowthRate',false,...
     'GrowthRate',0.04,...
@@ -278,36 +321,44 @@ toc(timeElapsedComponent)
 
 
 %% measure comparison
-measureComponent1 = componentSolutionSpaceDisplacement(1).Measure;
-measureComponent2 = componentSolutionSpaceDisplacement(2).Measure;
-measureBox1 = prod(solutionSpaceBoxDisplacement(2,[1,2])-solutionSpaceBoxDisplacement(1,[1,2]));
-measureBox2 = prod(solutionSpaceBoxDisplacement(2,[3,4])-solutionSpaceBoxDisplacement(1,[3,4]));
-fprintf('\nVolume Increases - Node 1: %.3gx ; Node 2: %.gx\n',measureComponent1/measureBox1,measureComponent2/measureBox2);
+measureComponent = [componentSolutionSpaceDisplacement(:).Measure];
+measureBox(1) = prod(solutionSpaceBoxDisplacement(2,[1,2])-solutionSpaceBoxDisplacement(1,[1,2]));
+measureBox(2) = prod(solutionSpaceBoxDisplacement(2,[3,4])-solutionSpaceBoxDisplacement(1,[3,4]));
+measureBox(3) = prod(solutionSpaceBoxDisplacement(2,[5,6])-solutionSpaceBoxDisplacement(1,[5,6]));
+measureBox(4) = prod(solutionSpaceBoxDisplacement(2,[7,8])-solutionSpaceBoxDisplacement(1,[7,8]));
+measureBox(5) = prod(solutionSpaceBoxDisplacement(2,[9,10])-solutionSpaceBoxDisplacement(1,[9,10]));
+measureBox(6) = prod(solutionSpaceBoxDisplacement(2,[11,12])-solutionSpaceBoxDisplacement(1,[11,12]));
+measureBox(7) = prod(solutionSpaceBoxDisplacement(2,[13,14])-solutionSpaceBoxDisplacement(1,[13,14]));
+measureBox(8) = prod(solutionSpaceBoxDisplacement(2,[15,16])-solutionSpaceBoxDisplacement(1,[15,16]));
+fprintf(['\n',repmat('=',1,80),'\n'],measureComponent./measureBox);
+fprintf('Volume Increases - %.3gx\n',measureComponent./measureBox);
+fprintf([repmat('=',1,80),'\n'],measureComponent./measureBox);
+fprintf('Volume Increase (Total) - %.3gx\n\n',prod(measureComponent./measureBox));
 
 
 %% Plot Visualization
 % initial truss + component solution spaces
-plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
     'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
 save_print_figure(gcf,[saveFolder,'InitialTrussComponent']);
 
 % initial truss + component solution spaces + mass
-plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
     'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement,...
     'ComponentSolutionSpaceMass',componentSolutionSpaceMass);
 save_print_figure(gcf,[saveFolder,'InitialTrussComponentWithMass']);
 
 % initial truss + optimized truss + component solution spaces
-plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
     'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
     'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
 save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussComponent']);
 
 % initial truss + optimized truss + component solution spaces + mass
-plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
     'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
     'NodePositionOptimalMass',nodePositionOptimalMass,...
@@ -316,7 +367,7 @@ plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
 save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussComponentWithMass']);
 
 % initial truss + optimized truss + box solution space + component solution spaces
-plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
     'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
     'BoxSolutionSpaceDisplacement',solutionSpaceBoxDisplacement,...
@@ -324,7 +375,7 @@ plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
 save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussBoxComponent']);
 
 % initial truss + optimized truss + box solution space + component solution spaces + mass
-plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
     'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
     'NodePositionOptimalMass',nodePositionOptimalMass,...
@@ -335,14 +386,14 @@ plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
 save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussBoxComponentWithMass']);
 
 % initial truss + box solution space + component solution spaces
-plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
     'BoxSolutionSpaceDisplacement',solutionSpaceBoxDisplacement,...
     'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
 save_print_figure(gcf,[saveFolder,'InitialTrussBoxComponent']);
 
 % initial truss + box solution space + component solution spaces + mass
-plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
     'BoxSolutionSpaceDisplacement',solutionSpaceBoxDisplacement,...
     'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement,...
@@ -351,10 +402,10 @@ plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
 save_print_figure(gcf,[saveFolder,'InitialTrussBoxComponentWithMass']);
 
 % initial truss + sample trusses + component solution space
-nRandomTruss = 5;
+nRandomTruss = 2;
 randomTrussMovingNode = candidate_space_sampling_individual_feasible(componentSolutionSpaceDisplacement,Components,nRandomTruss);
 
-plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,...
+plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,...
     'NodePositionInitial',initialDesign,...
     'NodePositionRandomDisplacement',randomTrussMovingNode,...
     'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
@@ -400,7 +451,15 @@ diary off;
 
 
 %% subfunction: plot truss
-function figureHandle = plot_results_truss_six_bar_2d_two_moving_node(baseNode,nodeElement,varargin)
+nRandomTruss = 1;
+randomTrussMovingNode = candidate_space_sampling_individual_feasible(componentSolutionSpaceDisplacement,Components,nRandomTruss);
+
+plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,...
+    'NodePositionInitial',initialDesign,...
+    'NodePositionRandomDisplacement',randomTrussMovingNode,...
+    'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
+
+function figureHandle = plot_results_truss_eighteen_bar_2d_eight_moving_node(baseNode,nodeElement,varargin)
     parser = inputParser;
     parser.addParameter('NodePositionInitial',[]);
     parser.addParameter('NodePositionOptimalDisplacement',[]);
@@ -480,8 +539,14 @@ function figureHandle = plot_results_truss_six_bar_2d_two_moving_node(baseNode,n
     handleInitialDeformed = [];
     if(~isempty(options.NodePositionInitial))
         nodePositionInitial = baseNode;
-        nodePositionInitial(2,:) = options.NodePositionInitial(:,[1,2]);
-        nodePositionInitial(4,:) = options.NodePositionInitial(:,[3,4]);
+        nodePositionInitial(1,:) = options.NodePositionInitial(:,[1,2]);
+        nodePositionInitial(2,:) = options.NodePositionInitial(:,[3,4]);
+        nodePositionInitial(3,:) = options.NodePositionInitial(:,[5,6]);
+        nodePositionInitial(4,:) = options.NodePositionInitial(:,[7,8]);
+        nodePositionInitial(5,:) = options.NodePositionInitial(:,[9,10]);
+        nodePositionInitial(6,:) = options.NodePositionInitial(:,[11,12]);
+        nodePositionInitial(7,:) = options.NodePositionInitial(:,[13,14]);
+        nodePositionInitial(8,:) = options.NodePositionInitial(:,[15,16]);
 
         [handleInitial,handleInitialDeformed] = plot_truss_deformation(gcf,nodePositionInitial,nodeElement,options.DeformationInitial,initialTrussOptions{:});
     end
@@ -491,8 +556,14 @@ function figureHandle = plot_results_truss_six_bar_2d_two_moving_node(baseNode,n
     handleOptimizedDisplacementDeformed = [];
     if(~isempty(options.NodePositionOptimalDisplacement))
         nodePositionOptimized = baseNode;
-        nodePositionOptimized(2,:) = options.NodePositionOptimalDisplacement(:,[1,2]);
-        nodePositionOptimized(4,:) = options.NodePositionOptimalDisplacement(:,[3,4]);
+        nodePositionOptimized(1,:) = options.NodePositionOptimalDisplacement(:,[1,2]);
+        nodePositionOptimized(2,:) = options.NodePositionOptimalDisplacement(:,[3,4]);
+        nodePositionOptimized(3,:) = options.NodePositionOptimalDisplacement(:,[5,6]);
+        nodePositionOptimized(4,:) = options.NodePositionOptimalDisplacement(:,[7,8]);
+        nodePositionOptimized(5,:) = options.NodePositionOptimalDisplacement(:,[9,10]);
+        nodePositionOptimized(6,:) = options.NodePositionOptimalDisplacement(:,[11,12]);
+        nodePositionOptimized(7,:) = options.NodePositionOptimalDisplacement(:,[13,14]);
+        nodePositionOptimized(8,:) = options.NodePositionOptimalDisplacement(:,[15,16]);
 
         [handleOptimalDisplacement,handleOptimizedDisplacementDeformed] = plot_truss_deformation(gcf,nodePositionOptimized,nodeElement,options.DeformationOptimalDisplacement,optimalTrussDisplacementOptions{:});
     end
@@ -502,8 +573,14 @@ function figureHandle = plot_results_truss_six_bar_2d_two_moving_node(baseNode,n
     handleOptimizedMassDeformed = [];
     if(~isempty(options.NodePositionOptimalMass))
         nodePositionOptimized = baseNode;
-        nodePositionOptimized(2,:) = options.NodePositionOptimalMass(:,[1,2]);
-        nodePositionOptimized(4,:) = options.NodePositionOptimalMass(:,[3,4]);
+        nodePositionOptimized(1,:) = options.NodePositionOptimalMass(:,[1,2]);
+        nodePositionOptimized(2,:) = options.NodePositionOptimalMass(:,[3,4]);
+        nodePositionOptimized(3,:) = options.NodePositionOptimalMass(:,[5,6]);
+        nodePositionOptimized(4,:) = options.NodePositionOptimalMass(:,[7,8]);
+        nodePositionOptimized(5,:) = options.NodePositionOptimalMass(:,[9,10]);
+        nodePositionOptimized(6,:) = options.NodePositionOptimalMass(:,[11,12]);
+        nodePositionOptimized(7,:) = options.NodePositionOptimalMass(:,[13,14]);
+        nodePositionOptimized(8,:) = options.NodePositionOptimalMass(:,[15,16]);
 
         [handleOptimalMass,handleOptimizedMassDeformed] = plot_truss_deformation(gcf,nodePositionOptimized,nodeElement,options.DeformationOptimalMass,optimalTrussMassOptions{:});
     end
@@ -512,28 +589,52 @@ function figureHandle = plot_results_truss_six_bar_2d_two_moving_node(baseNode,n
     handleToleranceNodeDisplacementBox = [];
     if(~isempty(options.BoxSolutionSpaceDisplacement))
         plot_design_box_2d(gcf,options.BoxSolutionSpaceDisplacement(:,[1,2]),boxSolutionDisplacementOptions{:});
-        handleToleranceNodeDisplacementBox = plot_design_box_2d(gcf,options.BoxSolutionSpaceDisplacement(:,[3,4]),boxSolutionDisplacementOptions{:});
+        plot_design_box_2d(gcf,options.BoxSolutionSpaceDisplacement(:,[3,4]),boxSolutionDisplacementOptions{:});
+        plot_design_box_2d(gcf,options.BoxSolutionSpaceDisplacement(:,[5,6]),boxSolutionDisplacementOptions{:});
+        plot_design_box_2d(gcf,options.BoxSolutionSpaceDisplacement(:,[7,8]),boxSolutionDisplacementOptions{:});
+        plot_design_box_2d(gcf,options.BoxSolutionSpaceDisplacement(:,[9,10]),boxSolutionDisplacementOptions{:});
+        plot_design_box_2d(gcf,options.BoxSolutionSpaceDisplacement(:,[11,12]),boxSolutionDisplacementOptions{:});
+        plot_design_box_2d(gcf,options.BoxSolutionSpaceDisplacement(:,[13,14]),boxSolutionDisplacementOptions{:});
+        handleToleranceNodeDisplacementBox = plot_design_box_2d(gcf,options.BoxSolutionSpaceDisplacement(:,[15,16]),boxSolutionDisplacementOptions{:});
     end
 
     % box-shaped solution space - mass
     handleToleranceNodeMassBox = [];
     if(~isempty(options.BoxSolutionSpaceMass))
         plot_design_box_2d(gcf,options.BoxSolutionSpaceMass(:,[1,2]),boxSolutionMassOptions{:});
-        handleToleranceNodeMassBox = plot_design_box_2d(gcf,options.BoxSolutionSpaceMass(:,[3,4]),boxSolutionMassOptions{:});
+        plot_design_box_2d(gcf,options.BoxSolutionSpaceMass(:,[3,4]),boxSolutionMassOptions{:});
+        plot_design_box_2d(gcf,options.BoxSolutionSpaceMass(:,[5,6]),boxSolutionMassOptions{:});
+        plot_design_box_2d(gcf,options.BoxSolutionSpaceMass(:,[7,8]),boxSolutionMassOptions{:});
+        plot_design_box_2d(gcf,options.BoxSolutionSpaceMass(:,[9,10]),boxSolutionMassOptions{:});
+        plot_design_box_2d(gcf,options.BoxSolutionSpaceMass(:,[11,12]),boxSolutionMassOptions{:});
+        plot_design_box_2d(gcf,options.BoxSolutionSpaceMass(:,[13,14]),boxSolutionMassOptions{:});
+        handleToleranceNodeMassBox = plot_design_box_2d(gcf,options.BoxSolutionSpaceMass(:,[15,16]),boxSolutionMassOptions{:});
     end
 
     % component solution space - displacement
     handleToleranceNodeDisplacementComponent = [];
     if(~isempty(options.ComponentSolutionSpaceDisplacement))
         options.ComponentSolutionSpaceDisplacement(1).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
-        handleToleranceNodeDisplacementComponent = options.ComponentSolutionSpaceDisplacement(2).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
+        options.ComponentSolutionSpaceDisplacement(2).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
+        options.ComponentSolutionSpaceDisplacement(3).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
+        options.ComponentSolutionSpaceDisplacement(4).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
+        options.ComponentSolutionSpaceDisplacement(5).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
+        options.ComponentSolutionSpaceDisplacement(6).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
+        options.ComponentSolutionSpaceDisplacement(7).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
+        handleToleranceNodeDisplacementComponent = options.ComponentSolutionSpaceDisplacement(8).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
     end
 
     % component solution space - mass
     handleToleranceNodeMassComponent = [];
     if(~isempty(options.ComponentSolutionSpaceMass))
         options.ComponentSolutionSpaceMass(1).plot_candidate_space(gcf,componentSolutionMassOptions{:});
-        handleToleranceNodeMassComponent = options.ComponentSolutionSpaceMass(2).plot_candidate_space(gcf,componentSolutionMassOptions{:});
+        options.ComponentSolutionSpaceMass(2).plot_candidate_space(gcf,componentSolutionMassOptions{:});
+        options.ComponentSolutionSpaceMass(3).plot_candidate_space(gcf,componentSolutionMassOptions{:});
+        options.ComponentSolutionSpaceMass(4).plot_candidate_space(gcf,componentSolutionMassOptions{:});
+        options.ComponentSolutionSpaceMass(5).plot_candidate_space(gcf,componentSolutionMassOptions{:});
+        options.ComponentSolutionSpaceMass(6).plot_candidate_space(gcf,componentSolutionMassOptions{:});
+        options.ComponentSolutionSpaceMass(7).plot_candidate_space(gcf,componentSolutionMassOptions{:});
+        handleToleranceNodeMassComponent = options.ComponentSolutionSpaceMass(8).plot_candidate_space(gcf,componentSolutionMassOptions{:});
     end
 
     % random trusses - displacement
@@ -543,8 +644,14 @@ function figureHandle = plot_results_truss_six_bar_2d_two_moving_node(baseNode,n
         trussColor = rand(nRandomTruss,3);
         for i=1:nRandomTruss
             randomNodePosition = baseNode;
-            randomNodePosition(2,:) = options.NodePositionRandomDisplacement(i,[1,2]);
-            randomNodePosition(4,:) = options.NodePositionRandomDisplacement(i,[3,4]);
+            randomNodePosition(1,:) = options.NodePositionRandomDisplacement(i,[1,2]);
+            randomNodePosition(2,:) = options.NodePositionRandomDisplacement(i,[3,4]);
+            randomNodePosition(3,:) = options.NodePositionRandomDisplacement(i,[5,6]);
+            randomNodePosition(4,:) = options.NodePositionRandomDisplacement(i,[7,8]);
+            randomNodePosition(5,:) = options.NodePositionRandomDisplacement(i,[9,10]);
+            randomNodePosition(6,:) = options.NodePositionRandomDisplacement(i,[11,12]);
+            randomNodePosition(7,:) = options.NodePositionRandomDisplacement(i,[13,14]);
+            randomNodePosition(8,:) = options.NodePositionRandomDisplacement(i,[15,16]);
             handleRandomDisplacement(i) = plot_truss_deformation(gcf,randomNodePosition,nodeElement,'ColorUndeformed',trussColor(i,:),randomTrussDisplacementOptions{:});
         end
     end
@@ -556,8 +663,14 @@ function figureHandle = plot_results_truss_six_bar_2d_two_moving_node(baseNode,n
         trussColor = rand(nRandomTruss,3);
         for i=1:nRandomTruss
             randomNodePosition = baseNode;
-            randomNodePosition(2,:) = options.NodePositionRandomMass(i,[1,2]);
-            randomNodePosition(4,:) = options.NodePositionRandomMass(i,[3,4]);
+            randomNodePosition(1,:) = options.NodePositionRandomMass(i,[1,2]);
+            randomNodePosition(2,:) = options.NodePositionRandomMass(i,[3,4]);
+            randomNodePosition(3,:) = options.NodePositionRandomMass(i,[5,6]);
+            randomNodePosition(4,:) = options.NodePositionRandomMass(i,[7,8]);
+            randomNodePosition(5,:) = options.NodePositionRandomMass(i,[9,10]);
+            randomNodePosition(6,:) = options.NodePositionRandomMass(i,[11,12]);
+            randomNodePosition(7,:) = options.NodePositionRandomMass(i,[13,14]);
+            randomNodePosition(8,:) = options.NodePositionRandomMass(i,[15,16]);
             handleRandomMass(i) = plot_truss_deformation(gcf,randomNodePosition,nodeElement,'ColorUndeformed',trussColor(i,:),randomTrussMassOptions{:});
         end
     end
@@ -571,7 +684,7 @@ function figureHandle = plot_results_truss_six_bar_2d_two_moving_node(baseNode,n
     % applied force
     handleForce = [];
     if(options.IncludeAppliedForce)
-        handleForce = quiver(2,0.5,0,-0.5,appliedForceOptions{:});
+        handleForce = quiver(5,0.5,0,-0.5,appliedForceOptions{:});
     end
 
     % axis
