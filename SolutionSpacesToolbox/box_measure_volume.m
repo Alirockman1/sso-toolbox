@@ -1,4 +1,4 @@
-function measure = box_measure_volume(designBox, varargin)
+function measure = box_measure_volume(designBox,varargin)
 %BOX_MEASURE_VOLUME uses the design box area/volume/hypervolume as its measure 
 %   BOX_MEASURE_VOLUME uses as measure for a candidate design box its (useful) 
 %   volume. In an box-optimization algorithm, this will tend to generate 
