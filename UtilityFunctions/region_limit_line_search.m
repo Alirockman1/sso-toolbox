@@ -57,11 +57,9 @@ function [stepSizeLimitInside,stepSizeLimitOutside] = region_limit_line_search(r
     
     nSample = size(initialPoint,1);
 
-    % initial step size -> see how much would be necessary to get to the edges 
-    % of the design space assuming you are starting on the opposite one within 
-    % maxIter iterations of bracketing
-    stepSizeInitialDesignSpace = max(designSpace(2,:)-designSpace(1,:))./2^maxIter;
-    stepSizeInitialDesignSpace = repmat(stepSizeInitialDesignSpace,nSample,1);
+    % initial step size -> see how much would be necessary to get through the diagonal
+    % of the design space in maxIter iterations of bracketing
+    stepSizeInitialDesignSpace = vecnorm(designSpace(2,:)-designSpace(1,:))./(vecnorm(direction,2)*2^maxIter);
 
     % search for limit where design is still inside design space
     designSpaceCriterion = @(stepSize) [is_in_design_box(initialPoint + stepSize.*direction,designSpace)];
