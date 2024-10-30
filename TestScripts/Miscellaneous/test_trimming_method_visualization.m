@@ -46,11 +46,15 @@ plot([anchorPosition1d],[-1],'r.','MarkerSize',20);
 plot([designSpaceLowerBound1d anchorPosition1d],[1 1],'r-','linewidth',3.0,'HandleVisibility','off');
 plot([anchorPosition1d designSpaceUpperBound1d],[1 1],'g-','linewidth',3.0,'HandleVisibility','off');
 plot([anchorPosition1d],[1],'r.','MarkerSize',20,'HandleVisibility','off');
-quiver([anchorPosition1d anchorPosition1d], [-1 1], [-0.1 0.1], [0 0], 'AutoScale','off');
+quiver(...
+    [anchorPosition1d anchorPosition1d], [-1 1], ...
+    [-0.1 0.1], [0 0], ...
+    'AutoScale','off','LineWidth',2.0,'Color',[0.9290 0.6940 0.1250]);
 set(gca,'XColor', 'none','YColor','none');
 grid minor;
 ylim([-2 2])
-legend({'Kept Interval','Removed Interval','Removed Design','Normals'},'location','east');
+legend({'Kept Region','Removed Region','Removed Design','Normal Vector'},'location','east');
+save_print_figure(gcf,[saveFolder,'PlanarTrimming1D'],'Size',[figureSize(1) figureSize(2)/2],'PrintFormat',{'png','pdf'});
 
 % 2d
 trimmingNormalsInside = [1 1; -3 3; 0.5 -0.7; 0 1; 1 0; -1 -1];
@@ -65,14 +69,13 @@ distanceCorner = anchorPosition2d - cornerCoordinate;
 
 figure;
 for i=1:size(trimmingNormalsInside,1)
-    subplot(2,3,i);
+    subplot(3,2,i);
     hold all;
 
     planeVector = [trimmingNormalsInside(i,2), -trimmingNormalsInside(i,1)];
 
-    designSpaceLimit1 = region_limit_line_search([],anchorPosition2d,planeVector,designSpace2d);
-    designSpaceLimit2 = region_limit_line_search([],anchorPosition2d,-planeVector,designSpace2d);
-    designSpaceIntersection = anchorPosition2d + [designSpaceLimit1;designSpaceLimit2].*[planeVector;-planeVector];
+    designSpaceLimit = region_limit_line_search([],[anchorPosition2d;anchorPosition2d],[planeVector;-planeVector],designSpace2d);
+    designSpaceIntersection = anchorPosition2d + designSpaceLimit.*[planeVector;-planeVector];
 
     dotProduct = sum(trimmingNormalsInside(i,:).*distanceCorner,2);
 
@@ -87,15 +90,19 @@ for i=1:size(trimmingNormalsInside,1)
 
     convexHullOutside.plot_candidate_space(gcf,'FaceColor','r','FaceAlpha',0.2,'LineStyle','none');
     convexHullInside.plot_candidate_space(gcf,'FaceColor','g','FaceAlpha',0.2,'LineStyle','none');
-    quiver(anchorPosition2d(1),anchorPosition2d(2),trimmingNormalsInside(i,1),trimmingNormalsInside(i,2),'AutoScale','on','AutoScaleFactor',0.3);
+    quiver(...
+        anchorPosition2d(1),anchorPosition2d(2),...
+        trimmingNormalsInside(i,1),trimmingNormalsInside(i,2),...
+        'AutoScale','on','AutoScaleFactor',0.3,'LineWidth',2.0,'Color',[0.9290 0.6940 0.1250]);
     plot(anchorPosition2d(1),anchorPosition2d(2),'r.','MarkerSize',20);
     set(gca,'XColor', 'none','YColor','none');
     grid minor;
 end
-legend({'Removed Area','Kept Area','Normal Vector','Removed Design'});
+legend({'Removed Region','Kept Region','Normal Vector','Removed Design'});
+save_print_figure(gcf,[saveFolder,'PlanarTrimming2D'],'Size',[figureSize(1) 2*figureSize(2)],'PrintFormat',{'png','pdf'});
 
 % 3d
-trimmingNormalsInside = [1 1 1; -3 3 -3; 0.5 -0.7 -.2; 0 1 0; 1 0 0; -1 -1 -1];
+trimmingNormalsInside = [1 1 1;  -1 -1 -1; -3 3 -3; 0.5 -0.7 -.2; 0 1 0; 1 0 0];
 
 trimmingNormalsInside = trimmingNormalsInside./vecnorm(trimmingNormalsInside,2,2);
 
@@ -107,7 +114,7 @@ distanceCorner = anchorPosition3d - cornerCoordinate;
 
 figure;
 for i=1:size(trimmingNormalsInside,1)
-    subplot(2,3,i);
+    subplot(3,2,i);
     hold all;
 
     % plane vectors
@@ -119,13 +126,11 @@ for i=1:size(trimmingNormalsInside,1)
         intersectionInterpolation.*(-planeVectorNull(1,:)) + (1-intersectionInterpolation).*(-planeVectorNull(2,:));...
         intersectionInterpolation.*planeVectorNull(1,:) + (1-intersectionInterpolation).*(-planeVectorNull(2,:))];
 
-    designSpaceIntersection = [];
-    for j=1:size(planeVector,1)
-        designSpaceLimit1 = region_limit_line_search([],anchorPosition3d,planeVector(j,:),designSpace3d);
-        designSpaceLimit2 = region_limit_line_search([],anchorPosition3d,-planeVector(j,:),designSpace3d);
-        planeIntersection = anchorPosition3d + [designSpaceLimit1;designSpaceLimit2].*[planeVector(j,:);-planeVector(j,:)];
-        designSpaceIntersection = [designSpaceIntersection;planeIntersection];
-    end
+    designSpaceLimit = region_limit_line_search([],...
+        repmat(anchorPosition3d,size(planeVector,1),1),...
+        planeVector,...
+        designSpace3d);
+    designSpaceIntersection = anchorPosition3d + designSpaceLimit.*planeVector;
 
     dotProduct = sum(trimmingNormalsInside(i,:).*distanceCorner,2);
 
@@ -140,13 +145,17 @@ for i=1:size(trimmingNormalsInside,1)
 
     convexHullOutside.plot_candidate_space(gcf,'FaceColor','r','FaceAlpha',0.2,'LineStyle','none');
     convexHullInside.plot_candidate_space(gcf,'FaceColor','g','FaceAlpha',0.2,'LineStyle','none');
-    quiver3(anchorPosition3d(1),anchorPosition3d(2),anchorPosition3d(3),trimmingNormalsInside(i,1),trimmingNormalsInside(i,2),trimmingNormalsInside(i,3),'AutoScale','on','AutoScaleFactor',0.3);
+    quiver3(...
+        anchorPosition3d(1),anchorPosition3d(2),anchorPosition3d(3),...
+        trimmingNormalsInside(i,1),trimmingNormalsInside(i,2),trimmingNormalsInside(i,3),...
+        'AutoScale','on','AutoScaleFactor',0.3,'LineWidth',2.0,'Color',[0.9290 0.6940 0.1250]);
     plot3(anchorPosition3d(1),anchorPosition3d(2),anchorPosition3d(3),'r.','MarkerSize',20);
     set(gca,'XColor','none','YColor','none','ZColor','none');
     grid minor;
     view(3);
 end
-legend({'Removed Area','Kept Area','Normal Vector','Removed Design'});
+legend({'Removed Region','Kept Region','Normal Vector','Removed Design'});
+save_print_figure(gcf,[saveFolder,'PlanarTrimming3D'],'Size',[figureSize(1) 2*figureSize(2)],'PrintFormat',{'png','pdf'});
 
 
 
@@ -163,7 +172,8 @@ plot([anchorPosition1d],[1],'r.','MarkerSize',20);
 set(gca,'XColor', 'none','YColor','none');
 grid minor;
 ylim([-2 2])
-legend({'Kept Interval','Removed Interval','Removed Design'},'location','east');
+legend({'Kept Region','Removed Region','Removed Design'},'location','east');
+save_print_figure(gcf,[saveFolder,'CornerBoxRemoval1D'],'Size',[figureSize(1) figureSize(2)/2],'PrintFormat',{'png','pdf'});
 
 % 2d
 cornerCombination = [...
@@ -201,13 +211,15 @@ for i=1:size(cornerCombination,1)
     set(gca,'XColor', 'none','YColor','none');
     grid minor;
 end
-legend([handleRemoved,handleKept,handleAnchor],{'Removed Area','Kept Area','Removed Design'});
+legend([handleRemoved,handleKept,handleAnchor],{'Removed Region','Kept Region','Removed Design'});
+save_print_figure(gcf,[saveFolder,'CornerBoxRemoval2D'],'Size',[figureSize(1) figureSize(2)],'PrintFormat',{'png','pdf'});
 
 % 3d - version 1
 cornerCombination = logical(round(fullfact(2*ones(3,1)) - 1));
+tileMapping = [1 3 5 7 2 4 6 8];
 figure;
 for i=1:size(cornerCombination,1)
-    subplot(2,4,i);
+    subplot(4,2,tileMapping(i));
     hold all;
 
     for j=1:size(cornerCombination,1)
@@ -242,15 +254,17 @@ for i=1:size(cornerCombination,1)
     grid minor;
     view(3);
 end
-legend([handleRemoved,handleKept,handleAnchor],{'Removed Area','Kept Area','Removed Design'});
+legend([handleRemoved,handleKept,handleAnchor],{'Removed Region','Kept Region','Removed Design'});
+save_print_figure(gcf,[saveFolder,'CornerBoxRemoval3D-1'],'Size',[figureSize(1) 2*figureSize(2)],'PrintFormat',{'png','pdf'});
 
 % 3d - version 2
 cornerCombination = logical(round(fullfact(2*ones(3,1)) - 1));
+tileMapping = [1 3 5 7 2 4 6 8];
 figure;
 for i=1:size(cornerCombination,1)
-    subplot(2,4,i);
+    subplot(4,2,tileMapping(i));
     hold all;
-    tolerance = 1e-3;
+    tolerance = -1e-3;
     goodRegion = designSpace3d + [+tolerance;-tolerance];
     handleKept = plot_design_box_3d(gcf,goodRegion,'FaceColor','g','FaceAlpha',0.2,'LineStyle','none');
 
@@ -277,7 +291,8 @@ for i=1:size(cornerCombination,1)
     grid minor;
     view(3);
 end
-legend([handleRemoved,handleKept,handleAnchor],{'Removed Area','Kept Area','Removed Design'});
+legend([handleRemoved,handleKept,handleAnchor],{'Removed Region','Kept Region','Removed Design'});
+save_print_figure(gcf,[saveFolder,'CornerBoxRemoval3D-2'],'Size',[figureSize(1) 2*figureSize(2)],'PrintFormat',{'png','pdf'});
 
 
 %% hole punching
@@ -291,7 +306,8 @@ plot([anchorPosition1d-holeSize anchorPosition1d+holeSize],[0 0],'r-','linewidth
 plot(anchorPosition1d,0,'r.','MarkerSize',20);
 set(gca,'XColor', 'none','YColor','none');
 grid minor;
-legend({'Kept Interval','Removed Interval','Removed Design'},'location','east');
+legend({'Kept Region','Removed Region','Removed Design'},'location','northeast');
+save_print_figure(gcf,[saveFolder,'HolePunching1D'],'Size',[figureSize(1) figureSize(2)/2],'PrintFormat',{'png','pdf'});
 
 % 2d
 figure;
@@ -301,7 +317,8 @@ plot_design_box_2d(gcf,anchorPosition2d+[-holeSize -holeSize ;+holeSize +holeSiz
 plot(anchorPosition2d(1),anchorPosition2d(2),'r.','MarkerSize',20);
 set(gca,'XColor', 'none','YColor','none');
 grid minor;
-legend({'Kept Area','Removed Area','Removed Design'},'location','east');
+legend({'Kept Region','Removed Region','Removed Design'},'location','east');
+save_print_figure(gcf,[saveFolder,'HolePunching2D'],'Size',[figureSize(1) figureSize(2)],'PrintFormat',{'png','pdf'});
 
 % 3d
 figure;
@@ -312,5 +329,6 @@ plot3(anchorPosition3d(1),anchorPosition3d(2),anchorPosition3d(3),'r.','MarkerSi
 set(gca,'XColor','none','YColor','none','ZColor','none');
 grid minor;
 view(3)
-legend({'Kept Area','Removed Area','Removed Design'},'location','east');
+legend({'Kept Region','Removed Region','Removed Design'},'location','east');
+save_print_figure(gcf,[saveFolder,'HolePunching3D'],'Size',[figureSize(1) figureSize(2)],'PrintFormat',{'png','pdf'});
 
