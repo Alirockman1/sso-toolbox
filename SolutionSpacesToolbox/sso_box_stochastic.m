@@ -103,7 +103,10 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
     if(isinf(measure) || isnan(measure))
         measure = 0;
     end
-    
+
+    % growth rate parameters
+    nDimension = size(designSpaceLowerBound,2);
+    growthFlexibilityExponent = linspace(nDimension,1,options.MaxIterExploration);
     
     %% Log Initialization
     if(nargout>=2)
@@ -150,10 +153,16 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
 
         % Change growth rate depending on previous result
         if(iExploration>1 && options.UseAdaptiveGrowthRate)
+            console.info('Adapting growth rate... ');
+            tic
+
+            purity = (nAcceptable/nSample);
             % Change step size to a bigger or smaller value depending on whether
-            % there were or weren't enough good design points in the step and repeat step
-            growthRate = (1/options.TargetAcceptedRatioExploration)*(nAcceptable/nSample)*growthRate;
-            growthRate = max(growthRate,options.MinimumGrowthRate);
+            % the achieved purity is smaller or larger than the desired one
+            growthRate = ((1-options.TargetAcceptedRatioExploration)./(1-purity)).^(growthFlexibilityExponent(iExploration)./nDimension).*growthRate;
+            growthRate = max(min(growthRate,options.MaximumGrowthRate),options.MinimumGrowthRate);
+
+            console.info('Elapsed time is %g seconds.\n',toc);
         end
         
         % Where design variables aren't fixed, expand candidate solution box 
@@ -208,7 +217,40 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
         if(nAcceptable==0 || nUseful==0 || nAcceptableUseful==0)
             console.warn('SSOOptBox:BadSampling',['No good/useful points found, ',...
                 'rolling back and reducing growth rate to minimum...']);
-            growthRate = options.MinimumGrowthRate;
+
+            if(isOutputIterationData)
+                console.info('Logging relevant information... ');
+                tic
+                
+                iterationData(iLog) = struct(... 
+                    ... % system data
+                    'EvaluatedDesignSamples',designSample,...
+                    'EvaluationOutput',outputEvaluation,...
+                    ... % algorithm data
+                    'Phase',1,...
+                    'GrowthRate',growthRate,...
+                    'NumberPaddingSamplesGenerated',nPaddingGenerated,...
+                    'PaddingSamplesUsed',paddingSample,...
+                    ... % problem data
+                    'DesignScore',score,...
+                    'IsGoodPerformance',isGoodPerformance,...
+                    'IsPhysicallyFeasible',isPhysicallyFeasible,...
+                    'IsAcceptable',isAcceptable,...
+                    'IsUseful',isUseful,...
+                    ... % trimming data
+                    'SamplingBoxBeforeTrim',samplingBoxGrown,...
+                    'SamplingBoxAfterTrim',[],... 
+                    'CandidateSpacesBeforeTrim',candidateSpaceGrown,...
+                    'CandidateSpacesAfterTrim',[]);
+                
+                % Finalizing
+                iLog = iLog + 1;
+                console.info('Elapsed time is %g seconds.\n',toc);
+            end
+
+            % limit growth rate to this current value
+            options.MaximumGrowthRate = growthRate;
+
             iExploration = iExploration + 1;
             continue;
         end

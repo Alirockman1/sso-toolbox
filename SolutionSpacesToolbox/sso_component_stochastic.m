@@ -120,7 +120,10 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
     else
         console.error('SSOBoxOptStochastic:InitialDesignWrong','Error. Initial guess/region incompatible in ''sso_component_stochastic''.');
     end
-    
+
+    % growth rate parameters
+    nDimension = size(designSpaceLowerBound,2);
+    growthFlexibilityExponent = linspace(nDimension,1,options.MaxIterExploration);
                              
     %% Log Initialization
     if(nargout>=2)
@@ -182,10 +185,11 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             console.info('Adapting growth rate... ');
             tic
 
+            purity = (nAcceptable/nSample);
             % Change step size to a bigger or smaller value depending on whether
-            % there were or weren't enough good design points in the step
-            growthRate = (1/options.TargetAcceptedRatioExploration)*(nAcceptable/nSample)*growthRate;
-            growthRate = max(growthRate,options.MinimumGrowthRate);
+            % the achieved purity is smaller or larger than the desired one
+            growthRate = ((1-options.TargetAcceptedRatioExploration)./(1-purity)).^(growthFlexibilityExponent(iExploration)./nDimension).*growthRate;
+            growthRate = max(min(growthRate,options.MaximumGrowthRate),options.MinimumGrowthRate);
 
             console.info('Elapsed time is %g seconds.\n',toc);
         end
@@ -298,8 +302,8 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
                 console.info('Elapsed time is %g seconds.\n',toc);
             end
 
-            % Rollback Settings
-            growthRate = options.MinimumGrowthRate;
+            % limit growth rate to this current value
+            options.MaximumGrowthRate = growthRate;
 
             % proceed to next iteration
             iExploration = iExploration + 1;

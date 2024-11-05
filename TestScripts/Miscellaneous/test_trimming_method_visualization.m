@@ -46,7 +46,7 @@ plot([anchorPosition1d],[-1],'r.','MarkerSize',20);
 plot([designSpaceLowerBound1d anchorPosition1d],[1 1],'r-','linewidth',3.0,'HandleVisibility','off');
 plot([anchorPosition1d designSpaceUpperBound1d],[1 1],'g-','linewidth',3.0,'HandleVisibility','off');
 plot([anchorPosition1d],[1],'r.','MarkerSize',20,'HandleVisibility','off');
-quiver(...
+q = quiver(...
     [anchorPosition1d anchorPosition1d], [-1 1], ...
     [-0.1 0.1], [0 0], ...
     'AutoScale','off','LineWidth',2.0,'Color',[0.9290 0.6940 0.1250]);
@@ -56,7 +56,8 @@ ylim([-2 2])
 legend({'Kept Region','Removed Region','Removed Design','Normal Vector'},'location','east');
 save_print_figure(gcf,[saveFolder,'PlanarTrimming1D'],'Size',[figureSize(1) figureSize(2)/2],'PrintFormat',{'png','pdf'});
 
-% 2d
+
+%% 2d
 trimmingNormalsInside = [1 1; -3 3; 0.5 -0.7; 0 1; 1 0; -1 -1];
 
 trimmingNormalsInside = trimmingNormalsInside./vecnorm(trimmingNormalsInside,2,2);

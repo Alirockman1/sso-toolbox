@@ -62,7 +62,7 @@ function save_print_figure(figureHandle,filename,varargin)
 %   See the License for the specific language governing permissions and
 %   limitations under the License.
 
-    saveFormatAvailable = {'pdf','png','eps','jpeg'};
+    saveFormatAvailable = {'jpg','png','tif-compressed','tif','emf','pdf','eps','eps-b&w','svg'};
 
     parser = inputParser;
     parser.addRequired('FigureHandle',@(x)isa(x,'matlab.ui.Figure'));

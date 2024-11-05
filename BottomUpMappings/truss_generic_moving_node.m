@@ -1,4 +1,4 @@
-function performanceMeasure = truss_generic_2d_moving_node(designSample,systemParameter)
+function performanceMeasure = truss_generic_moving_node(designSample,systemParameter)
 
 
 	% check which entries are design variables based on nan entry
