@@ -243,6 +243,12 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             obj.IsInsideDefinition = isInside;
             insideSample = designSample(isInside,:);
 
+            nDimension = size(insideSample,2);
+            if(size(insideSample,1)<=nDimension)
+                error('CandidateSpaceDelaunay:Generation:NotEnoughPoints',...
+                    sprintf('Not enough unique points specified; expected at least %d points, was given %d\n',nDimension+1,size(insideSample,1)));
+            end
+
             % create base delauney triangulation
             obj.DelaunayIndex = delaunayn(insideSample,obj.DelaunaynOptions{:});
 
@@ -373,7 +379,7 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             label = isInsideSpace | isInBoundary;
 
             if(nargout>1)
-        	    nSample = size(designSample,1);;
+        	    nSample = size(designSample,1);
         	    score = nan(nSample,1);
                 score(isInBoundary) = 0;
                 score(isInsideSpace) = max(barycentricCoordinate(isInsideSpace,:)-1,[],2);
@@ -405,14 +411,45 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %
         %   See also patch.
 
-        	figure(figureHandle);
+        	parser = inputParser;
+            parser.addParameter('FreeFacetsOnly',true);
+            parser.KeepUnmatched = true;
+            parser.parse(varargin{:});
+
+            isFreeFacetOnly = parser.Results.FreeFacetsOnly;
+            options = namedargs2cell(parser.Unmatched);
+        
+            figure(figureHandle);
             nDimension = size(obj.DesignSampleDefinition,2);
         	if((nDimension==2) || (nDimension==3))
-        		plotHandle = patch(...
-        			'Faces',obj.DelaunayIndex,...
-        			'Vertices',obj.ActiveDesign,...
-        			varargin{:});
-        	end
+                if(~isFreeFacetOnly)
+        		    plotHandle = patch(...
+        			    'Faces',obj.DelaunayIndex,...
+        			    'Vertices',obj.ActiveDesign,...
+        			    options{:});
+                else
+                    [uniqueFacet,isFreeBoundaryFacet] = find_triangulation_facets(obj.DelaunayIndex);
+                    
+                    if(nDimension==2)
+                        % first plot faces to fill inside region
+                        [~,optionsFaces] = merge_name_value_pair_argument(options,{'EdgeColor','none','HandleVisibility','off'});
+                        patch(...
+        			        'Faces',obj.DelaunayIndex,...
+        			        'Vertices',obj.ActiveDesign,...
+        			        optionsFaces{:});
+                    end
+
+                    % plot edges and facets
+                    plotHandle = patch(...
+        			    'Faces',uniqueFacet(isFreeBoundaryFacet,:),...
+        			    'Vertices',obj.ActiveDesign,...
+        			    options{:});
+                end
+            end
+
+            if(nargout<1)
+                clear plotHandle;
+            end
         end
 
         function measure = get.Measure(obj)

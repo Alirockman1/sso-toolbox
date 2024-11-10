@@ -39,10 +39,12 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %%
-trussAnalysisChoice = '9-DoF-3D';
-computeDisplacement = true;
+trussAnalysisChoice = '36-DoF-3D';
+computeDisplacement = false;
 computeMass = false;
-computeDisplacementAndMass = false;
+computeDisplacementAndMass = true;
+computeDelaunayComponent = false;
+useBoxResultForComponent = false;
 
 
 %% function call
@@ -51,6 +53,7 @@ systemFunction = @truss_generic_moving_node;
 switch trussAnalysisChoice
     case '2-DoF-2D'
         maxIter = 30;
+        nSample = 100;
         growthRateDisplacement = 0.2;
         growthRateMass = 0.2;
         trimmingPasses = 'full';
@@ -90,6 +93,7 @@ switch trussAnalysisChoice
         designSpaceUpperBoundMass = [2  1.5];
     case '4-DoF-2D'
         maxIter = 30;
+        nSample = 100;
         growthRateDisplacement = 0.2;
         growthRateMass = 0.2;
         trimmingPasses = 'full';
@@ -128,7 +132,8 @@ switch trussAnalysisChoice
         designSpaceLowerBoundMass = [0 -0.5 0 -0.5];
         designSpaceUpperBoundMass = [2  1.5 2  1.5];
     case '16-DoF-2D'
-        maxIter = 100;
+        maxIter = 150;
+        nSample = 100;
         growthRateDisplacement = 0.2;
         growthRateMass = 0.2;
         trimmingPasses = 'reduced';
@@ -206,6 +211,7 @@ switch trussAnalysisChoice
         designSpaceUpperBoundMass = repmat([10 1.5],1,8);
     case '36-DoF-2D'
         maxIter = 30;
+        nSample = 100;
         growthRateDisplacement = 0.1;
         growthRateMass = 0.1;
         trimmingPasses = 'reduced';
@@ -345,6 +351,7 @@ switch trussAnalysisChoice
         designSpaceUpperBoundMass = repmat([10 1.5],1,18);
     case '9-DoF-3D'
         maxIter = 50;
+        nSample = 100;
         growthRateDisplacement = 0.2;
         growthRateMass = 0.2;
         trimmingPasses = 'reduced';
@@ -398,17 +405,18 @@ switch trussAnalysisChoice
         designSpaceLowerBoundMass = [0 -0.5 -0.5 0 -0.5 -0.5 0 -0.5 -0.5];
         designSpaceUpperBoundMass = [2  1.5  1.5 2  1.5  1.5 2  1.5  1.5];
     case '36-DoF-3D'
-        maxIter = 150;
+        maxIter = 250;
+        nSample = 100;
         growthRateDisplacement = 0.1;
         growthRateMass = 0.1;
-        trimmingPasses = 'reduced';
+        trimmingPasses = 'single';
         nRandomTruss = 1;
         systemParameter.ElementCrossSectionArea = 10; % [mm^2]
         systemParameter.ElementYoungsModulus = 210e3; % [MPa]
         systemParameter.ElementDensity = 7850e-9; % [kg/mm^3]
         systemParameter.BaseNodePosition = [...
               0   0   0; % (1)
-              0   0   1; % (2)
+              0 0.5   1; % (2)
               0   1   0; % (3)
             nan nan nan; % (4)
             nan nan nan; % (5) 
@@ -503,18 +511,18 @@ switch trussAnalysisChoice
             14 16; % (38)
             15 16]; % (39)
         initialDesign = [...
-            1  0  0 ... % (1)
-            1  0  1 ... % (2)
-            1  1  0 ... % (3)
-            2  0  0 ... % (4)
-            2  0  1 ... % (5)
-            2  1  0 ... % (6)
-            3  0  0 ... % (7)
-            3  0  1 ... % (8)
-            3  1  0 ... % (9)
-            4  0  0 ... % (10)
-            4  0  1 ... % (11)
-            4  1  0]; % (12)
+            1    0  0 ... % (1)
+            1  0.5  1 ... % (2)
+            1    1  0 ... % (3)
+            2    0  0 ... % (4)
+            2  0.5  1 ... % (5)
+            2    1  0 ... % (6)
+            3    0  0 ... % (7)
+            3  0.5  1 ... % (8)
+            3    1  0 ... % (9)
+            4    0  0 ... % (10)
+            4  0.5  1 ... % (11)
+            4    1  0]; % (12)
         designSpaceLowerBoundDisplacement = initialDesign - repmat([0.9 0.5 0.5],1,12);
         designSpaceUpperBoundDisplacement = initialDesign + repmat([0.9 0.5 0.5],1,12);
         designSpaceLowerBoundMass = repmat([0 -0.5 -0.5],1,12);
@@ -675,8 +683,8 @@ end
 if(computeDisplacement)
     timeElapsedBox = tic;
     optionsBox = sso_stochastic_options('box',...
-        'NumberSamplesPerIterationExploration',300,...
-        'NumberSamplesPerIterationConsolidation',300,...
+        'NumberSamplesPerIterationExploration',nSample,...
+        'NumberSamplesPerIterationConsolidation',nSample,...
         'FixIterNumberExploration',true,...
         'FixIterNumberConsolidation',true,...
         'MaxIterExploration',maxIter,...
@@ -704,8 +712,8 @@ end
 if(computeMass)
     timeElapsedBox = tic;
     optionsBox = sso_stochastic_options('box',...
-        'NumberSamplesPerIterationExploration',300,...
-        'NumberSamplesPerIterationConsolidation',300,...
+        'NumberSamplesPerIterationExploration',nSample,...
+        'NumberSamplesPerIterationConsolidation',nSample,...
         'FixIterNumberExploration',true,...
         'FixIterNumberConsolidation',true,...
         'MaxIterExploration',maxIter,...
@@ -733,8 +741,8 @@ end
 if(computeDisplacementAndMass)
     timeElapsedBox = tic;
     optionsBox = sso_stochastic_options('box',...
-        'NumberSamplesPerIterationExploration',300,...
-        'NumberSamplesPerIterationConsolidation',300,...
+        'NumberSamplesPerIterationExploration',nSample,...
+        'NumberSamplesPerIterationConsolidation',nSample,...
         'FixIterNumberExploration',true,...
         'FixIterNumberConsolidation',true,...
         'MaxIterExploration',maxIter,...
@@ -763,10 +771,11 @@ end
 
 %% Component Opt
 if(computeDisplacement)
+    % convex 
     timeElapsedComponent = tic;
     optionsComponent = sso_stochastic_options('component',...
-        'NumberSamplesPerIterationExploration',300,...
-        'NumberSamplesPerIterationConsolidation',300,...
+        'NumberSamplesPerIterationExploration',nSample,...
+        'NumberSamplesPerIterationConsolidation',nSample,...
         'FixIterNumberExploration',true,...
         'FixIterNumberConsolidation',true,...
         'MaxIterExploration',maxIter,...
@@ -783,33 +792,88 @@ if(computeDisplacement)
         'UsePreviousPaddingSamplesConsolidation',false,...
         'TrimmingOperationOptions',{'PassesCriterion',trimmingPasses},...
         'TrimmingOrderOptions',{'OrderPreference','score'});
+
+
+    if(useBoxResultForComponent)
+        initialDesignComponent = solutionSpaceBoxDisplacement;
+    else
+        initialDesignComponent = initialDesign;
+    end
     
     rng(rngState);
-    [componentSolutionSpaceDisplacement,problemDataComponentDisplacement,iterDataComponentDisplacement] = sso_component_stochastic(designEvaluatorDisplacement,...
-        initialDesign,designSpaceLowerBoundDisplacement,designSpaceUpperBoundDisplacement,componentIndex,optionsComponent);
+    [componentSolutionSpaceConvexDisplacement,problemDataComponentConvexDisplacement,iterDataComponentConvexDisplacement] = sso_component_stochastic(designEvaluatorDisplacement,...
+        initialDesignComponent,designSpaceLowerBoundDisplacement,designSpaceUpperBoundDisplacement,componentIndex,optionsComponent);
     toc(timeElapsedComponent)
 
-    resultsFolder = [saveFolder,'ComponentDisplacement/'];
+    resultsFolder = [saveFolder,'ComponentConvexDisplacement/'];
     mkdir(resultsFolder);
-    algoDataComponentDisplacement = postprocess_sso_component_stochastic(problemDataComponentDisplacement,iterDataComponentDisplacement);
-    plot_sso_component_stochastic_metrics(algoDataComponentDisplacement,...
+    algoDataComponentConvexDisplacement = postprocess_sso_component_stochastic(problemDataComponentConvexDisplacement,iterDataComponentConvexDisplacement);
+    plot_sso_component_stochastic_metrics(algoDataComponentConvexDisplacement,...
         'SaveFolder',resultsFolder,...
         'CloseFigureAfterSaving',true,...
         'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
 
+    % non-convex
+    componentSolutionSpaceDelaunayDisplacement = [];
+    if(computeDelaunayComponent)
+        timeElapsedComponent = tic;
+        optionsComponent = sso_stochastic_options('component',...
+            'NumberSamplesPerIterationExploration',nSample,...
+            'NumberSamplesPerIterationConsolidation',nSample,...
+            'FixIterNumberExploration',true,...
+            'FixIterNumberConsolidation',true,...
+            'MaxIterExploration',maxIter,...
+            'MaxIterConsolidation',maxIter,...
+            'CandidateSpaceConstructorExploration',@CandidateSpaceDelaunay,...
+            'CandidateSpaceConstructorConsolidation',@CandidateSpaceDelaunay,...
+            'TrimmingMethodFunction',@component_trimming_method_corner_box_removal,...
+            'UseAdaptiveGrowthRate',true,...
+            'GrowthRate',growthRateDisplacement,...
+            'ApplyLeanness','never',...
+            'UsePaddingSamplesInTrimming',true,...
+            'UsePreviousEvaluatedSamplesConsolidation',false,...
+            'UsePreviousPaddingSamplesConsolidation',false,...
+            'TrimmingOperationOptions',{'PassesCriterion',trimmingPasses},...
+            'TrimmingOrderOptions',{'OrderPreference','score'});
+        
+        rng(rngState);
+        [componentSolutionSpaceDelaunayDisplacement,problemDataComponentDelaunayDisplacement,iterDataComponentDelaunayDisplacement] = sso_component_stochastic(designEvaluatorDisplacement,...
+            initialDesignComponent,designSpaceLowerBoundDisplacement,designSpaceUpperBoundDisplacement,componentIndex,optionsComponent);
+        toc(timeElapsedComponent)
+
+        resultsFolder = [saveFolder,'ComponentDelaunayDisplacement/'];
+        mkdir(resultsFolder);
+        algoDataComponentDelaunayDisplacement = postprocess_sso_component_stochastic(problemDataComponentDelaunayDisplacement,iterDataComponentDelaunayDisplacement);
+        plot_sso_component_stochastic_metrics(algoDataComponentDelaunayDisplacement,...
+            'SaveFolder',resultsFolder,...
+            'CloseFigureAfterSaving',true,...
+            'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
+
+        comparisonComponent = {algoDataComponentConvexDisplacement,algoDataComponentDelaunayDisplacement};
+        componentLabel = {'Planar Trimming','Corner Box Removal'};
+    else
+        comparisonComponent = {algoDataComponentConvexDisplacement};
+        componentLabel = {};
+    end
+
+    % comparison
     resultsFolder = [saveFolder,'ComparisonDisplacement/'];
     mkdir(resultsFolder);
-    plot_sso_comparison_box_component_stochastic_metrics(algoDataBoxDisplacement,algoDataComponentDisplacement,...
+    plot_sso_comparison_box_component_stochastic_metrics(...
+        {algoDataBoxDisplacement},...
+        comparisonComponent,...
+        'ComponentLabel',componentLabel,...
         'SaveFolder',resultsFolder,...
         'CloseFigureAfterSaving',true,...
         'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
 end
 
 if(computeMass)
+    % convex
     timeElapsedComponent = tic;
     optionsComponent = sso_stochastic_options('component',...
-        'NumberSamplesPerIterationExploration',300,...
-        'NumberSamplesPerIterationConsolidation',300,...
+        'NumberSamplesPerIterationExploration',nSample,...
+        'NumberSamplesPerIterationConsolidation',nSample,...
         'FixIterNumberExploration',true,...
         'FixIterNumberConsolidation',true,...
         'MaxIterExploration',maxIter,...
@@ -826,33 +890,88 @@ if(computeMass)
         'UsePreviousPaddingSamplesConsolidation',false,...
         'TrimmingOperationOptions',{'PassesCriterion',trimmingPasses},...
         'TrimmingOrderOptions',{'OrderPreference','score'});
+
+    if(useBoxResultForComponent)
+        initialDesignComponent = solutionSpaceBoxMass;
+    else
+        initialDesignComponent = initialDesign;
+    end
     
     rng(rngState);
-    [componentSolutionSpaceMass,problemDataComponentMass,iterDataComponentMass] = sso_component_stochastic(designEvaluatorMass,...
-        initialDesign,designSpaceLowerBoundMass,designSpaceUpperBoundMass,componentIndex,optionsComponent);
+    [componentSolutionSpaceConvexMass,problemDataComponentConvexMass,iterDataComponentConvexMass] = sso_component_stochastic(designEvaluatorMass,...
+        initialDesignComponent,designSpaceLowerBoundMass,designSpaceUpperBoundMass,componentIndex,optionsComponent);
     toc(timeElapsedComponent)
 
-    resultsFolder = [saveFolder,'ComponentMass/'];
+    resultsFolder = [saveFolder,'ComponentConvexMass/'];
     mkdir(resultsFolder);
-    algoDataComponentMass = postprocess_sso_component_stochastic(problemDataComponentMass,iterDataComponentMass);
-    plot_sso_component_stochastic_metrics(algoDataComponentMass,...
+    algoDataComponentConvexMass = postprocess_sso_component_stochastic(problemDataComponentConvexMass,iterDataComponentConvexMass);
+    plot_sso_component_stochastic_metrics(algoDataComponentConvexMass,...
         'SaveFolder',resultsFolder,...
         'CloseFigureAfterSaving',true,...
         'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
 
+    % delaunay
+    componentSolutionSpaceDelaunayMass = [];
+    if(computeDelaunayComponent)
+        timeElapsedComponent = tic;
+        optionsComponent = sso_stochastic_options('component',...
+            'NumberSamplesPerIterationExploration',nSample,...
+            'NumberSamplesPerIterationConsolidation',nSample,...
+            'FixIterNumberExploration',true,...
+            'FixIterNumberConsolidation',true,...
+            'MaxIterExploration',maxIter,...
+            'MaxIterConsolidation',maxIter,...
+            'CandidateSpaceConstructorExploration',@CandidateSpaceDelaunay,...
+            'CandidateSpaceConstructorConsolidation',@CandidateSpaceDelaunay,...
+            'TrimmingMethodFunction',@component_trimming_method_corner_box_removal,...
+            'UseAdaptiveGrowthRate',true,...
+            'GrowthRate',growthRateMass,...
+            'ApplyLeanness','never',...
+            'UsePaddingSamplesInTrimming',true,...
+            'UsePreviousEvaluatedSamplesConsolidation',false,...
+            'UsePreviousPaddingSamplesConsolidation',false,...
+            'TrimmingOperationOptions',{'PassesCriterion',trimmingPasses},...
+            'TrimmingOrderOptions',{'OrderPreference','score'});
+        
+        rng(rngState);
+        [componentSolutionSpaceDelaunayMass,problemDataComponentDelaunayMass,iterDataComponentDelaunayMass] = sso_component_stochastic(designEvaluatorMass,...
+            initialDesignComponent,designSpaceLowerBoundMass,designSpaceUpperBoundMass,componentIndex,optionsComponent);
+        toc(timeElapsedComponent)
+
+        resultsFolder = [saveFolder,'ComponentDelaunayMass/'];
+        mkdir(resultsFolder);
+        algoDataComponentDelaunayMass = postprocess_sso_component_stochastic(problemDataComponentDelaunayMass,iterDataComponentDelaunayMass);
+        plot_sso_component_stochastic_metrics(algoDataComponentDelaunayMass,...
+            'SaveFolder',resultsFolder,...
+            'CloseFigureAfterSaving',true,...
+            'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
+
+
+        comparisonComponent = {algoDataComponentConvexMass,algoDataComponentDelaunayMass};
+        componentLabel = {'Planar Trimming','Corner Box Removal'};
+    else
+        comparisonComponent = {algoDataComponentConvexMass};
+        componentLabel = {};
+    end
+
+    % comparison
     resultsFolder = [saveFolder,'ComparisonMass/'];
     mkdir(resultsFolder);
-    plot_sso_comparison_box_component_stochastic_metrics(algoDataBoxMass,algoDataComponentMass,...
+    plot_sso_comparison_box_component_stochastic_metrics(...
+        {algoDataBoxMass},...
+        comparisonComponent,...
+        'ComponentLabel',componentLabel,...
         'SaveFolder',resultsFolder,...
         'CloseFigureAfterSaving',true,...
         'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
 end
 
 if(computeDisplacementAndMass)
+    % convex
     timeElapsedComponent = tic;
     optionsComponent = sso_stochastic_options('component',...
-        'NumberSamplesPerIterationExploration',300,...
-        'NumberSamplesPerIterationConsolidation',300,...
+        'NumberSamplesPerIterationExploration',nSample,...
+        'NumberSamplesPerIterationConsolidation',nSample,...
         'FixIterNumberExploration',true,...
         'FixIterNumberConsolidation',true,...
         'MaxIterExploration',maxIter,...
@@ -869,24 +988,78 @@ if(computeDisplacementAndMass)
         'UsePreviousPaddingSamplesConsolidation',false,...
         'TrimmingOperationOptions',{'PassesCriterion',trimmingPasses},...
         'TrimmingOrderOptions',{'OrderPreference','score'});
+
+    if(useBoxResultForComponent)
+        initialDesignComponent = solutionSpaceBoxDisplacementAndMass;
+    else
+        initialDesignComponent = initialDesign;
+    end
     
     rng(rngState);
-    [componentSolutionSpaceDisplacementAndMass,problemDataComponentDisplacementAndMass,iterDataComponentDisplacementAndMass] = ...
+    [componentSolutionSpaceConvexDisplacementAndMass,problemDataComponentConvexDisplacementAndMass,iterDataComponentConvexDisplacementAndMass] = ...
         sso_component_stochastic(designEvaluatorDisplacementAndMass,...
-        initialDesign,designSpaceLowerBoundDisplacement,designSpaceUpperBoundDisplacement,componentIndex,optionsComponent);
+        initialDesignComponent,designSpaceLowerBoundDisplacement,designSpaceUpperBoundDisplacement,componentIndex,optionsComponent);
     toc(timeElapsedComponent)
 
-    resultsFolder = [saveFolder,'ComponentDisplacementAndMass/'];
+    resultsFolder = [saveFolder,'ComponentConvexDisplacementAndMass/'];
     mkdir(resultsFolder);
-    algoDataComponentDisplacementAndMass = postprocess_sso_component_stochastic(problemDataComponentDisplacementAndMass,iterDataComponentDisplacementAndMass);
-    plot_sso_component_stochastic_metrics(algoDataComponentDisplacementAndMass,...
+    algoDataComponentConvexDisplacementAndMass = postprocess_sso_component_stochastic(problemDataComponentConvexDisplacementAndMass,iterDataComponentConvexDisplacementAndMass);
+    plot_sso_component_stochastic_metrics(algoDataComponentConvexDisplacementAndMass,...
         'SaveFolder',resultsFolder,...
         'CloseFigureAfterSaving',true,...
         'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
 
+    % delaunay
+    componentSolutionSpaceDelaunayDisplacementAndMass = [];
+    if(computeDelaunayComponent)
+        timeElapsedComponent = tic;
+        optionsComponent = sso_stochastic_options('component',...
+            'NumberSamplesPerIterationExploration',nSample,...
+            'NumberSamplesPerIterationConsolidation',nSample,...
+            'FixIterNumberExploration',true,...
+            'FixIterNumberConsolidation',true,...
+            'MaxIterExploration',maxIter,...
+            'MaxIterConsolidation',maxIter,...
+            'CandidateSpaceConstructorExploration',@CandidateSpaceDelaunay,...
+            'CandidateSpaceConstructorConsolidation',@CandidateSpaceDelaunay,...
+            'TrimmingMethodFunction',@component_trimming_method_corner_box_removal,...
+            'UseAdaptiveGrowthRate',true,...
+            'GrowthRate',growthRateDisplacement,...
+            'ApplyLeanness','never',...
+            'UsePaddingSamplesInTrimming',true,...
+            'UsePreviousEvaluatedSamplesConsolidation',false,...
+            'UsePreviousPaddingSamplesConsolidation',false,...
+            'TrimmingOperationOptions',{'PassesCriterion',trimmingPasses},...
+            'TrimmingOrderOptions',{'OrderPreference','score'});
+        
+        rng(rngState);
+        [componentSolutionSpaceDelaunayDisplacementAndMass,problemDataComponentDelaunayDisplacementAndMass,iterDataComponentDelaunayDisplacementAndMass] = ...
+            sso_component_stochastic(designEvaluatorDisplacementAndMass,...
+            initialDesignComponent,designSpaceLowerBoundDisplacement,designSpaceUpperBoundDisplacement,componentIndex,optionsComponent);
+        toc(timeElapsedComponent)
+
+        resultsFolder = [saveFolder,'ComponentDelaunayDisplacementAndMass/'];
+        mkdir(resultsFolder);
+        algoDataComponentDelaunayDisplacementAndMass = postprocess_sso_component_stochastic(problemDataComponentDelaunayDisplacementAndMass,iterDataComponentDelaunayDisplacementAndMass);
+        plot_sso_component_stochastic_metrics(algoDataComponentDelaunayDisplacementAndMass,...
+            'SaveFolder',resultsFolder,...
+            'CloseFigureAfterSaving',true,...
+            'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
+
+        comparisonComponent = {algoDataComponentConvexDisplacementAndMass,algoDataComponentDelaunayDisplacementAndMass};
+        componentLabel = {'Planar Trimming','Corner Box Removal'};
+    else
+        comparisonComponent = {algoDataComponentConvexDisplacementAndMass};
+        componentLabel = {};
+    end
+
+    % comparison
     resultsFolder = [saveFolder,'ComparisonDisplacementAndMass/'];
     mkdir(resultsFolder);
-    plot_sso_comparison_box_component_stochastic_metrics(algoDataBoxDisplacementAndMass,algoDataComponentDisplacementAndMass,...
+    plot_sso_comparison_box_component_stochastic_metrics(...
+        {algoDataBoxDisplacementAndMass},...
+        comparisonComponent,...
+        'ComponentLabel',componentLabel,...
         'SaveFolder',resultsFolder,...
         'CloseFigureAfterSaving',true,...
         'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
@@ -902,7 +1075,8 @@ if(computeDisplacement)
     % initial truss + component solution spaces
     plot_results_truss_generic_moving_node(is3dPlot,systemParameter,...
         'NodePositionInitial',initialDesign,...
-        'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
+        'ComponentSolutionSpaceConvexDisplacement',componentSolutionSpaceConvexDisplacement,...
+        'ComponentSolutionSpaceDelaunayDisplacement',componentSolutionSpaceDelaunayDisplacement);
     save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialTrussComponent']);
     save_print_figure(gcf,[saveFolder,'InitialTrussComponent'],'PrintFormat',{'png','pdf'});
     
@@ -910,7 +1084,8 @@ if(computeDisplacement)
     plot_results_truss_generic_moving_node(is3dPlot,systemParameter,...
         'NodePositionInitial',initialDesign,...
         'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
-        'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
+        'ComponentSolutionSpaceConvexDisplacement',componentSolutionSpaceConvexDisplacement,...
+        'ComponentSolutionSpaceDelaunayDisplacement',componentSolutionSpaceDelaunayDisplacement);
     save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialOptimizedTrussComponent']);
     save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussComponent'],'PrintFormat',{'png','pdf'});
     
@@ -919,7 +1094,8 @@ if(computeDisplacement)
         'NodePositionInitial',initialDesign,...
         'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
         'BoxSolutionSpaceDisplacement',solutionSpaceBoxDisplacement,...
-        'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
+        'ComponentSolutionSpaceConvexDisplacement',componentSolutionSpaceConvexDisplacement,...
+        'ComponentSolutionSpaceDelaunayDisplacement',componentSolutionSpaceDelaunayDisplacement);
     save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialOptimizedTrussBoxComponent']);
     save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussBoxComponent'],'PrintFormat',{'png','pdf'});
     
@@ -927,17 +1103,19 @@ if(computeDisplacement)
     plot_results_truss_generic_moving_node(is3dPlot,systemParameter,...
         'NodePositionInitial',initialDesign,...
         'BoxSolutionSpaceDisplacement',solutionSpaceBoxDisplacement,...
-        'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
+        'ComponentSolutionSpaceConvexDisplacement',componentSolutionSpaceConvexDisplacement,...
+        'ComponentSolutionSpaceDelaunayDisplacement',componentSolutionSpaceDelaunayDisplacement);
     save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialTrussBoxComponent']);
     save_print_figure(gcf,[saveFolder,'InitialTrussBoxComponent'],'PrintFormat',{'png','pdf'});
 
     % initial truss + sample trusses + component solution space
-    randomTrussMovingNode = candidate_space_sampling_individual_feasible(componentSolutionSpaceDisplacement,componentIndex,nRandomTruss);
+    randomTrussMovingNode = candidate_space_sampling_individual_feasible(componentSolutionSpaceConvexDisplacement,componentIndex,nRandomTruss);
     
     plot_results_truss_generic_moving_node(is3dPlot,systemParameter,...
         'NodePositionInitial',initialDesign,...
         'NodePositionRandomDisplacement',randomTrussMovingNode,...
-        'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
+        'ComponentSolutionSpaceConvexDisplacement',componentSolutionSpaceConvexDisplacement,...
+        'ComponentSolutionSpaceDelaunayDisplacement',componentSolutionSpaceConvexDisplacement);
     save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialRandomTrussComponent']);
     save_print_figure(gcf,[saveFolder,'InitialRandomTrussComponent'],'PrintFormat',{'png','pdf'});
 end
@@ -946,8 +1124,10 @@ if(computeDisplacement & computeMass)
     % initial truss + component solution spaces + mass
     plot_results_truss_generic_moving_node(is3dPlot,systemParameter,...
         'NodePositionInitial',initialDesign,...
-        'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement,...
-        'ComponentSolutionSpaceMass',componentSolutionSpaceMass);
+        'ComponentSolutionSpaceConvexDisplacement',componentSolutionSpaceConvexDisplacement,...
+        'ComponentSolutionSpaceConvexMass',componentSolutionSpaceConvexMass,...
+        'ComponentSolutionSpaceDelaunayDisplacement',componentSolutionSpaceDelaunayDisplacement,...
+        'ComponentSolutionSpaceDelaunayMass',componentSolutionSpaceDelaunayMass);
     save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialTrussComponentWithMass']);
     save_print_figure(gcf,[saveFolder,'InitialTrussComponentWithMass'],'PrintFormat',{'png','pdf'});
     
@@ -956,8 +1136,10 @@ if(computeDisplacement & computeMass)
         'NodePositionInitial',initialDesign,...
         'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
         'NodePositionOptimalMass',nodePositionOptimalMass,...
-        'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement,...
-        'ComponentSolutionSpaceMass',componentSolutionSpaceMass);
+        'ComponentSolutionSpaceConvexDisplacement',componentSolutionSpaceConvexDisplacement,...
+        'ComponentSolutionSpaceConvexMass',componentSolutionSpaceConvexMass,...
+        'ComponentSolutionSpaceDelaunayDisplacement',componentSolutionSpaceDelaunayDisplacement,...
+        'ComponentSolutionSpaceDelaunayMass',componentSolutionSpaceDelaunayMass);
     save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialOptimizedTrussComponentWithMass']);
     save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussComponentWithMass'],'PrintFormat',{'png','pdf'});
     
@@ -968,8 +1150,10 @@ if(computeDisplacement & computeMass)
         'NodePositionOptimalMass',nodePositionOptimalMass,...
         'BoxSolutionSpaceDisplacement',solutionSpaceBoxDisplacement,...
         'BoxSolutionSpaceMass',solutionSpaceBoxMass,...
-        'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement,...
-        'ComponentSolutionSpaceMass',componentSolutionSpaceMass);
+        'ComponentSolutionSpaceConvexDisplacement',componentSolutionSpaceConvexDisplacement,...
+        'ComponentSolutionSpaceConvexMass',componentSolutionSpaceConvexMass,...
+        'ComponentSolutionSpaceDelaunayDisplacement',componentSolutionSpaceDelaunayDisplacement,...
+        'ComponentSolutionSpaceDelaunayMass',componentSolutionSpaceDelaunayMass);
     save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialOptimizedTrussBoxComponentWithMass']);
     save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussBoxComponentWithMass'],'PrintFormat',{'png','pdf'});
     
@@ -977,9 +1161,11 @@ if(computeDisplacement & computeMass)
     plot_results_truss_generic_moving_node(is3dPlot,systemParameter,...
         'NodePositionInitial',initialDesign,...
         'BoxSolutionSpaceDisplacement',solutionSpaceBoxDisplacement,...
-        'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement,...
+        'ComponentSolutionSpaceConvexDisplacement',componentSolutionSpaceConvexDisplacement,...
+        'ComponentSolutionSpaceDelaunayDisplacement',componentSolutionSpaceDelaunayDisplacement,...
         'BoxSolutionSpaceMass',solutionSpaceBoxMass,...
-        'ComponentSolutionSpaceMass',componentSolutionSpaceMass);
+        'ComponentSolutionSpaceConvexMass',componentSolutionSpaceConvexMass,...
+        'ComponentSolutionSpaceDelaunayMass',componentSolutionSpaceDelaunayMass);
     save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialTrussBoxComponentWithMass']);
     save_print_figure(gcf,[saveFolder,'InitialTrussBoxComponentWithMass'],'PrintFormat',{'png','pdf'});
 end
@@ -988,7 +1174,8 @@ if(computeDisplacementAndMass)
     % initial truss + component solution spaces
     plot_results_truss_generic_moving_node(is3dPlot,systemParameter,...
         'NodePositionInitial',initialDesign,...
-        'ComponentSolutionSpaceDisplacementAndMass',componentSolutionSpaceDisplacementAndMass);
+        'ComponentSolutionSpaceConvexDisplacementAndMass',componentSolutionSpaceConvexDisplacementAndMass,...
+        'ComponentSolutionSpaceDelaunayDisplacementAndMass',componentSolutionSpaceDelaunayDisplacementAndMass);
     save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialTrussComponentAndMass']);
     save_print_figure(gcf,[saveFolder,'InitialTrussComponentAndMass'],'PrintFormat',{'png','pdf'});
     
@@ -996,18 +1183,19 @@ if(computeDisplacementAndMass)
     plot_results_truss_generic_moving_node(is3dPlot,systemParameter,...
         'NodePositionInitial',initialDesign,...
         'BoxSolutionSpaceDisplacement',solutionSpaceBoxDisplacementAndMass,...
-        'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacementAndMass);
+        'ComponentSolutionSpaceConvexDisplacement',componentSolutionSpaceConvexDisplacementAndMass,...
+        'ComponentSolutionSpaceDelaunayDisplacement',componentSolutionSpaceDelaunayDisplacementAndMass);
     save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialTrussBoxComponentAndMass']);
     save_print_figure(gcf,[saveFolder,'InitialTrussBoxComponentAndMass'],'PrintFormat',{'png','pdf'});
 
     % initial truss + sample trusses + component solution space
-    nRandomTruss = 2;
-    randomTrussMovingNode = candidate_space_sampling_individual_feasible(componentSolutionSpaceDisplacementAndMass,componentIndex,nRandomTruss);
+    randomTrussMovingNode = candidate_space_sampling_individual_feasible(componentSolutionSpaceConvexDisplacementAndMass,componentIndex,nRandomTruss);
     
     plot_results_truss_generic_moving_node(is3dPlot,systemParameter,...
         'NodePositionInitial',initialDesign,...
         'NodePositionRandomDisplacementAndMass',randomTrussMovingNode,...
-        'ComponentSolutionSpaceDisplacementAndMass',componentSolutionSpaceDisplacementAndMass);
+        'ComponentSolutionSpaceConvexDisplacementAndMass',componentSolutionSpaceConvexDisplacementAndMass,...
+        'ComponentSolutionSpaceDelaunayDisplacementAndMass',componentSolutionSpaceDelaunayDisplacementAndMass);
     save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialRandomTrussComponentAndMass']);
     save_print_figure(gcf,[saveFolder,'InitialRandomTrussComponentAndMass'],'PrintFormat',{'png','pdf'});
 end
@@ -1030,7 +1218,7 @@ diary off;
 % plot_results_truss_generic_2d_moving_node(systemParameter,...
 %     'NodePositionInitial',initialDesign,...
 %     'NodePositionRandomDisplacement',randomTrussMovingNode,...
-%     'ComponentSolutionSpaceDisplacement',componentSolutionSpaceDisplacement);
+%     'ComponentSolutionSpaceConvexDisplacement',componentSolutionSpaceDisplacement);
 
 function figureHandle = plot_results_truss_generic_moving_node(is3dPlot,systemParameter,varargin)
     if(~is3dPlot)
@@ -1059,11 +1247,14 @@ function figureHandle = plot_results_truss_generic_2d_moving_node(systemParamete
     parser.addParameter('DeformationOptimalDisplacement',[]);
     parser.addParameter('DeformationOptimalMass',[]);
     parser.addParameter('BoxSolutionSpaceDisplacement',[]);
-    parser.addParameter('ComponentSolutionSpaceDisplacement',[]);
+    parser.addParameter('ComponentSolutionSpaceConvexDisplacement',[]);
+    parser.addParameter('ComponentSolutionSpaceDelaunayDisplacement',[]);
     parser.addParameter('BoxSolutionSpaceMass',[]);
-    parser.addParameter('ComponentSolutionSpaceMass',[]);
+    parser.addParameter('ComponentSolutionSpaceConvexMass',[]);
+    parser.addParameter('ComponentSolutionSpaceDelaunayMass',[]);
     parser.addParameter('BoxSolutionSpaceDisplacementAndMass',[]);
-    parser.addParameter('ComponentSolutionSpaceDisplacementAndMass',[]);
+    parser.addParameter('ComponentSolutionSpaceConvexDisplacementAndMass',[]);
+    parser.addParameter('ComponentSolutionSpaceDelaunayDisplacementAndMass',[]);
     parser.addParameter('IncludeWall',true);
     parser.addParameter('IncludeAppliedForce',true);
     parser.addParameter('IncludeAxesInformation',false);
@@ -1077,11 +1268,14 @@ function figureHandle = plot_results_truss_generic_2d_moving_node(systemParamete
     parser.addParameter('RandomTrussMassOptions',{});
     parser.addParameter('RandomTrussDisplacementAndMassOptions',{});
     parser.addParameter('BoxSolutionSpaceDisplacementOptions',{});
-    parser.addParameter('ComponentSolutionSpaceDisplacementOptions',{});
+    parser.addParameter('ComponentSolutionSpaceConvexDisplacementOptions',{});
+    parser.addParameter('ComponentSolutionSpaceDelaunayDisplacementOptions',{});
     parser.addParameter('BoxSolutionSpaceMassOptions',{});
-    parser.addParameter('ComponentSolutionSpaceMassOptions',{});
+    parser.addParameter('ComponentSolutionSpaceConvexMassOptions',{});
+    parser.addParameter('ComponentSolutionSpaceDelaunayMassOptions',{});
     parser.addParameter('BoxSolutionSpaceDisplacementAndMassOptions',{});
-    parser.addParameter('ComponentSolutionSpaceDisplacementAndMassOptions',{});
+    parser.addParameter('ComponentSolutionSpaceConvexDisplacementAndMassOptions',{});
+    parser.addParameter('ComponentSolutionSpaceDelaunayDisplacementAndMassOptions',{});
     parser.addParameter('LegendOptions',{});
     parser.parse(varargin{:});
     options = parser.Results;
@@ -1122,14 +1316,23 @@ function figureHandle = plot_results_truss_generic_2d_moving_node(systemParamete
     defaultBoxSolutionDisplacementAndMassOptions = {'EdgeColor','c','Linewidth',2.0};
     [~,boxSolutionDisplacementAndMassOptions] = merge_name_value_pair_argument(defaultBoxSolutionDisplacementAndMassOptions,options.BoxSolutionSpaceDisplacementAndMassOptions);
 
-    defaultComponentSolutionDisplacementOptions = {'EdgeColor','g','FaceColor','none','FaceAlpha',0.5,'Linewidth',2.0};
-    [~,componentSolutionDisplacementOptions] = merge_name_value_pair_argument(defaultComponentSolutionDisplacementOptions,options.ComponentSolutionSpaceDisplacementOptions);
+    defaultComponentSolutionConvexDisplacementOptions = {'EdgeColor','g','FaceColor','none','FaceAlpha',0.5,'Linewidth',2.0};
+    [~,componentSolutionConvexDisplacementOptions] = merge_name_value_pair_argument(defaultComponentSolutionConvexDisplacementOptions,options.ComponentSolutionSpaceConvexDisplacementOptions);
 
-    defaultComponentSolutionMassOptions = {'EdgeColor','k','FaceColor','none','FaceAlpha',0.5,'Linewidth',2.0};
-    [~,componentSolutionMassOptions] = merge_name_value_pair_argument(defaultComponentSolutionMassOptions,options.ComponentSolutionSpaceMassOptions);
+    defaultComponentSolutionDelaunayDisplacementOptions = {'EdgeColor','m','FaceColor','m','FaceAlpha',0.1,'Linewidth',2.0};
+    [~,componentSolutionDelaunayDisplacementOptions] = merge_name_value_pair_argument(defaultComponentSolutionDelaunayDisplacementOptions,options.ComponentSolutionSpaceDelaunayDisplacementOptions);
 
-    defaultComponentSolutionDisplacementAndMassOptions = {'EdgeColor','g','FaceColor','none','FaceAlpha',0.5,'Linewidth',2.0};
-    [~,componentSolutionDisplacementAndMassOptions] = merge_name_value_pair_argument(defaultComponentSolutionDisplacementAndMassOptions,options.ComponentSolutionSpaceDisplacementAndMassOptions);
+    defaultComponentSolutionConvexMassOptions = {'EdgeColor','k','FaceColor','none','FaceAlpha',0.5,'Linewidth',2.0};
+    [~,componentSolutionConvexMassOptions] = merge_name_value_pair_argument(defaultComponentSolutionConvexMassOptions,options.ComponentSolutionSpaceConvexMassOptions);
+
+    defaultComponentSolutionDelaunayMassOptions = {'EdgeColor','y','FaceColor','y','FaceAlpha',0.1,'Linewidth',2.0};
+    [~,componentSolutionDelaunayMassOptions] = merge_name_value_pair_argument(defaultComponentSolutionDelaunayMassOptions,options.ComponentSolutionSpaceDelaunayMassOptions);
+
+    defaultComponentSolutionConvexDisplacementAndMassOptions = {'EdgeColor','g','FaceColor','none','FaceAlpha',0.5,'Linewidth',2.0};
+    [~,componentSolutionConvexDisplacementAndMassOptions] = merge_name_value_pair_argument(defaultComponentSolutionConvexDisplacementAndMassOptions,options.ComponentSolutionSpaceConvexDisplacementAndMassOptions);
+
+    defaultComponentSolutionDelaunayDisplacementAndMassOptions = {'EdgeColor','m','FaceColor','m','FaceAlpha',0.1,'Linewidth',2.0};
+    [~,componentSolutionDelaunayDisplacementAndMassOptions] = merge_name_value_pair_argument(defaultComponentSolutionDelaunayDisplacementAndMassOptions,options.ComponentSolutionSpaceDelaunayDisplacementAndMassOptions);
 
     defaultLegendOptions = {'location','west'};
     [~,legendOptions] = merge_name_value_pair_argument(defaultLegendOptions,options.LegendOptions);
@@ -1205,31 +1408,58 @@ function figureHandle = plot_results_truss_generic_2d_moving_node(systemParamete
         handleToleranceNodeDisplacementAndMassBox = plot_design_box_2d(gcf,options.BoxSolutionSpaceDisplacementAndMass(:,currentIndex),boxSolutionDisplacementAndMassOptions{:});
     end
 
-    % component solution space - displacement
-    handleToleranceNodeDisplacementComponent = [];
-    if(~isempty(options.ComponentSolutionSpaceDisplacement))
+    % component solution space - convex - displacement
+    handleToleranceNodeDisplacementComponentConvex = [];
+    if(~isempty(options.ComponentSolutionSpaceConvexDisplacement))
         for i=1:nComponent-1
-            options.ComponentSolutionSpaceDisplacement(i).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
+            options.ComponentSolutionSpaceConvexDisplacement(i).plot_candidate_space(gcf,componentSolutionConvexDisplacementOptions{:});
         end
-        handleToleranceNodeDisplacementComponent = options.ComponentSolutionSpaceDisplacement(nComponent).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
+        handleToleranceNodeDisplacementComponentConvex = options.ComponentSolutionSpaceConvexDisplacement(nComponent).plot_candidate_space(gcf,componentSolutionConvexDisplacementOptions{:});
     end
 
-    % component solution space - mass
-    handleToleranceNodeMassComponent = [];
-    if(~isempty(options.ComponentSolutionSpaceMass))
+    % component solution space - convex - mass
+    handleToleranceNodeMassComponentConvex = [];
+    if(~isempty(options.ComponentSolutionSpaceConvexMass))
         for i=1:nComponent-1
-            options.ComponentSolutionSpaceMass(i).plot_candidate_space(gcf,componentSolutionMassOptions{:});
+            options.ComponentSolutionSpaceConvexMass(i).plot_candidate_space(gcf,componentSolutionConvexMassOptions{:});
         end
-        handleToleranceNodeMassComponent = options.ComponentSolutionSpaceMass(nComponent).plot_candidate_space(gcf,componentSolutionMassOptions{:});
+        handleToleranceNodeMassComponentConvex = options.ComponentSolutionSpaceConvexMass(nComponent).plot_candidate_space(gcf,componentSolutionConvexMassOptions{:});
     end
 
-    % component solution space - displacement and mass
-    handleToleranceNodeDisplacementAndMassComponent = [];
-    if(~isempty(options.ComponentSolutionSpaceDisplacementAndMass))
+    % component solution space - convex - displacement and mass
+    handleToleranceNodeDisplacementAndMassComponentConvex = [];
+    if(~isempty(options.ComponentSolutionSpaceConvexDisplacementAndMass))
         for i=1:nComponent-1
-            options.ComponentSolutionSpaceDisplacementAndMass(i).plot_candidate_space(gcf,componentSolutionDisplacementAndMassOptions{:});
+            options.ComponentSolutionSpaceConvexDisplacementAndMass(i).plot_candidate_space(gcf,componentSolutionConvexDisplacementAndMassOptions{:});
         end
-        handleToleranceNodeDisplacementAndMassComponent = options.ComponentSolutionSpaceDisplacementAndMass(nComponent).plot_candidate_space(gcf,componentSolutionDisplacementAndMassOptions{:});
+        handleToleranceNodeDisplacementAndMassComponentConvex = options.ComponentSolutionSpaceConvexDisplacementAndMass(nComponent).plot_candidate_space(gcf,componentSolutionConvexDisplacementAndMassOptions{:});
+    end
+
+    % component solution space - delaunay - displacement
+    handleToleranceNodeDisplacementComponentDelaunay = [];
+    if(~isempty(options.ComponentSolutionSpaceDelaunayDisplacement))
+        for i=1:nComponent-1
+            options.ComponentSolutionSpaceDelaunayDisplacement(i).plot_candidate_space(gcf,componentSolutionDelaunayDisplacementOptions{:});
+        end
+        handleToleranceNodeDisplacementComponentDelaunay = options.ComponentSolutionSpaceDelaunayDisplacement(nComponent).plot_candidate_space(gcf,componentSolutionDelaunayDisplacementOptions{:});
+    end
+
+    % component solution space - delaunay - mass
+    handleToleranceNodeMassComponentDelaunay = [];
+    if(~isempty(options.ComponentSolutionSpaceDelaunayMass))
+        for i=1:nComponent-1
+            options.ComponentSolutionSpaceDelaunayMass(i).plot_candidate_space(gcf,componentSolutionConvexMassOptions{:});
+        end
+        handleToleranceNodeMassComponentDelaunay = options.ComponentSolutionSpaceDelaunayMass(nComponent).plot_candidate_space(gcf,componentSolutionDelaunayMassOptions{:});
+    end
+
+    % component solution space - delaunay - displacement and mass
+    handleToleranceNodeDisplacementAndMassComponentDelaunay = [];
+    if(~isempty(options.ComponentSolutionSpaceDelaunayDisplacementAndMass))
+        for i=1:nComponent-1
+            options.ComponentSolutionSpaceDelaunayDisplacementAndMass(i).plot_candidate_space(gcf,componentSolutionDelaunayDisplacementAndMassOptions{:});
+        end
+        handleToleranceNodeDisplacementAndMassComponentDelaunay = options.ComponentSolutionSpaceDelaunayDisplacementAndMass(nComponent).plot_candidate_space(gcf,componentSolutionDelaunayDisplacementAndMassOptions{:});
     end
 
     % random trusses - displacement
@@ -1302,11 +1532,14 @@ function figureHandle = plot_results_truss_generic_2d_moving_node(systemParamete
             handleWall,...
             handleForce,...
             handleToleranceNodeDisplacementBox,...
-            handleToleranceNodeDisplacementComponent,...
+            handleToleranceNodeDisplacementComponentConvex,...
+            handleToleranceNodeDisplacementComponentDelaunay,...
             handleToleranceNodeMassBox,...
-            handleToleranceNodeMassComponent,...
+            handleToleranceNodeMassComponentConvex,...
+            handleToleranceNodeMassComponentDelaunay,...
             handleToleranceNodeDisplacementAndMassBox,...
-            handleToleranceNodeDisplacementAndMassComponent};
+            handleToleranceNodeDisplacementAndMassComponentConvex,...
+            handleToleranceNodeDisplacementAndMassComponentDelaunay};
 
         legendTextAll = {...
             'Initial Truss',...
@@ -1319,9 +1552,12 @@ function figureHandle = plot_results_truss_generic_2d_moving_node(systemParamete
             'Applied Force',...
             'Tolerance Region for the Node (Box) - Displacement',...
             'Tolerance Region for the Node (Component) - Displacement',...
+            'Tolerance Region for the Node (Component) - Displacement',...
             'Tolerance Region for the Node (Box) - Mass',...
             'Tolerance Region for the Node (Component) - Mass',...
+            'Tolerance Region for the Node (Component) - Mass',...
             'Tolerance Region for the Node (Box) - Displacement + Mass',...
+            'Tolerance Region for the Node (Component) - Displacement + Mass',...
             'Tolerance Region for the Node (Component) - Displacement + Mass'};
         
         handleObject = [handleObjectAll{:}];
@@ -1347,11 +1583,14 @@ function figureHandle = plot_results_truss_generic_3d_moving_node(systemParamete
     parser.addParameter('DeformationOptimalDisplacement',[]);
     parser.addParameter('DeformationOptimalMass',[]);
     parser.addParameter('BoxSolutionSpaceDisplacement',[]);
-    parser.addParameter('ComponentSolutionSpaceDisplacement',[]);
+    parser.addParameter('ComponentSolutionSpaceConvexDisplacement',[]);
+    parser.addParameter('ComponentSolutionSpaceDelaunayDisplacement',[]);
     parser.addParameter('BoxSolutionSpaceMass',[]);
-    parser.addParameter('ComponentSolutionSpaceMass',[]);
+    parser.addParameter('ComponentSolutionSpaceConvexMass',[]);
+    parser.addParameter('ComponentSolutionSpaceDelaunayMass',[]);
     parser.addParameter('BoxSolutionSpaceDisplacementAndMass',[]);
-    parser.addParameter('ComponentSolutionSpaceDisplacementAndMass',[]);
+    parser.addParameter('ComponentSolutionSpaceConvexDisplacementAndMass',[]);
+    parser.addParameter('ComponentSolutionSpaceDelaunayDisplacementAndMass',[]);
     parser.addParameter('IncludeWall',true);
     parser.addParameter('IncludeAppliedForce',true);
     parser.addParameter('IncludeAxesInformation',false);
@@ -1365,11 +1604,14 @@ function figureHandle = plot_results_truss_generic_3d_moving_node(systemParamete
     parser.addParameter('RandomTrussMassOptions',{});
     parser.addParameter('RandomTrussDisplacementAndMassOptions',{});
     parser.addParameter('BoxSolutionSpaceDisplacementOptions',{});
-    parser.addParameter('ComponentSolutionSpaceDisplacementOptions',{});
+    parser.addParameter('ComponentSolutionSpaceConvexDisplacementOptions',{});
+    parser.addParameter('ComponentSolutionSpaceDelaunayDisplacementOptions',{});
     parser.addParameter('BoxSolutionSpaceMassOptions',{});
-    parser.addParameter('ComponentSolutionSpaceMassOptions',{});
+    parser.addParameter('ComponentSolutionSpaceConvexMassOptions',{});
+    parser.addParameter('ComponentSolutionSpaceDelaunayMassOptions',{});
     parser.addParameter('BoxSolutionSpaceDisplacementAndMassOptions',{});
-    parser.addParameter('ComponentSolutionSpaceDisplacementAndMassOptions',{});
+    parser.addParameter('ComponentSolutionSpaceConvexDisplacementAndMassOptions',{});
+    parser.addParameter('ComponentSolutionSpaceDelaunayDisplacementAndMassOptions',{});
     parser.addParameter('LegendOptions',{});
     parser.parse(varargin{:});
     options = parser.Results;
@@ -1410,14 +1652,23 @@ function figureHandle = plot_results_truss_generic_3d_moving_node(systemParamete
     defaultBoxSolutionDisplacementAndMassOptions = {'FaceColor','c','FaceAlpha',0.2};
     [~,boxSolutionDisplacementAndMassOptions] = merge_name_value_pair_argument(defaultBoxSolutionDisplacementAndMassOptions,options.BoxSolutionSpaceDisplacementAndMassOptions);
 
-    defaultComponentSolutionDisplacementOptions = {'FaceColor','g','FaceAlpha',0.2};
-    [~,componentSolutionDisplacementOptions] = merge_name_value_pair_argument(defaultComponentSolutionDisplacementOptions,options.ComponentSolutionSpaceDisplacementOptions);
+    defaultComponentSolutionConvexDisplacementOptions = {'FaceColor','g','FaceAlpha',0.2};
+    [~,componentSolutionConvexDisplacementOptions] = merge_name_value_pair_argument(defaultComponentSolutionConvexDisplacementOptions,options.ComponentSolutionSpaceConvexDisplacementOptions);
 
-    defaultComponentSolutionMassOptions = {'FaceColor','k','FaceAlpha',0.2};
-    [~,componentSolutionMassOptions] = merge_name_value_pair_argument(defaultComponentSolutionMassOptions,options.ComponentSolutionSpaceMassOptions);
+    defaultComponentSolutionConvexMassOptions = {'FaceColor','k','FaceAlpha',0.2};
+    [~,componentSolutionConvexMassOptions] = merge_name_value_pair_argument(defaultComponentSolutionConvexMassOptions,options.ComponentSolutionSpaceConvexMassOptions);
 
-    defaultComponentSolutionDisplacementAndMassOptions = {'FaceColor','g','FaceAlpha',0.2};
-    [~,componentSolutionDisplacementAndMassOptions] = merge_name_value_pair_argument(defaultComponentSolutionDisplacementAndMassOptions,options.ComponentSolutionSpaceDisplacementAndMassOptions);
+    defaultComponentSolutionConvexDisplacementAndMassOptions = {'FaceColor','g','FaceAlpha',0.2};
+    [~,componentSolutionConvexDisplacementAndMassOptions] = merge_name_value_pair_argument(defaultComponentSolutionConvexDisplacementAndMassOptions,options.ComponentSolutionSpaceConvexDisplacementAndMassOptions);
+
+    defaultComponentSolutionDelaunayDisplacementOptions = {'FaceColor','m','FaceAlpha',0.2};
+    [~,componentSolutionDelaunayDisplacementOptions] = merge_name_value_pair_argument(defaultComponentSolutionDelaunayDisplacementOptions,options.ComponentSolutionSpaceDelaunayDisplacementOptions);
+
+    defaultComponentSolutionDelaunayMassOptions = {'FaceColor','m','FaceAlpha',0.2};
+    [~,componentSolutionDelaunayMassOptions] = merge_name_value_pair_argument(defaultComponentSolutionDelaunayMassOptions,options.ComponentSolutionSpaceDelaunayMassOptions);
+
+    defaultComponentSolutionDelaunayDisplacementAndMassOptions = {'FaceColor','m','FaceAlpha',0.2};
+    [~,componentSolutionDelaunayDisplacementAndMassOptions] = merge_name_value_pair_argument(defaultComponentSolutionDelaunayDisplacementAndMassOptions,options.ComponentSolutionSpaceDelaunayDisplacementAndMassOptions);
 
     defaultLegendOptions = {'location','west'};
     [~,legendOptions] = merge_name_value_pair_argument(defaultLegendOptions,options.LegendOptions);
@@ -1493,31 +1744,58 @@ function figureHandle = plot_results_truss_generic_3d_moving_node(systemParamete
         handleToleranceNodeDisplacementAndMassBox = plot_design_box_3d(gcf,options.BoxSolutionSpaceDisplacementAndMass(:,currentIndex),boxSolutionDisplacementAndMassOptions{:});
     end
 
-    % component solution space - displacement
-    handleToleranceNodeDisplacementComponent = [];
-    if(~isempty(options.ComponentSolutionSpaceDisplacement))
+    % component solution space - convex - displacement
+    handleToleranceNodeDisplacementComponentConvex = [];
+    if(~isempty(options.ComponentSolutionSpaceConvexDisplacement))
         for i=1:nComponent-1
-            options.ComponentSolutionSpaceDisplacement(i).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
+            options.ComponentSolutionSpaceConvexDisplacement(i).plot_candidate_space(gcf,componentSolutionConvexDisplacementOptions{:});
         end
-        handleToleranceNodeDisplacementComponent = options.ComponentSolutionSpaceDisplacement(nComponent).plot_candidate_space(gcf,componentSolutionDisplacementOptions{:});
+        handleToleranceNodeDisplacementComponentConvex = options.ComponentSolutionSpaceConvexDisplacement(nComponent).plot_candidate_space(gcf,componentSolutionConvexDisplacementOptions{:});
     end
 
-    % component solution space - mass
-    handleToleranceNodeMassComponent = [];
-    if(~isempty(options.ComponentSolutionSpaceMass))
+    % component solution space - convex - mass
+    handleToleranceNodeMassComponentConvex = [];
+    if(~isempty(options.ComponentSolutionSpaceConvexMass))
         for i=1:nComponent-1
-            options.ComponentSolutionSpaceMass(i).plot_candidate_space(gcf,componentSolutionMassOptions{:});
+            options.ComponentSolutionSpaceConvexMass(i).plot_candidate_space(gcf,componentSolutionConvexMassOptions{:});
         end
-        handleToleranceNodeMassComponent = options.ComponentSolutionSpaceMass(nComponent).plot_candidate_space(gcf,componentSolutionMassOptions{:});
+        handleToleranceNodeMassComponentConvex = options.ComponentSolutionSpaceConvexMass(nComponent).plot_candidate_space(gcf,componentSolutionConvexMassOptions{:});
     end
 
-    % component solution space - displacement and mass
-    handleToleranceNodeDisplacementAndMassComponent = [];
-    if(~isempty(options.ComponentSolutionSpaceDisplacementAndMass))
+    % component solution space - convex - displacement and mass
+    handleToleranceNodeDisplacementAndMassComponentConvex = [];
+    if(~isempty(options.ComponentSolutionSpaceConvexDisplacementAndMass))
         for i=1:nComponent-1
-            options.ComponentSolutionSpaceDisplacementAndMass(i).plot_candidate_space(gcf,componentSolutionDisplacementAndMassOptions{:});
+            options.ComponentSolutionSpaceConvexDisplacementAndMass(i).plot_candidate_space(gcf,componentSolutionConvexDisplacementAndMassOptions{:});
         end
-        handleToleranceNodeDisplacementAndMassComponent = options.ComponentSolutionSpaceDisplacementAndMass(nComponent).plot_candidate_space(gcf,componentSolutionDisplacementAndMassOptions{:});
+        handleToleranceNodeDisplacementAndMassComponentConvex = options.ComponentSolutionSpaceConvexDisplacementAndMass(nComponent).plot_candidate_space(gcf,componentSolutionConvexDisplacementAndMassOptions{:});
+    end
+
+    % component solution space - delaunay - displacement
+    handleToleranceNodeDisplacementComponentDelaunay = [];
+    if(~isempty(options.ComponentSolutionSpaceDelaunayDisplacement))
+        for i=1:nComponent-1
+            options.ComponentSolutionSpaceDelaunayDisplacement(i).plot_candidate_space(gcf,componentSolutionDelaunayDisplacementOptions{:});
+        end
+        handleToleranceNodeDisplacementComponentDelaunay = options.ComponentSolutionSpaceDelaunayDisplacement(nComponent).plot_candidate_space(gcf,componentSolutionDelaunayDisplacementOptions{:});
+    end
+
+    % component solution space - delaunay - mass
+    handleToleranceNodeMassComponentDelaunay = [];
+    if(~isempty(options.ComponentSolutionSpaceDelaunayMass))
+        for i=1:nComponent-1
+            options.ComponentSolutionSpaceDelaunayMass(i).plot_candidate_space(gcf,componentSolutionDelaunayMassOptions{:});
+        end
+        handleToleranceNodeMassComponentDelaunay = options.ComponentSolutionSpaceDelaunayMass(nComponent).plot_candidate_space(gcf,componentSolutionDelaunayMassOptions{:});
+    end
+
+    % component solution space - delaunay - displacement and mass
+    handleToleranceNodeDisplacementAndMassComponentDelaunay = [];
+    if(~isempty(options.ComponentSolutionSpaceDelaunayDisplacementAndMass))
+        for i=1:nComponent-1
+            options.ComponentSolutionSpaceDelaunayDisplacementAndMass(i).plot_candidate_space(gcf,componentSolutionDelaunayDisplacementAndMassOptions{:});
+        end
+        handleToleranceNodeDisplacementAndMassComponentDelaunay = options.ComponentSolutionSpaceDelaunayDisplacementAndMass(nComponent).plot_candidate_space(gcf,componentSolutionDelaunayDisplacementAndMassOptions{:});
     end
 
     % random trusses - displacement
@@ -1590,11 +1868,14 @@ function figureHandle = plot_results_truss_generic_3d_moving_node(systemParamete
             handleWall,...
             handleForce,...
             handleToleranceNodeDisplacementBox,...
-            handleToleranceNodeDisplacementComponent,...
+            handleToleranceNodeDisplacementComponentConvex,...
+            handleToleranceNodeDisplacementComponentDelaunay,...
             handleToleranceNodeMassBox,...
-            handleToleranceNodeMassComponent,...
+            handleToleranceNodeMassComponentConvex,...
+            handleToleranceNodeMassComponentDelaunay,...
             handleToleranceNodeDisplacementAndMassBox,...
-            handleToleranceNodeDisplacementAndMassComponent};
+            handleToleranceNodeDisplacementAndMassComponentConvex,...
+            handleToleranceNodeDisplacementAndMassComponentDelaunay};
 
         legendTextAll = {...
             'Initial Truss',...
@@ -1607,9 +1888,12 @@ function figureHandle = plot_results_truss_generic_3d_moving_node(systemParamete
             'Applied Force',...
             'Tolerance Region for the Node (Box) - Displacement',...
             'Tolerance Region for the Node (Component) - Displacement',...
+            'Tolerance Region for the Node (Component) - Displacement',...
             'Tolerance Region for the Node (Box) - Mass',...
             'Tolerance Region for the Node (Component) - Mass',...
+            'Tolerance Region for the Node (Component) - Mass',...
             'Tolerance Region for the Node (Box) - Displacement + Mass',...
+            'Tolerance Region for the Node (Component) - Displacement + Mass',...
             'Tolerance Region for the Node (Component) - Displacement + Mass'};
         
         handleObject = [handleObjectAll{:}];

@@ -82,9 +82,9 @@ xlim([1 nDimensionMaxPlot]);
 xlabel('Problem Dimension','Interpreter','latex');
 ylabel('Volume Increase ($$V/V_{box}$$)','Interpreter','latex');
 set(gca, 'YScale', 'log', 'FontSize', 14);
-legend('location','northwest','FontSize',8);
+% legend('location','northwest','FontSize',8);
 grid minor;
-save_print_figure(gcf,[saveFolder,'VolumeGainedToBox'],'Size',figureSize*1.5,'PrintFormat',{'png','pdf'});
+save_print_figure(gcf,[saveFolder,'VolumeGainedToBox'],'Size',figureSize,'PrintFormat',{'png','pdf'});
 
 
 %% reference for two dimensions

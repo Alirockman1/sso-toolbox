@@ -188,7 +188,9 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             purity = (nAcceptable/nSample);
             % Change step size to a bigger or smaller value depending on whether
             % the achieved purity is smaller or larger than the desired one
+            %growthRate = purity/options.TargetAcceptedRatioExploration*growthRate;
             growthRate = ((1-options.TargetAcceptedRatioExploration)./(1-purity)).^(growthFlexibilityExponent(iExploration)./nDimension).*growthRate;
+            %growthRate = (((1-options.TargetAcceptedRatioExploration)*purity)./((1-purity)*options.TargetAcceptedRatioExploration)).^(growthFlexibilityExponent(iExploration)./nDimension).*growthRate;
             growthRate = max(min(growthRate,options.MaximumGrowthRate),options.MinimumGrowthRate);
 
             console.info('Elapsed time is %g seconds.\n',toc);
@@ -303,7 +305,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             end
 
             % limit growth rate to this current value
-            options.MaximumGrowthRate = growthRate;
+            %options.MaximumGrowthRate = growthRate;
 
             % proceed to next iteration
             iExploration = iExploration + 1;

@@ -52,6 +52,11 @@ function measure = box_measure_minimum_length(designBox, varargin)
     parser.parse(varargin{:});
 
     weight = conditional_default_value_assignment(parser.Results.Weight,ones(1,size(designBox,2)));
+
+    if(isempty(designBox))
+        measure = 0;
+        return;
+    end
     
     % edges length
     norm_lengths = (designBox(2,:) - designBox(1,:))./weight;
