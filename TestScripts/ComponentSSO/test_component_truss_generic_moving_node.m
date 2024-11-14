@@ -43,8 +43,8 @@ trussAnalysisChoice = '36-DoF-3D';
 computeDisplacement = false;
 computeMass = false;
 computeDisplacementAndMass = true;
-computeDelaunayComponent = false;
-useBoxResultForComponent = false;
+computeDelaunayComponent = true;
+useBoxResultForComponent = true;
 
 
 %% function call
@@ -1115,7 +1115,7 @@ if(computeDisplacement)
         'NodePositionInitial',initialDesign,...
         'NodePositionRandomDisplacement',randomTrussMovingNode,...
         'ComponentSolutionSpaceConvexDisplacement',componentSolutionSpaceConvexDisplacement,...
-        'ComponentSolutionSpaceDelaunayDisplacement',componentSolutionSpaceConvexDisplacement);
+        'ComponentSolutionSpaceDelaunayDisplacement',componentSolutionSpaceDelaunayDisplacement);
     save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialRandomTrussComponent']);
     save_print_figure(gcf,[saveFolder,'InitialRandomTrussComponent'],'PrintFormat',{'png','pdf'});
 end

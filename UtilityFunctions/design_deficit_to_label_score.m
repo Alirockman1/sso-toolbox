@@ -45,10 +45,22 @@ function [label,score] = design_deficit_to_label_score(measureDeficit,deficitWei
     % calculate score based on worst-case objective meta function and 
     % label accordingly
     weightedDeficit = deficitWeight.*measureDeficit;
-    score = max(weightedDeficit,[],2);
-    label = (score<=0);
-
-    % for bad designs, use the sum of violated limits instead of worst-case
-    violatedLimit = max(weightedDeficit,0);
-    score(~label) = sqrt(sum(violatedLimit(~label,:).^2,2));
+    worstCase = max(weightedDeficit,[],2);
+    label = (worstCase<=0);
+    
+    if(nargout>1)
+        % see which limits were violated, if any
+        violatedLimit = max(weightedDeficit,0);
+        score = nan(size(worstCase));
+        
+        % for bad designs, use worst-case
+        % score(~label) = worstCase(~label);
+        % for bad designs, use the sum of violated limits instead of worst-case
+        score(~label) = sqrt(sum(violatedLimit(~label,:).^2,2));
+    
+        % for good designs, use worst-case
+        % score(label) = worstCase(label);
+        % for good designs, use geometric mean of deficits
+        score(label) = -prod(abs(weightedDeficit(label,:)).^(1/nDeficit),2);
+    end
 end

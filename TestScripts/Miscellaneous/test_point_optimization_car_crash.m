@@ -55,7 +55,7 @@ designEvaluator = DesignEvaluatorBottomUpMapping(bottomUpMapping,...
 %                            F1     F2   
 designSpaceLowerBound = [   1e5    1e5];
 designSpaceUpperBound = [   1e6    1e6];
-initialDesign         = [3.55e5 3.55e5];
+initialDesign         = [5.55e5 3.55e5];
 
 
 %% optimization methods
