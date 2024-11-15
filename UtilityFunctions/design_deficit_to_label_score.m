@@ -37,7 +37,6 @@ function [label,score] = design_deficit_to_label_score(measureDeficit,deficitWei
 %   SPDX-License-Identifier: Apache-2.0
 
     % set default weight
-    nDeficit  = size(measureDeficit,2);
     if(nargin<2 || isempty(deficitWeight))
         deficitWeight = 1;
     end
@@ -61,6 +60,6 @@ function [label,score] = design_deficit_to_label_score(measureDeficit,deficitWei
         % for good designs, use worst-case
         % score(label) = worstCase(label);
         % for good designs, use geometric mean of deficits
-        score(label) = -prod(abs(weightedDeficit(label,:)).^(1/nDeficit),2);
+        score(label) = -geomean(abs(weightedDeficit(label,:)),2);
     end
 end

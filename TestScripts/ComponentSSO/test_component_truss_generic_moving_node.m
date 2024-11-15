@@ -39,12 +39,12 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %%
-trussAnalysisChoice = '36-DoF-3D';
+trussAnalysisChoice = '16-DoF-2D';
 computeDisplacement = false;
 computeMass = false;
 computeDisplacementAndMass = true;
-computeDelaunayComponent = true;
-useBoxResultForComponent = true;
+computeDelaunayComponent = false;
+useBoxResultForComponent = false;
 
 
 %% function call
@@ -1211,14 +1211,33 @@ diary off;
 
 
 %% subfunction: plot truss
-% plot additional random truss
-% nRandomTruss = 1;
-% randomTrussMovingNode = candidate_space_sampling_individual_feasible(componentSolutionSpaceDisplacement,Components,nRandomTruss);
-% 
-% plot_results_truss_generic_2d_moving_node(systemParameter,...
-%     'NodePositionInitial',initialDesign,...
-%     'NodePositionRandomDisplacement',randomTrussMovingNode,...
-%     'ComponentSolutionSpaceConvexDisplacement',componentSolutionSpaceDisplacement);
+% plot additional random truss with deformation
+nRandomTruss = 1;
+randomTrussMovingNode = candidate_space_sampling_individual_feasible(componentSolutionSpaceConvexDisplacementAndMass,componentIndex,nRandomTruss);
+
+% deformed trusses
+nodePositionInitial = systemParameter.BaseNodePosition;
+nodePositionInitial(isDesignVariable) = column_vector_to_row_major_matrix(randomTrussMovingNode',nDimension);
+nodeDisplacementRandom = ...
+    truss_analysis(...
+	    nodePositionInitial,...
+	    systemParameter.FixedDegreesOfFreedom,...
+	    systemParameter.NodeForce,...
+	    systemParameter.NodeElement,...
+	    systemParameter.ElementCrossSectionArea,...
+	    systemParameter.ElementYoungsModulus);
+
+plot_results_truss_generic_2d_moving_node(systemParameter,...
+    'NodePositionInitial',initialDesign,...
+    'NodePositionOptimalDisplacement',randomTrussMovingNode,...
+    'DeformationInitial',nodeDisplacementInitial,...
+    'DeformationOptimalDisplacement',nodeDisplacementRandom, ...
+    'ComponentSolutionSpaceConvexDisplacement',componentSolutionSpaceConvexDisplacementAndMass,...
+    'OptimalTrussDisplacementOptions',{'ColorUndeformed',rand(1,3),'DisplacementScaleFactor',20},...
+    'InitialTrussOptions',{'DisplacementScaleFactor',20});
+save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialRandomTrussDeformationComponent3']);
+save_print_figure(gcf,[saveFolder,'InitialRandomTrussDeformationComponent3'],'PrintFormat',{'png','pdf'});
+
 
 function figureHandle = plot_results_truss_generic_moving_node(is3dPlot,systemParameter,varargin)
     if(~is3dPlot)
