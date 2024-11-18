@@ -19,7 +19,7 @@ function color = color_palette_okabe_ito(index)
 %	Output:
 %		- COLOR : (8,3) OR (nChoice,3) double 
 %
-%   See also color_palette_ibm, color_palette_paul_tol, orderedcolors, 
+%   See also color_palette_ibm, color_palette_tol, orderedcolors, 
 %	colororder.
 %
 %   Copyright 2024 Eduardo Rodrigues Della Noce

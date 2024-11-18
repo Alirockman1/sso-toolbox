@@ -1,20 +1,20 @@
-function color = color_palette_paul_tol(index,paletteType)
-%COLOR_PALETTE_PAUL_TOL Colorblind-friendly color palette from Dr. Paul Tol
-%	COLOR_PALETTE_OKABE_ITO returns a color palette developed by Dr. Paul Tol
-%	which is more accessible to colorblind people. Multiple palettes are 
-%	available, and the choice can be specified.
+function color = color_palette_tol(index,paletteType)
+%COLOR_PALETTE_TOL Colorblind-friendly color palette from Dr. Paul Tol
+%	COLOR_PALETTE_TOL returns a color palette developed by Dr. Paul Tol which is 
+%	more accessible to colorblind people. Multiple palettes are available, and 
+%	the choice of which one to get can be specified.
 %	Source of palettes: https://personal.sron.nl/~pault/
 %	Testing the colorblind appearance: https://davidmathlogic.com/colorblind/
 %
-%	COLOR = COLOR_PALETTE_OKABE_ITO returns an array with all the colors in the 
+%	COLOR = COLOR_PALETTE_TOL returns an array with all the colors in the 
 %	palette. These are expressed as [R,G,B] triplets with values from 0 to 1,
 %	with each row being a new color.
 %
-%	COLOR = COLOR_PALETTE_OKABE_ITO(INDEX) allows the choice of colors specified
+%	COLOR = COLOR_PALETTE_TOL(INDEX) allows the choice of colors specified
 %	by their index INDEX. Can be left empty to choose all colors. Default is
 %	empty.
 %
-%	COLOR = COLOR_PALETTE_OKABE_ITO(INDEX,PALETTETYPE) also allows the 
+%	COLOR = COLOR_PALETTE_TOL(INDEX,PALETTETYPE) also allows the 
 %	specfication of which color palette is desired. The following options are
 %	available: 
 %		- 'bright' : 7 colors, discrete use.
