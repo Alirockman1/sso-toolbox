@@ -11,7 +11,8 @@ function color = color_palette_paul_tol(index,paletteType)
 %	with each row being a new color.
 %
 %	COLOR = COLOR_PALETTE_OKABE_ITO(INDEX) allows the choice of colors specified
-%	by their index INDEX.
+%	by their index INDEX. Can be left empty to choose all colors. Default is
+%	empty.
 %
 %	COLOR = COLOR_PALETTE_OKABE_ITO(INDEX,PALETTETYPE) also allows the 
 %	specfication of which color palette is desired. The following options are
@@ -40,6 +41,7 @@ function color = color_palette_paul_tol(index,paletteType)
 %		- 'smooth-rainbow' : 35 colors, can be interpolated, last color for bad 
 %		data.
 %	More about each palette can be found on https://personal.sron.nl/~pault/ .
+%	Default choice is 'vibrant'.
 %
 %	Input:
 %		- INDEX : (nChoice) integer

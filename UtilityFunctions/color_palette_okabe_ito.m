@@ -10,7 +10,8 @@ function color = color_palette_okabe_ito(index)
 %	with each row being a new color.
 %
 %	COLOR = COLOR_PALETTE_OKABE_ITO(INDEX) allows the choice of colors specified
-%	by their index INDEX.
+%	by their index INDEX. Can be left empty to choose all colors. Default is
+%	empty.
 %
 %	Input:
 %		- INDEX : (nChoice) integer
@@ -47,7 +48,7 @@ function color = color_palette_okabe_ito(index)
 		204 121 167;... % reddish purple
 		]./255;
 
-	if(nargin<1)
+	if(nargin<1 || isempty(index))
 		index = 1:size(colorPalette,1);
 	end
 

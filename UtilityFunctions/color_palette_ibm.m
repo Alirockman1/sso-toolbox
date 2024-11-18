@@ -9,7 +9,8 @@ function color = color_palette_ibm(index)
 %	with each row being a new color.
 %
 %	COLOR = COLOR_PALETTE_IBM(INDEX) allows the choice of colors specified by
-%	their index INDEX.
+%	their index INDEX. Can be left empty to choose all colors. Default is
+%	empty.
 %
 %	Input:
 %		- INDEX : (nChoice) integer
@@ -43,7 +44,7 @@ function color = color_palette_ibm(index)
 		255 176   0;... % yellow-brown
 		]./255;
 
-	if(nargin<1)
+	if(nargin<1 || isempty(index))
 		index = 1:size(colorPalette,1);
 	end
 
