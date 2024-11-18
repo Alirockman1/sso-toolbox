@@ -38,14 +38,14 @@ function color = color_palette_okabe_ito(index)
 %   limitations under the License.
 
 	colorPalette = [...
-		  0   0   0;... % black
-		230 159   0;... % orange
-		 86 180 233;... % sky blue
-		  0 158 115;... % bluish green
-		240 228  66;... % yellow
-		  0 114 178;... % blue
-		213  94   0;... % vermillion
-		204 121 167;... % reddish purple
+		  0   0   0;... % black #000000
+		230 159   0;... % orange #E69F00
+		 86 180 233;... % sky blue #56B4E9
+		  0 158 115;... % bluish green #009E73
+		240 228  66;... % yellow #F0E442
+		  0 114 178;... % blue #0072B2
+		213  94   0;... % vermillion #D55E00
+		204 121 167;... % reddish purple #CC79A7
 		]./255;
 
 	if(nargin<1 || isempty(index))

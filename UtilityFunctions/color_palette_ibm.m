@@ -37,11 +37,11 @@ function color = color_palette_ibm(index)
 %   limitations under the License.
 
 	colorPalette = [...
-		100 143 255;... % blue
-		120  94 240;... % purple
-		220  38 127;... % pink
-		254  97   0;... % orange
-		255 176   0;... % yellow-brown
+		100 143 255;... % blue #648fff
+		120  94 240;... % purple #785EF0
+		220  38 127;... % pink #DC267F
+		254  97   0;... % orange #FE6100
+		255 176   0;... % yellow-brown #FFB000
 		]./255;
 
 	if(nargin<1 || isempty(index))
