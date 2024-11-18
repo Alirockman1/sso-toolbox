@@ -47,9 +47,40 @@ function color = color_palette_okabe_ito(index)
 		213  94   0;... % vermillion #D55E00
 		204 121 167;... % reddish purple #CC79A7
 		]./255;
+	colorName = {...
+		'black';...
+		'orange';...
+		'sky-blue';...
+		'bluish-green';...
+		'yellow';...
+		'blue';...
+		'vermillion';...
+		'reddish-purple';...
+		};
 
 	if(nargin<1 || isempty(index))
 		index = 1:size(colorPalette,1);
+	end
+
+	if(ischar(index)||isstring(index))
+		index = {index};
+	end
+	if(iscell(index))
+		nEntry = length(index);
+		numericalIndex = nan(nEntry,1);
+
+		for i=1:nEntry
+			choice = strcmpi(colorName,index{i});
+
+			if(~any(choice))
+				error('ColorPaletteOkabeIto:NameNotFound',['Color ',index{i},...
+					' not found for palette Okabe-Ito.']);
+			end
+
+			numericalIndex(i) = find(choice);
+        end
+
+        index = numericalIndex;
 	end
 
 	color = colorPalette(index,:);

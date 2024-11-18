@@ -41,11 +41,39 @@ function color = color_palette_ibm(index)
 		120  94 240;... % purple #785EF0
 		220  38 127;... % pink #DC267F
 		254  97   0;... % orange #FE6100
-		255 176   0;... % yellow-brown #FFB000
+		255 176   0;... % yellow #FFB000
 		]./255;
+	colorName = {...
+		'blue';...
+		'purple';...
+		'pink';...
+		'orange';...
+		'yellow';...
+		};
 
 	if(nargin<1 || isempty(index))
 		index = 1:size(colorPalette,1);
+	end
+
+	if(ischar(index)||isstring(index))
+		index = {index};
+	end
+	if(iscell(index))
+		nEntry = length(index);
+		numericalIndex = nan(nEntry,1);
+
+		for i=1:nEntry
+			choice = strcmpi(colorName,index{i});
+
+			if(~any(choice))
+				error('ColorPaletteIbm:NameNotFound',['Color ',index{i},...
+					' not found for palette IBM.']);
+			end
+
+			numericalIndex(i) = find(choice);
+        end
+
+        index = numericalIndex;
 	end
 
 	color = colorPalette(index,:);
