@@ -2,7 +2,7 @@ function color = color_palette_ibm(index)
 %COLOR_PALETTE_IBM Colorblind-friendly color palette from IBM Design Library
 %	COLOR_PALETTE_IBM returns a color palette developed by IBM which is supposed
 %	which is more accessible to colorblind people.
-%	Testing the colorblind appearance: https://davidmathlogic.com/colorblind/
+%	<a href="https://davidmathlogic.com/colorblind/#%23648FFF-%23785EF0-%23DC267F-%23FE6100-%23FFB000">Testing the colorblind appearance</a>
 %
 %	COLOR = COLOR_PALETTE_IBM returns an array with all the colors in the 
 %	palette. These are expressed as [R,G,B] triplets with values from 0 to 1,
@@ -10,10 +10,15 @@ function color = color_palette_ibm(index)
 %
 %	COLOR = COLOR_PALETTE_IBM(INDEX) allows the choice of colors specified by
 %	their index INDEX. Can be left empty to choose all colors. Default is
-%	empty.
+%	empty. Colors can also be specified by name:
+%		- (1) 'blue' : #648fff
+%		- (2) 'purple' : #785EF0
+%		- (3) 'pink' : #DC267F
+%		- (4) 'orange' : #FE6100
+%		- (5) 'yellow' : #FFB000
 %
 %	Input:
-%		- INDEX : (nChoice) integer
+%		- INDEX : (nChoice) integer OR (nChoice) cell
 %		
 %	Output:
 %		- COLOR : (5,3) OR (nChoice,3) double 

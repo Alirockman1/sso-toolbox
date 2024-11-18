@@ -4,7 +4,6 @@ function color = color_palette_tol(index,paletteType)
 %	more accessible to colorblind people. Multiple palettes are available, and 
 %	the choice of which one to get can be specified.
 %	Source of palettes: https://personal.sron.nl/~pault/
-%	Testing the colorblind appearance: https://davidmathlogic.com/colorblind/
 %
 %	COLOR = COLOR_PALETTE_TOL returns an array with all the colors in the 
 %	palette. These are expressed as [R,G,B] triplets with values from 0 to 1,
@@ -12,38 +11,266 @@ function color = color_palette_tol(index,paletteType)
 %
 %	COLOR = COLOR_PALETTE_TOL(INDEX) allows the choice of colors specified
 %	by their index INDEX. Can be left empty to choose all colors. Default is
-%	empty.
+%	empty. For some palette types, the colors can also be specified by name.
 %
 %	COLOR = COLOR_PALETTE_TOL(INDEX,PALETTETYPE) also allows the 
 %	specfication of which color palette is desired PALETTETYPE. The following 
-%	options are available: 
-%		- 'bright' : 7 colors, discrete use.
+%	options are available (and colors, when such option is set): 
+%		- 'bright' : 7 colors, discrete use. 
+%			-- (1) 'blue' : #4477AA
+%			-- (2) 'red' : #EE6677
+%			-- (3) 'green' : #228833
+%			-- (4) 'yellow' : #CCBB44
+%			-- (5) 'cyan' : #66CCEE
+%			-- (6) 'purple' : #AA3377
+%			-- (7) 'grey' : #BBBBBB
 %		- 'high-contrast' : 5 colors, discrete use.
+%			-- (1) 'white' : #FFFFFF
+%			-- (2) 'blue' : #004488
+%			-- (3) 'yellow' : #DDAA33
+%			-- (4) 'red' : #BB5566
+%			-- (5) 'black' : #000000
 %		- 'vibrant' : 7 colors, discrete use.
+%			-- (1) 'orange' : #EE7733
+%			-- (2) 'blue' : #0077BB
+%			-- (3) 'cyan' : #33BBEE
+%			-- (4) 'magenta' : #EE3377
+%			-- (5) 'red' : #CC3311
+%			-- (6) 'teal' : #009988
+%			-- (7) 'grey' : #BBBBBB
 %		- 'muted' : 10 colors, discrete use, last color for bad data.
+%			--  (1) 'rose' : #CC6677
+%			--  (2) 'indigo' : #332288
+%			--  (3) 'sand' : #DDCC77
+%			--  (4) 'green' : #117733
+%			--  (5) 'cyan' : #88CCEE
+%			--  (6) 'wine' : #882255
+%			--  (7) 'purple' : #44AA99
+%			--  (8) 'olive' : #999933
+%			--  (9) 'teal' : #AA4499
+%			-- (10) 'pale-grey' : #DDDDDD - bad data
 %		- 'medium-contrast' : 8 colors, discrete use.
+%			-- (1) 'white' : #FFFFFF
+%			-- (2) 'light-blue' : #6699CC
+%			-- (3) 'dark-blue' : #004488
+%			-- (4) 'light-yellow' : #EECC66
+%			-- (5) 'dark-red' : #994455
+%			-- (6) 'dark-yellow' : #997700
+%			-- (7) 'light-red' : #EE99AA
+%			-- (8) 'black' : #000000
 %		- 'pale' : 6 colors, discrete use.
+%			-- (1) 'pale-blue' : #BBCCEE
+%			-- (2) 'pale-cyan' : #CCEEFF
+%			-- (3) 'pale-green' : #CCDDAA
+%			-- (4) 'pale-yellow' : #EEEEBB
+%			-- (5) 'pale-red' : #FFCCCC
+%			-- (6) 'pale-grey' : #DDDDDD
 %		- 'dark' : 6 colors, discrete use.
+%			-- (1) 'dark-blue' : #222255
+%			-- (2) 'dark-cyan' : #225555
+%			-- (3) 'dark-green' : #225522
+%			-- (4) 'dark-yellow' : #666633
+%			-- (5) 'dark-red' : #663333
+%			-- (6) 'dark-grey' : #555555
 %		- 'light' : 9 colors, discrete use.
+%			-- (1) 'light-blue' : #77AADD
+%			-- (2) 'orange' : #EE8866
+%			-- (3) 'light-yellow' : #EEDD88
+%			-- (4) 'pink' : #FFAABB
+%			-- (5) 'light-cyan' : #99DDFF
+%			-- (6) 'mint' : #44BB99
+%			-- (7) 'pear' : #BBCC33
+%			-- (8) 'olive' : #AAAA00
+%			-- (9) 'pale-grey' : #DDDDDD
 %		- 'sunset' : 12 colors, can be interpolated, last color for bad data.
+%			--  (1) #364B9A
+%			--  (2) #4A7BB7
+%			--  (3) #6EA6CD
+%			--  (4) #98CAE1
+%			--  (5) #C2E4EF
+%			--  (6) #EAECCC
+%			--  (7) #FEDA8B
+%			--  (8) #FDB366
+%			--  (9) #F67E4B
+%			-- (10) #DD3D2D
+%			-- (11) #A50026
+%			-- (12) #FFFFFF - bad data
 %		- 'nightfall' : 18 colors, can be interpolated, last color for bad data.
+%			--  (1) #125A56
+%			--  (2) #00767B
+%			--  (3) #238F9D
+%			--  (4) #42A7C6
+%			--  (5) #60BCE9
+%			--  (6) #9DCCEF
+%			--  (7) #C6DBED
+%			--  (8) #DEE6E7
+%			--  (9) #ECEADA
+%			-- (10) #F0E6B2
+%			-- (11) #F9D576
+%			-- (12) #FFB954
+%			-- (13) #FD9A44
+%			-- (14) #F57634
+%			-- (15) #E94C1F
+%			-- (16) #D11807
+%			-- (17) #A01813
+%			-- (18) #FFFFFF - bad data
 %		- 'burd' : 10 colors, can be interpolated, last color for bad data.
+%			--  (1) #2166AC
+%			--  (2) #4393C3
+%			--  (3) #92C5DE
+%			--  (4) #D1E5F0
+%			--  (5) #F7F7F7
+%			--  (6) #FDDBC7
+%			--  (7) #F4A582
+%			--  (8) #D6604D
+%			--  (9) #B2182B
+%			-- (10) # FFEE99 - bad data
 %		- 'prgn' : 10 colors, can be interpolated, last color for bad data.
+%			--  (1) #762A83
+%			--  (2) #9970AB
+%			--  (3) #C2A5CF
+%			--  (4) #E7D4E8
+%			--  (5) #F7F7F7
+%			--  (6) #D9F0D3
+%			--  (7) #ACD39E
+%			--  (8) #5AAE61
+%			--  (9) #1B7837
+%			-- (10) #FFEE99 - bad data
 %		- 'ylorbr' : 10 colors, can be interpolated, last color for bad data.
+%			--  (1) #FFFFE5
+%			--  (2) #FFF7BC
+%			--  (3) #FEE391
+%			--  (4) #FEC44F
+%			--  (5) #FB9A29
+%			--  (6) #EC7014
+%			--  (7) #CC4C02
+%			--  (8) #993404
+%			--  (9) #662506
+%			-- (10) #888888 - bad data
 %		- 'iridescent' : 24 colors, can be interpolated, last color for bad 
 %		data.
+%			--  (1) #FEFBE9
+%			--  (2) #FCF7D5
+%			--  (3) #F5F3C1
+%			--  (4) #EAF0B5
+%			--  (5) #DDECBF
+%			--  (6) #D0E7CA
+%			--  (7) #C2E3D2
+%			--  (8) #B5DDD8
+%			--  (9) #A8D8DC
+%			-- (10) #9BD2E1
+%			-- (11) #8DCBE4
+%			-- (12) #81C4E7
+%			-- (13) #7BBCE7
+%			-- (14) #7EB2E4
+%			-- (15) #88A5DD
+%			-- (16) #9398D2
+%			-- (17) #9B8AC4
+%			-- (18) #9D7DB2
+%			-- (19) #9A709E
+%			-- (20) #906388
+%			-- (21) #805770
+%			-- (22) #684957
+%			-- (23) #46353A
+%			-- (24) #999999 - bad data
 %		- 'incandescent' : 12 colors, can be interpolated, last color for bad 
 %		data.
+%			--  (1) #CEFFFF
+%			--  (2) #C6F7D6
+%			--  (3) #A2F49B
+%			--  (4) #BBE453
+%			--  (5) #D5CE04
+%			--  (6) #E7B503
+%			--  (7) #F19903
+%			--  (8) #F6790B
+%			--  (9) #F94902
+%			-- (10) #E40515
+%			-- (11) #A80003
+%			-- (12) #888888 - bad data
 %		- 'discrete-rainbow' : 15 colors, discrete use, last color for bad data.
+%			--  (1) #D1BBD7
+%			--  (2) #AE76A3
+%			--  (3) #882E72
+%			--  (4) #1965B0
+%			--  (5) #5289C7
+%			--  (6) #7BAFDE
+%			--  (7) #4EB265
+%			--  (8) #90C987
+%			--  (9) #CAE0AB
+%			-- (10) #F7F056
+%			-- (11) #F6C141
+%			-- (12) #F1932D
+%			-- (13) #E8601C
+%			-- (14) #DC050C
+%			-- (15) #777777 - bad data
 %		- 'discrete-rainbow-23' : 24 colors, discrete use, last color for bad 
 %		data.
+%			--  (1) #E8ECFB
+%			--  (2) #D9CCE3
+%			--  (3) #CAACCB
+%			--  (4) #BA8DB4
+%			--  (5) #AA6F9E
+%			--  (6) #994F88
+%			--  (7) #882E72
+%			--  (8) #1965B0
+%			--  (9) #437DBF
+%			-- (10) #6195CF
+%			-- (11) #7BAFDE
+%			-- (12) #4EB265
+%			-- (13) #90C987
+%			-- (14) #CAE0AB
+%			-- (15) #F7F056
+%			-- (16) #F7CB45
+%			-- (17) #F4A736
+%			-- (18) #EE8026
+%			-- (19) #E65518
+%			-- (20) #DC050C
+%			-- (21) #A5170E
+%			-- (22) #72190E
+%			-- (23) #42150A
+%			-- (24) #777777 - bad data
 %		- 'smooth-rainbow' : 35 colors, can be interpolated, last color for bad 
 %		data.
+%			--  (1) #E8ECFB
+%			--  (2) #DDD8EF
+%			--  (3) #D1C1E1
+%			--  (4) #C3A8D1
+%			--  (5) #B58FC2
+%			--  (6) #A778B4
+%			--  (7) #9B62A7
+%			--  (8) #8C4E99
+%			--  (9) #6F4C9B
+%			-- (10) #6059A9
+%			-- (11) #5568B8
+%			-- (12) #4E79C5
+%			-- (13) #4D8AC6
+%			-- (14) #4E96BC
+%			-- (15) #549EB3
+%			-- (16) #59A5A9
+%			-- (17) #60AB9E
+%			-- (18) #69B190
+%			-- (19) #77B77D
+%			-- (20) #8CBC68
+%			-- (21) #A6BE54
+%			-- (22) #BEBC48
+%			-- (23) #D1B541
+%			-- (24) #DDAA3C
+%			-- (25) #E49C39
+%			-- (26) #E78C35
+%			-- (27) #E67932
+%			-- (28) #E4632D
+%			-- (29) #DF4828
+%			-- (30) #DA2222
+%			-- (31) #B8221E
+%			-- (32) #95211B
+%			-- (33) #721E17
+%			-- (34) #521A13
+%			-- (35) #666666 - bad data
 %	More about each palette can be found on https://personal.sron.nl/~pault/ .
 %	Default choice is 'vibrant'.
 %
 %	Input:
-%		- INDEX : (nChoice) integer
+%		- INDEX : (nChoice) integer OR (nChoice) cell
 %		- PALETTETYPE : string
 %		
 %	Output:

@@ -3,7 +3,7 @@ function color = color_palette_okabe_ito(index)
 %	COLOR_PALETTE_OKABE_ITO returns a color palette developed by Masataka Okabe
 %	and Kei Ito which is more accessible to colorblind people.
 %	Source of palette: https://jfly.uni-koeln.de/color/
-%	Testing the colorblind appearance: https://davidmathlogic.com/colorblind/
+%	<a href="https://davidmathlogic.com/colorblind/#%23000000-%23E69F00-%2356B4E9-%23009E73-%23F0E442-%230072B2-%23D55E00-%23CC79A7">Testing the colorblind appearance</a>
 %
 %	COLOR = COLOR_PALETTE_OKABE_ITO returns an array with all the colors in the 
 %	palette. These are expressed as [R,G,B] triplets with values from 0 to 1,
@@ -11,10 +11,18 @@ function color = color_palette_okabe_ito(index)
 %
 %	COLOR = COLOR_PALETTE_OKABE_ITO(INDEX) allows the choice of colors specified
 %	by their index INDEX. Can be left empty to choose all colors. Default is
-%	empty.
+%	empty. Colors can also be specified by name:
+%		- (1) 'black' : #000000
+%		- (2) 'orange' : #E69F00
+%		- (3) 'sky-blue' : #56B4E9
+%		- (4) 'bluish-green' : #009E73
+%		- (5) 'yellow' : #F0E442
+%		- (6) 'blue' : #0072B2
+%		- (7) 'vermillion' : #D55E00
+%		- (8) 'reddish-purple' : #CC79A7
 %
 %	Input:
-%		- INDEX : (nChoice) integer
+%		- INDEX : (nChoice) integer OR (nChoice) cell
 %		
 %	Output:
 %		- COLOR : (8,3) OR (nChoice,3) double 
