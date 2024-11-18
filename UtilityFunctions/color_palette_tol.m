@@ -34,10 +34,9 @@ function color = color_palette_tol(index,paletteType)
 %		data.
 %		- 'incandescent' : 12 colors, can be interpolated, last color for bad 
 %		data.
-%		- 'discrete-rainbow' : 15 colors, can be interpolated, last color for 
-%		bad data.
-%		- 'discrete-rainbow-23' : 24 colors, can be interpolated, last color for 
-%		bad data.
+%		- 'discrete-rainbow' : 15 colors, discrete use, last color for bad data.
+%		- 'discrete-rainbow-23' : 24 colors, discrete use, last color for bad 
+%		data.
 %		- 'smooth-rainbow' : 35 colors, can be interpolated, last color for bad 
 %		data.
 %	More about each palette can be found on https://personal.sron.nl/~pault/ .
