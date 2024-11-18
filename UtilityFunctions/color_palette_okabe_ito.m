@@ -1,0 +1,55 @@
+function color = color_palette_okabe_ito(index)
+%COLOR_PALETTE_OKABE_ITO Colorblind-friendly color palette from Okabe, Ito
+%	COLOR_PALETTE_OKABE_ITO returns a color palette developed by Masataka Okabe
+%	and Kei Ito which is more accessible to colorblind people.
+%	Source of palette: https://jfly.uni-koeln.de/color/
+%	Testing the colorblind appearance: https://davidmathlogic.com/colorblind/
+%
+%	COLOR = COLOR_PALETTE_OKABE_ITO returns an array with all the colors in the 
+%	palette. These are expressed as [R,G,B] triplets with values from 0 to 1,
+%	with each row being a new color.
+%
+%	COLOR = COLOR_PALETTE_OKABE_ITO(INDEX) allows the choice of colors specified
+%	by their index INDEX.
+%
+%	Input:
+%		- INDEX : (nChoice) integer
+%		
+%	Output:
+%		- COLOR : (8,3) OR (nChoice,3) double 
+%
+%   See also color_palette_ibm, color_palette_paul_tol, orderedcolors, 
+%	colororder.
+%
+%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   SPDX-License-Identifier: Apache-2.0
+
+%   Licensed under the Apache License, Version 2.0 (the "License");
+%   you may not use this file except in compliance with the License.
+%   You may obtain a copy of the License at
+% 
+%       http://www.apache.org/licenses/LICENSE-2.0
+% 
+%   Unless required by applicable law or agreed to in writing, software
+%   distributed under the License is distributed on an "AS IS" BASIS,
+%   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+%   See the License for the specific language governing permissions and
+%   limitations under the License.
+
+	colorPalette = [...
+		  0   0   0;... % black
+		230 159   0;... % orange
+		 86 180 233;... % sky blue
+		  0 158 115;... % bluish green
+		240 228  66;... % yellow
+		  0 114 178;... % blue
+		213  94   0;... % vermillion
+		204 121 167;... % reddish purple
+		]./255;
+
+	if(nargin<1)
+		index = 1:size(colorPalette,1);
+	end
+
+	color = colorPalette(index,:);
+end
