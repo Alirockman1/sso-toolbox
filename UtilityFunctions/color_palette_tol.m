@@ -266,8 +266,9 @@ function color = color_palette_tol(index,paletteType)
 %			-- (33) #721E17
 %			-- (34) #521A13
 %			-- (35) #666666 - bad data
-%	More about each palette can be found on https://personal.sron.nl/~pault/ .
-%	Default choice is 'vibrant'.
+%	More about each palette: https://personal.sron.nl/~pault/ .
+% 	Colorblind visualization: https://davidmathlogic.com/colorblind/ .
+%	Default value is 'bright'.
 %
 %	Input:
 %		- INDEX : (nChoice) integer OR (nChoice) cell
@@ -296,7 +297,7 @@ function color = color_palette_tol(index,paletteType)
 
 
 	if(nargin<2 || isempty(paletteType))
-		paletteType = 'vibrant';
+		paletteType = 'bright';
 	end
 
 	switch lower(paletteType)
