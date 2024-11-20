@@ -681,28 +681,34 @@ end
 
 
 %% Evaluate Samples
-function [labelReq,labelPf,score,outputEvaluation] = component_sso_evaluate_sample_points(designEvaluator,dv,console)
+function [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation] = component_sso_evaluate_sample_points(designEvaluator,dv,console)
     console.info('Evaluating sample points... ');
     tic
     
     [performanceDeficit,physicalFeasibilityDeficit,outputEvaluation] = designEvaluator.evaluate(dv);
-    [labelReq,score] = design_deficit_to_label_score(performanceDeficit);
-    labelPf = design_deficit_to_label_score(physicalFeasibilityDeficit);
+
+    [isGoodPerformance,score] = design_deficit_to_label_score(performanceDeficit);
+
+    if(~isempty(physicalFeasibilityDeficit))
+        isPhysicallyFeasible = design_deficit_to_label_score(physicalFeasibilityDeficit);
+    else
+        isPhysicallyFeasible = true(size(dv,1),1);
+    end
     
     toc
-    console.debug('- Number of good samples: %g (%g%%)\n',sum(labelReq),100*sum(labelReq)/size(labelReq,1));
-    console.debug('- Number of bad samples: %g (%g%%)\n',sum(~labelReq),100*sum(~labelReq)/size(labelReq,1));
-    console.debug('- Number of physically feasible samples: %g (%g%%)\n',sum(labelPf),100*sum(labelPf)/size(labelPf,1));
-    console.debug('- Number of physically infeasible samples: %g (%g%%)\n',sum(~labelPf),100*sum(~labelPf)/size(labelPf,1));
+    console.debug('- Number of good samples: %g (%g%%)\n',sum(isGoodPerformance),100*sum(isGoodPerformance)/size(isGoodPerformance,1));
+    console.debug('- Number of bad samples: %g (%g%%)\n',sum(~isGoodPerformance),100*sum(~isGoodPerformance)/size(isGoodPerformance,1));
+    console.debug('- Number of physically feasible samples: %g (%g%%)\n',sum(isPhysicallyFeasible),100*sum(isPhysicallyFeasible)/size(isPhysicallyFeasible,1));
+    console.debug('- Number of physically infeasible samples: %g (%g%%)\n',sum(~isPhysicallyFeasible),100*sum(~isPhysicallyFeasible)/size(isPhysicallyFeasible,1));
 end
 
 
 %% Label Samples
-function [labelAcc_sample,labelUse_sample] = component_sso_label_requirement_spaces(RequirementSpacesType,labelReq_sample,labelPF_sample,console)
+function [labelAcc_sample,labelUse_sample] = component_sso_label_requirement_spaces(RequirementSpacesType,isGoodPerformance_sample,labelPF_sample,console)
     console.info('Creating labels for each design... ');
     tic
     
-    [labelAcc_sample,labelUse_sample] = design_requirement_spaces_label(RequirementSpacesType,labelReq_sample,labelPF_sample);
+    [labelAcc_sample,labelUse_sample] = design_requirement_spaces_label(RequirementSpacesType,isGoodPerformance_sample,labelPF_sample);
     
     toc
 end

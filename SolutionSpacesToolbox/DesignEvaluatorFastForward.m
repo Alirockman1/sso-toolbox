@@ -35,7 +35,7 @@ classdef DesignEvaluatorFastForward < DesignEvaluatorBase
         %   MODELPERFORMANCE : DesignFastForward object
         %   
         %   See also DesignFastForward, evaluate.
-        modelPerformance
+        ModelPerformance
         
         %MODELPHYSICALFEASIBILITY Model used to predict physical feasibility
         %   MODELPHYSICALFEASIBILITY is the design fast-forward model used to 
@@ -44,11 +44,15 @@ classdef DesignEvaluatorFastForward < DesignEvaluatorBase
         %   MODELPHYSICALFEASIBILITY : DesignFastForward object
         %   
         %   See also DesignFastForward, evaluate.
-        modelPhysicalFeasibility
+        ModelPhysicalFeasibility
+
+        PerformanceDeficitDefaultValue
+
+        PhysicalFeasibilityDeficitDefaultValue
     end
     
     methods
-        function obj = DesignEvaluatorFastForward(modelPerformance,modelPhysicalFeasibility)
+        function obj = DesignEvaluatorFastForward(varargin)
         %DESIGNEVALUATORFASTFORWARD Constructor
         %   DESIGNEVALUATORFASTFORWARD uses design fast-forward models to 
         %   create a design evaluator.
@@ -73,15 +77,14 @@ classdef DesignEvaluatorFastForward < DesignEvaluatorBase
         %   
         %   See also evaluate.
 
-            if(nargin<2)
-                modelPhysicalFeasibility = [];
-                if(nargin<1)
-                    modelPerformance = [];
-                end
-            end
+            parser = inputParser;
+            parser.addOptional('ModelPerformance',[]);
+            parser.addOptional('ModelPhysicalFeasibility',[]);
+            parser.addParameter('PerformanceDeficitDefaultValue',[]);
+            parser.addParameter('PhysicalFeasibilityDeficitDefaultValue',[]);
+            parser.parse(varargin{:});
 
-            obj.modelPerformance = modelPerformance;
-            obj.modelPhysicalFeasibility = modelPhysicalFeasibility;
+            obj = parser.Results;
         end
         
         function [performanceDeficit,physicalFeasibilityDeficit,evaluationOutput] = evaluate(obj,designSample)
@@ -123,28 +126,28 @@ classdef DesignEvaluatorFastForward < DesignEvaluatorBase
         %   See also DesignFastForward.
 
             % performance prediction
-            if(~isempty(obj.modelPerformance))
-                [performanceDeficit,performanceOutput] = obj.modelPerformance.predict_designs(designSample);
+            if(~isempty(obj.ModelPerformance))
+                [performanceDeficit,performanceOutput] = obj.ModelPerformance.predict_designs(designSample);
                 % predict designs outside training region as bad
-                boundingBox = obj.modelPerformance.BoundingBoxPositive;
+                boundingBox = obj.ModelPerformance.BoundingBoxPositive;
                 insidePredictionRange = is_in_design_box(designSample,boundingBox);
                 performanceDeficit(~insidePredictionRange,:) = abs(performanceDeficit(~insidePredictionRange,:));
             else
                 % no model, assume all good
-                performanceDeficit = -ones(size(designSample,1),1);
+                performanceDeficit = repmat(obj.PerformanceDeficitDefaultValue,size(designSample,1),1);
                 performanceOutput = [];
             end
 
             % physical feasibility prediction
-            if(~isempty(obj.modelPhysicalFeasibility))
-                [physicalFeasibilityDeficit,physicalFeasibilityOutput] = obj.modelPhysicalFeasibility.predict_designs(designSample);
+            if(~isempty(obj.ModelPhysicalFeasibility))
+                [physicalFeasibilityDeficit,physicalFeasibilityOutput] = obj.ModelPhysicalFeasibility.predict_designs(designSample);
                 % predict designs outside training region as physically infeasible
-                boundingBox = obj.modelPhysicalFeasibility.BoundingBoxPositive;
+                boundingBox = obj.ModelPhysicalFeasibility.BoundingBoxPositive;
                 insidePredictionRange = is_in_design_box(designSample,boundingBox);
                 physicalFeasibilityDeficit(~insidePredictionRange,:) = abs(physicalFeasibilityDeficit(~insidePredictionRange,:));
             else
                 % no model, assume all physically feasible
-                physicalFeasibilityDeficit = -ones(size(designSample,1),1);
+                physicalFeasibilityDeficit = repmat(obj.PhysicalFeasibilityDeficitDefaultValue,size(designSample,1),1);
                 physicalFeasibilityOutput = [];
             end
 

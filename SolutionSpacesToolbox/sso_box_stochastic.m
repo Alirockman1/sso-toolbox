@@ -497,9 +497,15 @@ function [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation] = box_s
     console.info('Evaluating sample points... ');
     tic
     
-    [reserveReq,reservePf,outputEvaluation] = designEvaluator.evaluate(designSample);
-    [isGoodPerformance,score] = design_deficit_to_label_score(reserveReq);
-    isPhysicallyFeasible = design_deficit_to_label_score(reservePf);
+    [performanceDeficit,physicalFeasibilityDeficit,outputEvaluation] = designEvaluator.evaluate(designSample);
+    
+    [isGoodPerformance,score] = design_deficit_to_label_score(performanceDeficit);
+    
+    if(~isempty(physicalFeasibilityDeficit))
+        isPhysicallyFeasible = design_deficit_to_label_score(physicalFeasibilityDeficit);
+    else
+        isPhysicallyFeasible = true(size(designSample,1),1);
+    end
 
     console.info('Elapsed time is %g seconds.\n',toc);
     nSamples = size(designSample,1);

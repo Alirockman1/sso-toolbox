@@ -171,7 +171,7 @@ classdef BottomUpMappingPython < BottomUpMappingBase
         
 			parser = inputParser;
 			parser.addOptional('SystemParameter',[]);
-			parser.addParameter('PhysicalFeasibilityDefaultValue',-1);
+			parser.addParameter('PhysicalFeasibilityDefaultValue',[]);
 			parser.addParameter('PhysicalFeasibilityFunction',[]);
 			parser.addParameter('PhysicalFeasibilityParameter',[]);
 			parser.parse(varargin{:});
