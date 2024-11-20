@@ -75,7 +75,7 @@ initialDesign         = [5.55e5 3.55e5];
 % optimizationOptions = {'Display','diagnose'};
 
 optimizationFunction = @optimization_bayesian;
-optimizationOptions = {'MaxIter',100};
+optimizationOptions = {'MaxIter',10};
 
 
 %% start point-based optimization - quantity of interest

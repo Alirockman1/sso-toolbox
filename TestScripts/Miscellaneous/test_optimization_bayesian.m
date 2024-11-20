@@ -1,3 +1,8 @@
+%   Some references:
+%       - https://distill.pub/2020/bayesian-optimization/ 
+%       - https://machinelearningmastery.com/what-is-bayesian-optimization/
+%       - https://krasserm.github.io/2018/03/21/bayesian-optimization/
+
 %% Cleanup
 fclose all;
 close all;
@@ -23,7 +28,7 @@ designSpaceLowerBound = [0];
 designSpaceUpperBound = [1];
 objectiveFunction = @(x) -x.^2 .* sin(5*pi.*x).^6.0;
 
-options = {'MaxIter',10,'BatchTrialSize',10,'InitialExplorationFactor',0.01,'ExplorationFactorUpdateFunction',[],...
+options = {'MaxIter',10,'BatchTrialSize',100,'InitialExplorationFactor',0.01,'ExplorationFactorUpdateFunction',[],...
     'GaussianRegressionModelTrainingOptions',{'Standardize',true,'OptimizeHyperparameters',{'BasisFunction','KernelFunction','KernelScale','Sigma'},...
         'HyperparameterOptimizationOptions',struct('ShowPlots',false)}};
 
@@ -65,7 +70,7 @@ function visualize_bayesian_optimization_1d(optimizationOutput,varargin)
     plot(designSample,predictedObjectiveValue+predictedStandardDeviation,':','color',color_palette_tol('red'),'linewidth',2.0,'HandleVisibility','off');
     plot(designSample,predictedObjectiveValue-predictedStandardDeviation,':','color',color_palette_tol('red'),'linewidth',2.0);
     plot(optimizationOutput.InitialData.EvaluatedSample,optimizationOutput.InitialData.EvaluatedObjective,'.','color',color_palette_tol('cyan'),'MarkerSize',20);
-    legend({'Objective Function','Model Prediction','Standard Deviation','Evaluated Points'},'location','northwest');
+    legend({'Objective Function','Model Prediction','Standard Deviation','Evaluated Points'},'location','southwest');
     xlim([min(designSample) max(designSample)]);
     title('Initial Data');
 
@@ -105,7 +110,7 @@ function visualize_bayesian_optimization_1d(optimizationOutput,varargin)
         plot(optimizationOutput.IterationData(i).EvaluatedSample,optimizationOutput.IterationData(i).EvaluatedObjective,'.','color',color_palette_tol('cyan'),'MarkerSize',20);
         plot(designSample,expectedImprovement,'-','color',color_palette_tol('purple'),'linewidth',2.0);
         legend({'Objective Function','Model Prediction','Standard Deviation',...
-            'Previous Points','Newly Evaluated Points','Previous Expected Improvement'},'location','northwest');
+            'Previous Points','Newly Evaluated Points','Previous Expected Improvement'},'location','southwest');
         xlim([min(designSample) max(designSample)]);
         title(sprintf('Iteration %d',i));
 
