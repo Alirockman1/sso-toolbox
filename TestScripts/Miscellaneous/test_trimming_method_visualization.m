@@ -40,16 +40,16 @@ anchorPosition3d = [0.3 0.3 0.3];
 % 1d
 figure;
 hold all;
-plot([designSpaceLowerBound1d anchorPosition1d],[-1 -1],'g-','linewidth',3.0);
-plot([anchorPosition1d designSpaceUpperBound1d],[-1 -1],'r-','linewidth',3.0);
-plot([anchorPosition1d],[-1],'r.','MarkerSize',20);
-plot([designSpaceLowerBound1d anchorPosition1d],[1 1],'r-','linewidth',3.0,'HandleVisibility','off');
-plot([anchorPosition1d designSpaceUpperBound1d],[1 1],'g-','linewidth',3.0,'HandleVisibility','off');
-plot([anchorPosition1d],[1],'r.','MarkerSize',20,'HandleVisibility','off');
+plot([designSpaceLowerBound1d anchorPosition1d],[-1 -1],'-','color',color_palette_tol('cyan'),'linewidth',3.0);
+plot([anchorPosition1d designSpaceUpperBound1d],[-1 -1],'-','color',color_palette_tol('purple'),'linewidth',3.0);
+plot([anchorPosition1d],[-1],'x','color',color_palette_tol('purple'),'MarkerSize',10,'linewidth',2.0);
+plot([designSpaceLowerBound1d anchorPosition1d],[1 1],'-','color',color_palette_tol('purple'),'linewidth',3.0,'HandleVisibility','off');
+plot([anchorPosition1d designSpaceUpperBound1d],[1 1],'-','color',color_palette_tol('cyan'),'linewidth',3.0,'HandleVisibility','off');
+plot([anchorPosition1d],[1],'x','color',color_palette_tol('purple'),'MarkerSize',10,'linewidth',2.0,'HandleVisibility','off');
 q = quiver(...
     [anchorPosition1d anchorPosition1d], [-1 1], ...
     [-0.1 0.1], [0 0], ...
-    'AutoScale','off','LineWidth',2.0,'Color',[0.9290 0.6940 0.1250]);
+    'AutoScale','off','LineWidth',2.0,'Color',color_palette_tol('yellow'));
 set(gca,'XColor', 'none','YColor','none');
 grid minor;
 ylim([-2 2])

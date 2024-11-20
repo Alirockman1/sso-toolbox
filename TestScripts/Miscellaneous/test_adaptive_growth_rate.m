@@ -20,6 +20,7 @@ figureSize = [goldenRatio 1]*8.5;
 %% 
 targetPurity = 0.7;
 growthExponent = [1,3,9];
+colorExponent = color_palette_tol({'blue','red','green'});
 purity = 0:0.0001:1;
 growthRateBase = 0.1;
 
@@ -35,10 +36,10 @@ end
 figure;
 hold all;
 for i=1:size(growthExponent,2)
-    plot(purity,growthRate1(i,:),'-','linewidth',3);
-    plot(purity,growthRate2(i,:),'-.','linewidth',3);
+    plot(purity,growthRate1(i,:),'-','color',colorExponent(i,:),'linewidth',2.5);
+    plot(purity,growthRate2(i,:),'-.','color',colorExponent(i,:),'linewidth',2.5);
 end
-plot(purity,purity./targetPurity*growthRateBase,'--','linewidth',1.5);
+plot(purity,purity./targetPurity*growthRateBase,'--','color',color_palette_tol('grey'),'linewidth',2.5);
 grid minor;
 lim = axis;
 plot([0 1],[growthRateBase growthRateBase],'k--','linewidth',1.5);

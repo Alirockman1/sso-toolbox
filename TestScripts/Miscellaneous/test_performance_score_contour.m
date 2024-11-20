@@ -64,6 +64,8 @@ plot([quantityOfInterestUpperLimit(1) quantityOfInterestUpperLimit(1)],[quantiti
 plot([quantitiesOfInterestLowerBound(1) quantitiesOfInterestUpperBound(1)],[quantityOfInterestLowerLimit(2) quantityOfInterestLowerLimit(2)],'k:','Linewidth',0.7,'HandleVisibility','off');
 plot([quantitiesOfInterestLowerBound(1) quantitiesOfInterestUpperBound(1)],[quantityOfInterestUpperLimit(2) quantityOfInterestUpperLimit(2)],'k:','Linewidth',0.7,'DisplayName','Critical Limits');
 contour(quantityOfInterest1Grid,quantityOfInterest2Grid,performanceScore,-0.5:0.1:1.5,'DisplayName','Performance Score');
+clim([-0.5 1.5]);
+colormap(color_palette_tol(9:31,'smooth-rainbow'));
 colorbar;
 grid minor;
 xlabel('$$y_1$$','interpreter','latex','FontSize',16);

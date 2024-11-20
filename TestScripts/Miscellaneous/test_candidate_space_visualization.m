@@ -37,9 +37,9 @@ candidateSpace = candidateSpace.define_candidate_space(designSample(inCandidateS
 
 figure;
 hold all;
-plot(designSample(inCandidateSpace,1),designSample(inCandidateSpace,2),'g.','MarkerSize',20);
-plot(designSample(~inCandidateSpace,1),designSample(~inCandidateSpace,2),'r.','MarkerSize',20);
-candidateSpace.plot_candidate_space(gcf,'EdgeColor','k');
+plot(designSample(inCandidateSpace,1),designSample(inCandidateSpace,2),'o','Color',color_palette_tol('green'),'MarkerSize',10,'linewidth',4);
+plot(designSample(~inCandidateSpace,1),designSample(~inCandidateSpace,2),'x','Color',color_palette_tol('red'),'MarkerSize',10,'linewidth',4);
+candidateSpace.plot_candidate_space(gcf,'EdgeColor',color_palette_tol('cyan'),'linewidth',4);
 legend({'Inside Candidate Space','Outside Candidate Space','Convex Hull Boundary'},'location','south');
 grid minor;
 set(gca,'XColor', 'none','YColor','none');
@@ -63,11 +63,11 @@ candidateSpaceGrown = candidateSpace.grow_candidate_space(growthRate);
 figure;
 hold all;
 plot(convexHullCenter(1),convexHullCenter(2),'b.','MarkerSize',20);
-candidateSpace.plot_candidate_space(gcf,'EdgeColor','k');
-plot(insideSample(:,1),insideSample(:,2),'g.','MarkerSize',20);
+candidateSpace.plot_candidate_space(gcf,'EdgeColor','k','linewidth',4);
+plot(insideSample(:,1),insideSample(:,2),'o','color',color_palette_tol('green'),'MarkerSize',10,'linewidth',4);
 quiver(insideSample(:,1),insideSample(:,2),growthVector(:,1),growthVector(:,2),'AutoScale','off');
-candidateSpaceGrown.plot_candidate_space(gcf,'EdgeColor','c');
-plot(insideSampleGrown(:,1),insideSampleGrown(:,2),'y.','MarkerSize',20);
+candidateSpaceGrown.plot_candidate_space(gcf,'EdgeColor',color_palette_tol('cyan'),'linewidth',4);
+plot(insideSampleGrown(:,1),insideSampleGrown(:,2),'o','color',color_palette_tol('yellow'),'MarkerSize',10,'linewidth',4);
 legend({'Convex Hull Center','Original Convex Hull','Inside Points','Growth Vector','Grown Convex Hull','New Inside Points'},'location','northwest')
 grid minor;
 set(gca,'XColor', 'none','YColor','none');

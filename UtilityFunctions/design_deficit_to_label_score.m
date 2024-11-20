@@ -48,6 +48,9 @@ function [label,score] = design_deficit_to_label_score(measureDeficit,deficitWei
     label = (worstCase<=0);
     
     if(nargout>1)
+        % ignore inf entries for score calculation
+        weightedDeficit(isinf(weightedDeficit)) = nan;
+
         % see which limits were violated, if any
         violatedLimit = max(weightedDeficit,0);
         score = nan(size(worstCase));
@@ -60,6 +63,10 @@ function [label,score] = design_deficit_to_label_score(measureDeficit,deficitWei
         % for good designs, use worst-case
         % score(label) = worstCase(label);
         % for good designs, use geometric mean of deficits
-        score(label) = -geomean(abs(weightedDeficit(label,:)),2);
+        score(label) = -geomean(abs(weightedDeficit(label,:)),2,'omitnan');
+
+        % if any entry is nan, throw it to either extreme of min/max
+        score(label & isnan(score)) = min(score);
+        score(~label & isnan(score)) = max(score);
     end
 end
