@@ -51,21 +51,28 @@ function expectedImprovement = bayesian_acquisition_gaussian_expected_improvemen
 	[predictionExpectedValue,predictionStandardDeviation] = gaussianRegressionModelObjective.predict(designSample);
 
 	% compute predicted improvement based solely on expected values
-    %   note: objetiveOptimalCurrent and predictionExpectedValue are inverted 
-    %   compared to standard implementations, as we are attempting to minimize 
-    %   the function instead of maximize, so our improvement is having 
+    %   note: objetiveOptimalCurrent+explorationFactor and predictionExpectedValue 
+    %   are inverted compared to standard implementations, as we are attempting to  
+    %   minimize the function instead of maximize, so our improvement is having 
     %   predictionExpectedValue be lesser instead of greater
-	predictedImprovement = objetiveOptimalCurrent - predictionExpectedValue - explorationFactor;
+	predictedImprovement = objetiveOptimalCurrent+explorationFactor - predictionExpectedValue;
 
-	% compute variation information (based on how unknown each sample is)
-	normalTransformation = predictedImprovement./predictionStandardDeviation;
-	normalTransformation(predictionStandardDeviation==0) = 0;
+	% normalize the predicted improvement to a gaussian curve
+	normalizedPredictedImprovement = predictedImprovement./predictionStandardDeviation;
+	normalizedPredictedImprovement(predictionStandardDeviation==0) = 0;
 
-    % 
-	probabilityOfImprovement = normcdf(normalTransformation);
-	sampleProbabilityDensity = normpdf(normalTransformation);
+    % get probability of improvement and uncertainty of improvement
+    %	--> model that with: cumulative distribution and probability density
+    %	--> (1) the higher the predicted improvement, the higher the probability
+    %		that is true (CDF)
+    %	--> (2) the closer the predicted improvement is to 0, the larger the 
+    %		uncertainty of whether this is an improvement or not (PDF)
+	probabilityOfImprovement = normcdf(normalizedPredictedImprovement);
+	uncertaintyOfImprovement = normpdf(normalizedPredictedImprovement);
 
-	% use both predicted expected values and variation information to estimate the actual expected improvement
-	expectedImprovement = predictedImprovement.*probabilityOfImprovement + predictionStandardDeviation.*sampleProbabilityDensity;
+	% use both information to determine an expected improvement
+	%	--> first term: the (probabilistic) expected value of improvement
+	%	--> second term: the uncertainty term 
+	expectedImprovement = predictedImprovement.*probabilityOfImprovement + predictionStandardDeviation.*uncertaintyOfImprovement;
 	expectedImprovement(predictionStandardDeviation==0) = 0;
 end

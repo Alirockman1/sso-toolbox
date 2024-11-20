@@ -50,17 +50,19 @@ function probabilityOfImprovement = bayesian_acquisition_gaussian_probability_of
 	[predictionExpectedValue,predictionStandardDeviation] = gaussianRegressionModelObjective.predict(designSample);
 
 	% compute predicted improvement based solely on expected values
-    %   note: objetiveOptimalCurrent and predictionExpectedValue are inverted 
-    %   compared to standard implementations, as we are attempting to minimize 
-    %   the function instead of maximize, so our improvement is having 
-    %   predictionExpectedValue be smaller instead of larger
-	predictedImprovement = objetiveOptimalCurrent - predictionExpectedValue - explorationFactor;
+    %   note: objetiveOptimalCurrent+explorationFactor and predictionExpectedValue 
+    %   are inverted compared to standard implementations, as we are attempting to  
+    %   minimize the function instead of maximize, so our improvement is having 
+    %   predictionExpectedValue be lesser instead of greater
+	predictedImprovement = objetiveOptimalCurrent+explorationFactor - predictionExpectedValue;
 
-	% 
-	normalTransformation = predictedImprovement./predictionStandardDeviation;
-	normalTransformation(predictionStandardDeviation==0) = 0;
+	% normalize the predicted improvement to a gaussian curve
+	normalizedPredictedImprovement = predictedImprovement./predictionStandardDeviation;
+	normalizedPredictedImprovement(predictionStandardDeviation==0) = 0;
 
-    % 
-	probabilityOfImprovement = normcdf(normalTransformation);
+    % get the probability of improvement based on the cumulative distribution function
+    %	--> the larger the predicted improvement, the larger the probability it actually
+    %	is an improvement (certainty depends on standard deviation).
+	probabilityOfImprovement = normcdf(normalizedPredictedImprovement);
 	probabilityOfImprovement(predictionStandardDeviation==0) = 0;
 end
