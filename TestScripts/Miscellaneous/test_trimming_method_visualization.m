@@ -36,6 +36,14 @@ anchorPosition2d = [0.3 0.3];
 anchorPosition3d = [0.3 0.3 0.3];
 
 
+%% color choice
+colorInsideCandidateSpace = color_palette_tol('cyan');
+colorOutsideCandidateSpace = color_palette_tol('purple');
+colorPointInside = color_palette_tol('green');
+colorPointOutside = color_palette_tol('red');
+colorGrowthPoint = color_palette_tol('yellow');
+
+
 %% planar trimming
 % 1d
 figure;

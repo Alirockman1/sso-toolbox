@@ -412,11 +412,11 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %   See also patch.
 
         	parser = inputParser;
-            parser.addParameter('FreeFacetsOnly',true);
+            parser.addParameter('FreeFacetOnly',true);
             parser.KeepUnmatched = true;
             parser.parse(varargin{:});
 
-            isFreeFacetOnly = parser.Results.FreeFacetsOnly;
+            isFreeFacetOnly = parser.Results.FreeFacetOnly;
             options = namedargs2cell(parser.Unmatched);
         
             figure(figureHandle);

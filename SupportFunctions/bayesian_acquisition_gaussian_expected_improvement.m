@@ -1,4 +1,4 @@
-function expectedImprovement = bayesian_acquisition_gaussian_expected_improvement(designSample,gaussianRegressionModelObjective,objetiveOptimalCurrent,explorationFactor)
+function expectedImprovement = bayesian_acquisition_gaussian_expected_improvement(designSample,gaussianRegressionModelObjective,objectiveOptimalCurrent,explorationFactor)
 %BAYESIAN_ACQUISITION_GAUSSIAN_EXPECTED_IMPROVEMENT for optimization
 %	BAYESIAN_ACQUISITION_GAUSSIAN_EXPECTED_IMPROVEMENT is an acquisition 
 %	function for bayesian optimization using gaussian process regression for
@@ -51,11 +51,11 @@ function expectedImprovement = bayesian_acquisition_gaussian_expected_improvemen
 	[predictionExpectedValue,predictionStandardDeviation] = gaussianRegressionModelObjective.predict(designSample);
 
 	% compute predicted improvement based solely on expected values
-    %   note: objetiveOptimalCurrent+explorationFactor and predictionExpectedValue 
-    %   are inverted compared to standard implementations, as we are attempting to  
-    %   minimize the function instead of maximize, so our improvement is having 
+    %   note: objectiveOptimalCurrent and predictionExpectedValue are inverted
+    %   compared to standard implementations, as we are attempting to minimize
+    %   the function instead of maximize, so our improvement is having 
     %   predictionExpectedValue be lesser instead of greater
-	predictedImprovement = objetiveOptimalCurrent+explorationFactor - predictionExpectedValue;
+	predictedImprovement = objectiveOptimalCurrent - predictionExpectedValue - explorationFactor;
 
 	% normalize the predicted improvement to a gaussian curve
 	normalizedPredictedImprovement = predictedImprovement./predictionStandardDeviation;

@@ -28,7 +28,7 @@ designSpaceLowerBound = [0];
 designSpaceUpperBound = [1];
 objectiveFunction = @(x) -x.^2 .* sin(5*pi.*x).^6.0;
 
-options = {'MaxIter',10,'InitialExplorationFactor',0.01,'ExplorationFactorUpdateFunction',[]};
+options = {'MaxIter',10,'InitialExplorationFactor',0.05,'ExplorationFactorUpdateFunction',[]};
 
 [designOptimal,objectiveOptimal,optimizationOutput] = optimization_bayesian(...
 	objectiveFunction,[],designSpaceLowerBound,designSpaceUpperBound,[],...
