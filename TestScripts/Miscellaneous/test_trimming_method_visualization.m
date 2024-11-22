@@ -37,35 +37,42 @@ anchorPosition3d = [0.3 0.3 0.3];
 
 
 %% color choice
-colorInsideCandidateSpace = color_palette_tol('cyan');
-colorOutsideCandidateSpace = color_palette_tol('purple');
+colorCandidateSpaceInside = color_palette_tol('cyan');
+colorCandidateSpaceOutside = color_palette_tol('yellow');
 colorPointInside = color_palette_tol('green');
 colorPointOutside = color_palette_tol('red');
 colorGrowthPoint = color_palette_tol('yellow');
+colorVector = color_palette_tol('purple');
+
+optionsCandidateSpaceInside1d = {'-','color',colorCandidateSpaceInside,'linewidth',3.0};
+optionsCandidateSpaceOutside1d = {'-','color',colorCandidateSpaceOutside,'linewidth',3.0};
+optionsCandidateSpaceInside2d3d = {'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.4,'LineStyle','none'};
+optionsCandidateSpaceOutside2d3d = {'FaceColor',colorCandidateSpaceOutside,'FaceAlpha',0.5,'LineStyle','none'};
+optionsPointOutside = {'x','color',colorPointOutside,'MarkerSize',10,'linewidth',2.0};
 
 
 %% planar trimming
 % 1d
 figure;
 hold all;
-plot([designSpaceLowerBound1d anchorPosition1d],[-1 -1],'-','color',color_palette_tol('cyan'),'linewidth',3.0);
-plot([anchorPosition1d designSpaceUpperBound1d],[-1 -1],'-','color',color_palette_tol('purple'),'linewidth',3.0);
-plot([anchorPosition1d],[-1],'x','color',color_palette_tol('purple'),'MarkerSize',10,'linewidth',2.0);
-plot([designSpaceLowerBound1d anchorPosition1d],[1 1],'-','color',color_palette_tol('purple'),'linewidth',3.0,'HandleVisibility','off');
-plot([anchorPosition1d designSpaceUpperBound1d],[1 1],'-','color',color_palette_tol('cyan'),'linewidth',3.0,'HandleVisibility','off');
-plot([anchorPosition1d],[1],'x','color',color_palette_tol('purple'),'MarkerSize',10,'linewidth',2.0,'HandleVisibility','off');
-q = quiver(...
+plot([anchorPosition1d designSpaceUpperBound1d],[-1 -1],optionsCandidateSpaceOutside1d{:});
+plot([designSpaceLowerBound1d anchorPosition1d],[-1 -1],optionsCandidateSpaceInside1d{:});
+plot([anchorPosition1d],[-1],optionsPointOutside{:});
+plot([designSpaceLowerBound1d anchorPosition1d],[1 1],optionsCandidateSpaceOutside1d{:},'HandleVisibility','off');
+plot([anchorPosition1d designSpaceUpperBound1d],[1 1],optionsCandidateSpaceInside1d{:},'HandleVisibility','off');
+quiver(...
     [anchorPosition1d anchorPosition1d], [-1 1], ...
-    [-0.1 0.1], [0 0], ...
-    'AutoScale','off','LineWidth',2.0,'Color',color_palette_tol('yellow'));
+    [-0.15 0.15], [0 0], ...
+    'AutoScale','off','LineWidth',2.0,'Color',colorVector);
+plot([anchorPosition1d],[1],optionsPointOutside{:},'HandleVisibility','off');
 set(gca,'XColor', 'none','YColor','none');
 grid minor;
-ylim([-2 2])
-legend({'Kept Region','Removed Region','Removed Design','Normal Vector'},'location','east');
+ylim([-2 2]);
+legend({'Removed Region','Kept Region','Normal Vector','Removed Design'},'location','east');
 save_print_figure(gcf,[saveFolder,'PlanarTrimming1D'],'Size',[figureSize(1) figureSize(2)/2],'PrintFormat',{'png','pdf'});
 
 
-%% 2d
+% 2d
 trimmingNormalsInside = [1 1; -3 3; 0.5 -0.7; 0 1; 1 0; -1 -1];
 
 trimmingNormalsInside = trimmingNormalsInside./vecnorm(trimmingNormalsInside,2,2);
@@ -97,13 +104,13 @@ for i=1:size(trimmingNormalsInside,1)
     convexHullOutside = CandidateSpaceConvexHull(designSpaceLowerBound2d,designSpaceUpperBound2d);
     convexHullOutside = convexHullOutside.define_candidate_space(pointOutside);
 
-    convexHullOutside.plot_candidate_space(gcf,'FaceColor','r','FaceAlpha',0.2,'LineStyle','none');
-    convexHullInside.plot_candidate_space(gcf,'FaceColor','g','FaceAlpha',0.2,'LineStyle','none');
+    convexHullOutside.plot_candidate_space(gcf,optionsCandidateSpaceOutside2d3d{:});
+    convexHullInside.plot_candidate_space(gcf,optionsCandidateSpaceInside2d3d{:});
     quiver(...
         anchorPosition2d(1),anchorPosition2d(2),...
         trimmingNormalsInside(i,1),trimmingNormalsInside(i,2),...
-        'AutoScale','on','AutoScaleFactor',0.3,'LineWidth',2.0,'Color',[0.9290 0.6940 0.1250]);
-    plot(anchorPosition2d(1),anchorPosition2d(2),'r.','MarkerSize',20);
+        'AutoScale','on','AutoScaleFactor',0.3,'LineWidth',2.0,'Color',colorVector);
+    plot(anchorPosition2d(1),anchorPosition2d(2),optionsPointOutside{:});
     set(gca,'XColor', 'none','YColor','none');
     grid minor;
 end
@@ -146,19 +153,21 @@ for i=1:size(trimmingNormalsInside,1)
     pointInside = [anchorPosition3d;designSpaceIntersection;cornerCoordinate(dotProduct<=0,:)];
     pointOutside = [anchorPosition3d;designSpaceIntersection;cornerCoordinate(dotProduct>0,:)];
 
-    convexHullInside = CandidateSpaceConvexHull(designSpaceLowerBound3d,designSpaceUpperBound3d);
-    convexHullInside = convexHullInside.define_candidate_space(pointInside);
+    tolerance = 1e-5;
 
-    convexHullOutside = CandidateSpaceConvexHull(designSpaceLowerBound3d,designSpaceUpperBound3d);
-    convexHullOutside = convexHullOutside.define_candidate_space(pointOutside);
+    convexHullInside = CandidateSpaceConvexHull(designSpaceLowerBound3d-tolerance,designSpaceUpperBound3d+tolerance);
+    convexHullInside = convexHullInside.define_candidate_space(pointInside+tolerance*trimmingNormalsInside(i,:));
 
-    convexHullOutside.plot_candidate_space(gcf,'FaceColor','r','FaceAlpha',0.2,'LineStyle','none');
-    convexHullInside.plot_candidate_space(gcf,'FaceColor','g','FaceAlpha',0.2,'LineStyle','none');
+    convexHullOutside = CandidateSpaceConvexHull(designSpaceLowerBound3d-tolerance,designSpaceUpperBound3d+tolerance);
+    convexHullOutside = convexHullOutside.define_candidate_space(pointOutside-tolerance*trimmingNormalsInside(i,:));
+
+    convexHullOutside.plot_candidate_space(gcf,optionsCandidateSpaceOutside2d3d{:},'linestyle','none');
+    convexHullInside.plot_candidate_space(gcf,optionsCandidateSpaceInside2d3d{:});
     quiver3(...
         anchorPosition3d(1),anchorPosition3d(2),anchorPosition3d(3),...
         trimmingNormalsInside(i,1),trimmingNormalsInside(i,2),trimmingNormalsInside(i,3),...
-        'AutoScale','on','AutoScaleFactor',0.3,'LineWidth',2.0,'Color',[0.9290 0.6940 0.1250]);
-    plot3(anchorPosition3d(1),anchorPosition3d(2),anchorPosition3d(3),'r.','MarkerSize',20);
+        'AutoScale','on','AutoScaleFactor',0.3,'LineWidth',2.0,'Color',colorVector);
+    plot3(anchorPosition3d(1),anchorPosition3d(2),anchorPosition3d(3),optionsPointOutside{:});
     set(gca,'XColor','none','YColor','none','ZColor','none');
     grid minor;
     view(3);
@@ -172,12 +181,12 @@ save_print_figure(gcf,[saveFolder,'PlanarTrimming3D'],'Size',[figureSize(1) 2*fi
 % 1d
 figure;
 hold all;
-plot([designSpaceLowerBound1d anchorPosition1d],[-1 -1],'g-','linewidth',3.0);
-plot([anchorPosition1d designSpaceUpperBound1d],[-1 -1],'r-','linewidth',3.0);
-plot([anchorPosition1d],[-1],'r.','MarkerSize',20);
-plot([designSpaceLowerBound1d anchorPosition1d],[1 1],'r-','linewidth',3.0);
-plot([anchorPosition1d designSpaceUpperBound1d],[1 1],'g-','linewidth',3.0);
-plot([anchorPosition1d],[1],'r.','MarkerSize',20);
+plot([designSpaceLowerBound1d anchorPosition1d],[-1 -1],optionsCandidateSpaceInside1d{:});
+plot([anchorPosition1d designSpaceUpperBound1d],[-1 -1],optionsCandidateSpaceOutside1d{:});
+plot([anchorPosition1d],[-1],optionsPointOutside{:});
+plot([designSpaceLowerBound1d anchorPosition1d],[1 1],optionsCandidateSpaceOutside1d{:});
+plot([anchorPosition1d designSpaceUpperBound1d],[1 1],optionsCandidateSpaceInside1d{:});
+plot([anchorPosition1d],[1],optionsPointOutside{:});
 set(gca,'XColor', 'none','YColor','none');
 grid minor;
 ylim([-2 2])
@@ -211,12 +220,12 @@ for i=1:size(cornerCombination,1)
         end
 
         if(j==i)
-            handleRemoved = plot_design_box_2d(gcf,cornerBox,'FaceColor','r','FaceAlpha',0.2,'LineStyle','none');
+            handleRemoved = plot_design_box_2d(gcf,cornerBox,optionsCandidateSpaceOutside2d3d{:});
         else
-            handleKept = plot_design_box_2d(gcf,cornerBox,'FaceColor','g','FaceAlpha',0.2,'LineStyle','none');
+            handleKept = plot_design_box_2d(gcf,cornerBox,optionsCandidateSpaceInside2d3d{:});
         end
     end
-    handleAnchor = plot(anchorPosition2d(1),anchorPosition2d(2),'r.','MarkerSize',20);
+    handleAnchor = plot(anchorPosition2d(1),anchorPosition2d(2),optionsPointOutside{:});
     set(gca,'XColor', 'none','YColor','none');
     grid minor;
 end
@@ -253,12 +262,12 @@ for i=1:size(cornerCombination,1)
         end
 
         if(j==i)
-            handleRemoved = plot_design_box_3d(gcf,cornerBox,'FaceColor','r','FaceAlpha',0.2,'LineStyle','none');
+            handleRemoved = plot_design_box_3d(gcf,cornerBox,optionsCandidateSpaceOutside2d3d{:});
         else
-            handleKept = plot_design_box_3d(gcf,cornerBox,'FaceColor','g','FaceAlpha',0.2,'LineStyle','none');
+            handleKept = plot_design_box_3d(gcf,cornerBox,optionsCandidateSpaceInside2d3d{:});
         end
     end
-    handleAnchor = plot3(anchorPosition3d(1),anchorPosition3d(2),anchorPosition3d(3),'r.','MarkerSize',20);
+    handleAnchor = plot3(anchorPosition3d(1),anchorPosition3d(2),anchorPosition3d(3),optionsPointOutside{:});
     set(gca,'XColor', 'none','YColor','none','ZColor','none');
     grid minor;
     view(3);
@@ -275,7 +284,7 @@ for i=1:size(cornerCombination,1)
     hold all;
     tolerance = -1e-3;
     goodRegion = designSpace3d + [+tolerance;-tolerance];
-    handleKept = plot_design_box_3d(gcf,goodRegion,'FaceColor','g','FaceAlpha',0.2,'LineStyle','none');
+    handleKept = plot_design_box_3d(gcf,goodRegion,optionsCandidateSpaceInside2d3d{:});
 
     cornerBox = designSpace3d;
     if(cornerCombination(i,1))
@@ -293,9 +302,9 @@ for i=1:size(cornerCombination,1)
     else
         cornerBox(1,3) = anchorPosition3d(3);
     end
-    handleRemoved = plot_design_box_3d(gcf,cornerBox,'FaceColor','r','FaceAlpha',0.2,'LineStyle','none');
+    handleRemoved = plot_design_box_3d(gcf,cornerBox,optionsCandidateSpaceOutside2d3d{:});
 
-    handleAnchor = plot3(anchorPosition3d(1),anchorPosition3d(2),anchorPosition3d(3),'r.','MarkerSize',20);
+    handleAnchor = plot3(anchorPosition3d(1),anchorPosition3d(2),anchorPosition3d(3),optionsPointOutside{:});
     set(gca,'XColor', 'none','YColor','none','ZColor','none');
     grid minor;
     view(3);
@@ -310,9 +319,10 @@ holeSize = 0.1;
 % 1d
 figure;
 hold all;
-plot([designSpaceLowerBound1d designSpaceUpperBound1d],[0 0],'g-','linewidth',3.0);
-plot([anchorPosition1d-holeSize anchorPosition1d+holeSize],[0 0],'r-','linewidth',3.0);
-plot(anchorPosition1d,0,'r.','MarkerSize',20);
+plot([designSpaceLowerBound1d anchorPosition1d-holeSize],[0 0],optionsCandidateSpaceInside1d{:});
+plot([anchorPosition1d+holeSize designSpaceUpperBound1d],[0 0],optionsCandidateSpaceInside1d{:},'HandleVisibility','off');
+plot([anchorPosition1d-holeSize anchorPosition1d+holeSize],[0 0],optionsCandidateSpaceOutside1d{:});
+plot(anchorPosition1d,0,optionsPointOutside{:});
 set(gca,'XColor', 'none','YColor','none');
 grid minor;
 legend({'Kept Region','Removed Region','Removed Design'},'location','northeast');
@@ -321,9 +331,9 @@ save_print_figure(gcf,[saveFolder,'HolePunching1D'],'Size',[figureSize(1) figure
 % 2d
 figure;
 hold all;
-plot_design_box_2d(gcf,designSpace2d,'FaceColor','g','FaceAlpha',0.2,'LineStyle','none');
-plot_design_box_2d(gcf,anchorPosition2d+[-holeSize -holeSize ;+holeSize +holeSize],'FaceColor','r','FaceAlpha',0.2,'LineStyle','none');
-plot(anchorPosition2d(1),anchorPosition2d(2),'r.','MarkerSize',20);
+plot_design_box_2d(gcf,designSpace2d,optionsCandidateSpaceInside2d3d{:});
+plot_design_box_2d(gcf,anchorPosition2d+[-holeSize -holeSize ;+holeSize +holeSize],optionsCandidateSpaceOutside2d3d{:});
+plot(anchorPosition2d(1),anchorPosition2d(2),optionsPointOutside{:});
 set(gca,'XColor', 'none','YColor','none');
 grid minor;
 legend({'Kept Region','Removed Region','Removed Design'},'location','east');
@@ -332,9 +342,9 @@ save_print_figure(gcf,[saveFolder,'HolePunching2D'],'Size',[figureSize(1) figure
 % 3d
 figure;
 hold all;
-plot_design_box_3d(gcf,designSpace3d,'FaceColor','g','FaceAlpha',0.2,'LineStyle','none');
-plot_design_box_3d(gcf,anchorPosition3d+[-holeSize -holeSize -holeSize;+holeSize +holeSize +holeSize],'FaceColor','r','FaceAlpha',0.2,'LineStyle','none');
-plot3(anchorPosition3d(1),anchorPosition3d(2),anchorPosition3d(3),'r.','MarkerSize',20);
+plot_design_box_3d(gcf,designSpace3d,optionsCandidateSpaceInside2d3d{:});
+plot_design_box_3d(gcf,anchorPosition3d+[-holeSize -holeSize -holeSize;+holeSize +holeSize +holeSize],optionsCandidateSpaceOutside2d3d{:});
+plot3(anchorPosition3d(1),anchorPosition3d(2),anchorPosition3d(3),optionsPointOutside{:});
 set(gca,'XColor','none','YColor','none','ZColor','none');
 grid minor;
 view(3)

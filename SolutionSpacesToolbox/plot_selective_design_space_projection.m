@@ -200,8 +200,18 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
         
         %% Evaluate Samples
         [performanceDeficit,physicalFeasibilityDeficit,evaluatorOutput] = designEvaluator.evaluate(designSample);
-        isGoodPerformance = design_deficit_to_label_score(performanceDeficit);
-        isPhysicallyFeasible = design_deficit_to_label_score(physicalFeasibilityDeficit);
+
+        if(isempty(performanceDeficit))
+            isGoodPerformance = true(size(designSample,1),1);
+        else
+            isGoodPerformance = design_deficit_to_label_score(performanceDeficit);
+        end
+
+        if(isempty(physicalFeasibilityDeficit))
+            isPhysicallyFeasible = true(size(designSample,1),1);
+        else
+            isPhysicallyFeasible = design_deficit_to_label_score(physicalFeasibilityDeficit);
+        end
 
         %% Tag Bad Designs w.r.t. which requirement it violates
         iBadDesigns = find((~isGoodPerformance) & isPhysicallyFeasible);

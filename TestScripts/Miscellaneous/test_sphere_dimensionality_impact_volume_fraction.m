@@ -40,6 +40,7 @@ for i=1:nDimensionMaxTest
 end
 
 figure;
+colororder(color_palette_tol);
 hold all;
 for i=1:nDimensionMaxPlot
     validEntries = ~isnan(volumeFraction(i,:));
@@ -53,7 +54,7 @@ for i=1:nDimensionMaxPlot
         legendDescription = sprintf('%d Components',i);
     end
 
-    plot(currentValidDimension,currentFraction,'-*','DisplayName',legendDescription);
+    plot(currentValidDimension,currentFraction,'-*','DisplayName',legendDescription,'LineWidth',2.0);
 end
 xlim([1 nDimensionMaxPlot]);
 set(gca, 'YScale', 'log');
@@ -63,6 +64,7 @@ save_print_figure(gcf,[saveFolder,'VolumeLostToComplete'],'Size',figureSize);
 
 volumeIncrease = volumeFraction./min(volumeFraction,[],1);
 figure;
+colororder(color_palette_tol);
 hold all;
 for i=1:nDimensionMaxPlot
     validEntries = ~isnan(volumeIncrease(i,:));
@@ -76,7 +78,7 @@ for i=1:nDimensionMaxPlot
         legendDescription = sprintf('%d Components',i);
     end
 
-    plot(currentValidDimension,currentIncrease,'-*','DisplayName',legendDescription);
+    plot(currentValidDimension,currentIncrease,'DisplayName',legendDescription,'LineWidth',2.0,'Marker','.','MarkerSize',20);
 end
 xlim([1 nDimensionMaxPlot]);
 xlabel('Problem Dimension','Interpreter','latex');
@@ -84,7 +86,7 @@ ylabel('Volume Increase ($$V/V_{box}$$)','Interpreter','latex');
 set(gca, 'YScale', 'log', 'FontSize', 14);
 % legend('location','northwest','FontSize',8);
 grid minor;
-save_print_figure(gcf,[saveFolder,'VolumeGainedToBox'],'Size',figureSize,'PrintFormat',{'png','pdf'});
+save_print_figure(gcf,[saveFolder,'BallVolumeGainedToBox'],'Size',figureSize,'PrintFormat',{'png','pdf'});
 
 
 %% reference for two dimensions

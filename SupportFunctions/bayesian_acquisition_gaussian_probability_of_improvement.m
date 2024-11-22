@@ -53,7 +53,8 @@ function probabilityOfImprovement = bayesian_acquisition_gaussian_probability_of
     %   note: objectiveOptimalCurrent and predictionExpectedValue are inverted
     %   compared to standard implementations, as we are attempting to minimize
     %   the function instead of maximize, so our improvement is having 
-    %   predictionExpectedValue be lesser instead of greater
+    %   predictionExpectedValue be lesser instead of greater than the current
+    %	optimum
 	predictedImprovement = objectiveOptimalCurrent - predictionExpectedValue - explorationFactor;
 
 	% normalize the predicted improvement to a gaussian curve

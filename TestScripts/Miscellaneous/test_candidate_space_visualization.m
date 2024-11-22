@@ -26,11 +26,16 @@ designSpaceUpperBoundSpace = [2 2];
 
 
 %% color choice
-colorInsideCandidateSpace = color_palette_tol('cyan');
-colorOutsideCandidateSpace = color_palette_tol('purple');
+colorCandidateSpaceInside = color_palette_tol('cyan');
+colorCandidateSpaceOutside = color_palette_tol('purple');
 colorPointInside = color_palette_tol('green');
 colorPointOutside = color_palette_tol('red');
 colorGrowthPoint = color_palette_tol('yellow');
+colorVector = color_palette_tol('yellow');
+
+optionsPointInside = {'linestyle','none','Marker','*','color',colorPointInside,'MarkerSize',10,'linewidth',2.0};
+optionsPointOutside = {'linestyle','none','Marker','+','color',colorPointOutside,'MarkerSize',10,'linewidth',2.0};
+optionsVector = {'AutoScale','off','Color',colorVector,'linewidth',1.5};
 
 
 %% visualize - convex hull
@@ -45,9 +50,9 @@ candidateSpace = candidateSpace.define_candidate_space(designSample(inCandidateS
 
 figure;
 hold all;
-plot(designSample(inCandidateSpace,1),designSample(inCandidateSpace,2),'o','Color',colorPointInside,'MarkerSize',10,'linewidth',4);
-plot(designSample(~inCandidateSpace,1),designSample(~inCandidateSpace,2),'x','Color',colorPointOutside,'MarkerSize',10,'linewidth',4);
-candidateSpace.plot_candidate_space(gcf,'EdgeColor',colorInsideCandidateSpace,'linewidth',4);
+plot(designSample(inCandidateSpace,1),designSample(inCandidateSpace,2),optionsPointInside{:});
+plot(designSample(~inCandidateSpace,1),designSample(~inCandidateSpace,2),optionsPointOutside{:});
+candidateSpace.plot_candidate_space(gcf,'EdgeColor',colorCandidateSpaceInside,'linewidth',4);
 legend({'Inside Candidate Space','Outside Candidate Space','Convex Hull Boundary'},'location','south');
 grid minor;
 set(gca,'XColor', 'none','YColor','none');
@@ -71,11 +76,11 @@ candidateSpaceGrown = candidateSpace.grow_candidate_space(growthRate);
 figure;
 hold all;
 plot(convexHullCenter(1),convexHullCenter(2),'b.','MarkerSize',20);
-candidateSpace.plot_candidate_space(gcf,'EdgeColor',colorInsideCandidateSpace,'LineStyle','--','linewidth',4);
-plot(insideSample(:,1),insideSample(:,2),'o','color',colorPointInside,'MarkerSize',10,'linewidth',4);
-quiver(insideSample(:,1),insideSample(:,2),growthVector(:,1),growthVector(:,2),'AutoScale','off');
-candidateSpaceGrown.plot_candidate_space(gcf,'EdgeColor',colorInsideCandidateSpace,'linewidth',4);
-plot(insideSampleGrown(:,1),insideSampleGrown(:,2),'o','color',colorGrowthPoint,'MarkerSize',10,'linewidth',4);
+candidateSpace.plot_candidate_space(gcf,'EdgeColor',colorCandidateSpaceInside,'LineStyle','--','linewidth',4);
+plot(insideSample(:,1),insideSample(:,2),optionsPointInside{:});
+quiver(insideSample(:,1),insideSample(:,2),growthVector(:,1),growthVector(:,2),optionsVector{:});
+candidateSpaceGrown.plot_candidate_space(gcf,'EdgeColor',colorCandidateSpaceInside,'linewidth',4);
+plot(insideSampleGrown(:,1),insideSampleGrown(:,2),optionsPointInside{:},'color',colorGrowthPoint);
 legend({'Convex Hull Center','Original Convex Hull','Inside Points','Growth Vector','Grown Convex Hull','New Inside Points'},'location','northwest')
 grid minor;
 set(gca,'XColor', 'none','YColor','none');
@@ -128,11 +133,11 @@ end
 
 figure;
 hold all;
-plot(designSample(isInside,1),designSample(isInside,2),'o','color',colorPointInside,'MarkerSize',10,'linewidth',4);
-plot(designSample(~isInside,1),designSample(~isInside,2),'x','color',colorPointOutside,'MarkerSize',10,'linewidth',4);
-candidateSpace.plot_candidate_space(gcf,'FaceColor',colorInsideCandidateSpace,'FaceAlpha',0.5,'EdgeColor',colorInsideCandidateSpace,'FreeFacetOnly',false);
+plot(designSample(isInside,1),designSample(isInside,2),optionsPointInside{:});
+plot(designSample(~isInside,1),designSample(~isInside,2),optionsPointOutside{:});
+candidateSpace.plot_candidate_space(gcf,'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.5,'EdgeColor',colorCandidateSpaceInside,'FreeFacetOnly',false);
 patch('Faces',outsideDelaunayIndex,'Vertices',insideSample,'LineStyle','--','EdgeColor','k','FaceColor','none','linewidth',1.5);
-legend({'Inside Candidate Space','Outside Candidate Space','Simplices Inside Area','Removed Simplices'},'location','west');
+legend({'Inside Candidate Space','Outside Candidate Space','Simplices Inside Area','Removed Simplices'},'location','northwest');
 grid minor;
 set(gca,'XColor', 'none','YColor','none');
 h = get(gca,'Children');
@@ -164,11 +169,11 @@ candidateSpaceGrown = candidateSpace.grow_candidate_space(growthRate);
 
 figure;
 hold all;
-plot(originalVertices(:,1),originalVertices(:,2),'o','color',colorPointInside,'MarkerSize',10,'linewidth',4);
-plot(newVertices(:,1),newVertices(:,2),'o','color',colorGrowthPoint,'MarkerSize',10,'linewidth',4);
-candidateSpace.plot_candidate_space(gcf,'FaceColor','none','EdgeColor',colorInsideCandidateSpace,'LineStyle','--','linewidth',2,'FreeFacetOnly',false);
-candidateSpaceGrown.plot_candidate_space(gcf,'FaceColor','none','EdgeColor',colorInsideCandidateSpace,'linewidth',2);
-quiver(originalVertices(:,1),originalVertices(:,2),growthVector(:,1),growthVector(:,2),'AutoScale','off','Color',[0.9290 0.6940 0.1250]);
+plot(originalVertices(:,1),originalVertices(:,2),optionsPointInside{:});
+plot(newVertices(:,1),newVertices(:,2),optionsPointInside{:},'color',colorGrowthPoint);
+candidateSpace.plot_candidate_space(gcf,'FaceColor','none','EdgeColor',colorCandidateSpaceInside,'LineStyle','--','linewidth',2,'FreeFacetOnly',false);
+candidateSpaceGrown.plot_candidate_space(gcf,'FaceColor','none','EdgeColor',colorCandidateSpaceInside,'linewidth',2);
+quiver(originalVertices(:,1),originalVertices(:,2),growthVector(:,1),growthVector(:,2),optionsVector{:});
 legend({'Original Vertices','Grown Vertices','Original Simplices','Grown Simplices','Vertices Growth'},'location','northwest');
 grid minor;
 set(gca,'XColor', 'none','YColor','none');
@@ -196,10 +201,10 @@ candidateSpace = candidateSpace.define_candidate_space(designSample,labelSample)
 isShapeDefinition = candidateSpace.IsShapeDefinition;
 
 figure;
-plot(designSample(labelSample,1),designSample(labelSample,2),'o','color',colorPointInside,'MarkerSize',10,'LineWidth',4);
+plot(designSample(labelSample,1),designSample(labelSample,2),optionsPointInside{:});
 hold all;
-plot(designSample(~labelSample,1),designSample(~labelSample,2),'x','color',colorPointOutside,'MarkerSize',10,'LineWidth',4);
-candidateSpace.plot_candidate_space(gcf,'FaceColor',colorInsideCandidateSpace,'FaceAlpha',0.5,'EdgeColor','none');
+plot(designSample(~labelSample,1),designSample(~labelSample,2),optionsPointOutside{:});
+candidateSpace.plot_candidate_space(gcf,'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.5,'EdgeColor','none');
 legend({'Inside Candidate Space','Outside Candidate Space','Positive Region of Classifier'},'Location','southwest');
 grid minor;
 set(gca,'XColor', 'none','YColor','none');

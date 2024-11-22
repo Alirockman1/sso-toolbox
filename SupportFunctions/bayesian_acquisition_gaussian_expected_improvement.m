@@ -54,7 +54,8 @@ function expectedImprovement = bayesian_acquisition_gaussian_expected_improvemen
     %   note: objectiveOptimalCurrent and predictionExpectedValue are inverted
     %   compared to standard implementations, as we are attempting to minimize
     %   the function instead of maximize, so our improvement is having 
-    %   predictionExpectedValue be lesser instead of greater
+    %   predictionExpectedValue be lesser instead of greater than the current
+    %	optimum
 	predictedImprovement = objectiveOptimalCurrent - predictionExpectedValue - explorationFactor;
 
 	% normalize the predicted improvement to a gaussian curve
@@ -64,7 +65,7 @@ function expectedImprovement = bayesian_acquisition_gaussian_expected_improvemen
     % get probability of improvement and uncertainty of improvement
     %	--> model that with: cumulative distribution and probability density
     %	--> (1) the higher the predicted improvement, the higher the probability
-    %		that is true (CDF)
+    %		that is a true improvement (CDF)
     %	--> (2) the closer the predicted improvement is to 0, the larger the 
     %		uncertainty of whether this is an improvement or not (PDF)
 	probabilityOfImprovement = normcdf(normalizedPredictedImprovement);
