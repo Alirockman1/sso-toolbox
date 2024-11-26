@@ -1,4 +1,4 @@
-function [figureElementHandle,problemData,plotData] = plot_selective_design_space_projection(designEvaluator,designBox,designSpaceLowerBound,designSpaceUpperBound,desiredPairs,plotGrid,varargin)
+function [figureElementHandle,problemData,plotData] = plot_selective_design_space_projection(varargin)
 %PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION Pair-view of box-shaped solution space
 %   PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION projects the solution space design
 %   box into 2D-planes and allows for the visualization of them together with
@@ -121,21 +121,30 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
     parser.addRequired('DesignEvaluator',@(x)isa(x,'DesignEvaluatorBase'));
     parser.addRequired('DesignBox',@(x)isnumeric(x)&&size(x,1)==2);
     parser.addRequired('DesignSpaceLowerBound',@(x)isnumeric(x)&&size(x,1)==1);
-    parser.addRequired('DesignSpaceUpperbound',@(x)isnumeric(x)&&size(x,1)==1);
+    parser.addRequired('DesignSpaceUpperBound',@(x)isnumeric(x)&&size(x,1)==1);
     parser.addRequired('DesiredPairs',@(x)(isnumeric(x)&&size(x,2)==2));
     parser.addRequired('PlotGrid',@(x)(isnumeric(x)&&length(x)==2));
+    parser.addOptional('CurrentFigure',[],@(x)isa(x,'matlab.ui.Figure')||isempty(x));
     parser.addParameter('NumberSamplesPerPlot',3000,@(x)isnumeric(x)&&isscalar(x)&&x>0);
     parser.addParameter('AxesLabels',{},@(x)iscell(x));
     parser.addParameter('MarkerColorsViolatedRequirements','r');
     parser.addParameter('MarkerColorsCriterion','worst',@(x)any(stcpmi(x,{'worst','random'})));
     parser.addParameter('SamplingMethod',@sampling_latin_hypercube,@(x)isa(x,'function_handle'));
     parser.addParameter('SamplingOptions',{},@(x)iscell(x));
+    parser.addParameter('PlotIntervals',true,@(x)islogical(x));
     parser.addParameter('PlotOptionsGood',{},@(x)iscell(x));
     parser.addParameter('PlotOptionsBad',{},@(x)iscell(x));
     parser.addParameter('PlotOptionsPhysicallyInfeasible',{},@(x)iscell(x));
     parser.addParameter('PlotOptionsIntervals',{},@(x)iscell);
     parser.addParameter('PlotOptionsBox',{},@(x)iscell(x));
-    parser.parse(designEvaluator,designBox,designSpaceLowerBound,designSpaceUpperBound,desiredPairs,plotGrid,varargin{:});
+    parser.parse(varargin{:});
+    
+    designEvaluator = parser.Results.DesignEvaluator;
+    designBox = parser.Results.DesignBox;
+    designSpaceLowerBound = parser.Results.DesignSpaceLowerBound;
+    designSpaceUpperBound = parser.Results.DesignSpaceUpperBound;
+    desiredPairs = parser.Results.DesiredPairs;
+    plotGrid = parser.Results.PlotGrid;
     options = parser.Results;
 
     defaultPlotOptionsGood = {'Linestyle','none','Marker','.','Color','g'};
@@ -151,7 +160,7 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
     defaultPlotOptionsIntervals = {'LineStyle','--','Color','k','Linewidth',1.5};
     [~,plotOptionsIntervals] = merge_name_value_pair_argument(defaultPlotOptionsIntervals,options.PlotOptionsIntervals);
 
-    defaultPlotOptionsBox = {'Linestyle','-','Color','k','Linewidth',2.0};
+    defaultPlotOptionsBox = {'Linestyle','-','EdgeColor','k','Linewidth',2.0};
     [~,plotOptionBox] = merge_name_value_pair_argument(defaultPlotOptionsBox,options.PlotOptionsBox);
     
     
@@ -188,7 +197,12 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
 
     
     %% Start Figure
-    figureElementHandle.MainFigure = figure;
+    if(isempty(options.CurrentFigure))
+        figureElementHandle.MainFigure = figure;
+    else
+        figureElementHandle.MainFigure = options.CurrentFigure;
+    end
+    figure(figureElementHandle.MainFigure);
     hold all; 
     drawnow;
     for j=1:size(desiredPairs,1)
@@ -266,33 +280,24 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
         end
         
         % dashed box limits
-        plot([designBox(1,desiredPairs(j,1)) designBox(1,desiredPairs(j,1))],...
-            [designSpaceLowerBound(desiredPairs(j,2)) designSpaceUpperBound(desiredPairs(j,2))],...
-            plotOptionsIntervals{:}); % vertical left line
-        plot([designBox(2,desiredPairs(j,1)) designBox(2,desiredPairs(j,1))],...
-            [designSpaceLowerBound(desiredPairs(j,2)) designSpaceUpperBound(desiredPairs(j,2))],...
-            plotOptionsIntervals{:}); % vertical right line
-        plot([designSpaceLowerBound(desiredPairs(j,1)) designSpaceUpperBound(desiredPairs(j,1))],...
-            [designBox(1,desiredPairs(j,2)) designBox(1,desiredPairs(j,2))],...
-            plotOptionsIntervals{:}); % horizontal lower line
-        plot([designSpaceLowerBound(desiredPairs(j,1)) designSpaceUpperBound(desiredPairs(j,1))],...
-            [designBox(2,desiredPairs(j,2)) designBox(2,desiredPairs(j,2))],...
-            plotOptionsIntervals{:}); % horizontal upper line
+        if(options.PlotIntervals)
+            plot([designBox(1,desiredPairs(j,1)) designBox(1,desiredPairs(j,1))],...
+                [designSpaceLowerBound(desiredPairs(j,2)) designSpaceUpperBound(desiredPairs(j,2))],...
+                plotOptionsIntervals{:}); % vertical left line
+            plot([designBox(2,desiredPairs(j,1)) designBox(2,desiredPairs(j,1))],...
+                [designSpaceLowerBound(desiredPairs(j,2)) designSpaceUpperBound(desiredPairs(j,2))],...
+                plotOptionsIntervals{:}); % vertical right line
+            plot([designSpaceLowerBound(desiredPairs(j,1)) designSpaceUpperBound(desiredPairs(j,1))],...
+                [designBox(1,desiredPairs(j,2)) designBox(1,desiredPairs(j,2))],...
+                plotOptionsIntervals{:}); % horizontal lower line
+            plot([designSpaceLowerBound(desiredPairs(j,1)) designSpaceUpperBound(desiredPairs(j,1))],...
+                [designBox(2,desiredPairs(j,2)) designBox(2,desiredPairs(j,2))],...
+                plotOptionsIntervals{:}); % horizontal upper line
+        end
         
         % box contour
-        boxPlotX = [...
-            designBox(1,desiredPairs(j,1)) ... % bottom-left corner
-            designBox(2,desiredPairs(j,1)) ... % bottom-right corner
-            designBox(2,desiredPairs(j,1)) ... % top-right corner
-            designBox(1,desiredPairs(j,1)) ... % top-left corner
-            designBox(1,desiredPairs(j,1))]; % bottom-left corner
-        boxPlotY = [...
-            designBox(1,desiredPairs(j,2)) ... % bottom-left corner
-            designBox(1,desiredPairs(j,2)) ... % bottom-right corner
-            designBox(2,desiredPairs(j,2)) ... % top-right corner
-            designBox(2,desiredPairs(j,2)) ... % top-left corner
-            designBox(1,desiredPairs(j,2))]; % bottom-left corner
-        plot(boxPlotX,boxPlotY,plotOptionBox{:});
+        currentDesignBox = designBox(:,[desiredPairs(j,1),desiredPairs(j,2)]);
+        plot_design_box_2d(gcf,currentDesignBox,plotOptionBox{:});
         
         % axis lengths and labels
         axis([designSpaceLowerBound(desiredPairs(j,1)) designSpaceUpperBound(desiredPairs(j,1)) ...
