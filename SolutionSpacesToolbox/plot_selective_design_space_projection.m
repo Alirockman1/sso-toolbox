@@ -13,6 +13,11 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
 %   are pair-wise plots as defined by DESIREDPAIRS, and are on a grid of 
 %   subplots as specified by PLOTGRID.
 %
+%   PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION(DESIGNEVALUATOR,DESIGNBOX,
+%   DESIGNSPACELOWERBOUND,DESIGNSPACEUPPERBOUND,DESIREDPAIRS,PLOTGRID,
+%   FIGUREHANDLE) additionally allows one to specify an existing figure to 
+%   use for the plots, instead of creating a new one.
+%
 %   PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION(...NAME,VALUE,...) allows the 
 %   specification of additional options. These are:
 %       - 'NumberSamplesPerPlot' : how many sample points are used in each 
@@ -31,6 +36,9 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
 %       the plots. Default: @sampling_latin_hypercube.
 %       - 'SamplingOptions' : extra options for the sampling method. Default
 %       is empty.
+%       - 'PlotIntervals' : true/false flag indicating whether the dashed 
+%       intervals for the design variables should be printed or not. Default:
+%       true.
 %       - 'PlotOptionsGood' : options for the plotting of design points with 
 %       good performance. Default: {'Linestyle','none','Marker','.','Color','g'}
 %       - 'PlotOptionsBad' : options for the plotting of design points with 
@@ -41,8 +49,9 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
 %       - 'PlotOptionsIntervals' : options for the plotting of the intervals of
 %       the solution space design box. Default: {'LineStyle','--','Color','k',
 %       'Linewidth',1.5}.
-%       - 'PlotOptionsBox' : options for the plotting of the solution box.
-%       Default: {'Linestyle','-','Color','k','Linewidth',2.0}.
+%       - 'PlotOptionsBox' : options for the plotting of the solution box. Uses
+%       the 'plot_design_box_2d' function. Default: {'Linestyle','-',
+%       'EdgeColor','k','Linewidth',2.0}.
 %
 %   FIGUREELEMENTHANDLE = PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION(...) returns 
 %   the handles for the main elements of the figure as a whole. These are:
