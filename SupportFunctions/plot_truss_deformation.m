@@ -77,13 +77,12 @@ function [handleUndeformed,handleDeformed] = plot_truss_deformation(figureHandle
 	parser = inputParser;
     parser.addOptional('NodeDisplacement',[]);
     parser.addOptional('ElementCrossSectionArea',1);
-    parser.addParameter('ColorUndeformed','b');
-    parser.addParameter('ColorDeformed','r');
     parser.addParameter('DisplacementScaleFactor',1);
     parser.addParameter('MinimumLinewidth',[],@(x)isnumeric(x));
     parser.addParameter('MaximumLinewidth',1,@(x)isnumeric(x));
-    parser.addParameter('PlotOptions',{},@(x)iscell(x));
-   
+    parser.addParameter('TrussPlotOptions',{},@(x)iscell(x));
+    parser.addParameter('UndeformedPlotOptions',{});
+    parser.addParameter('DeformedPlotOptions',{});
 	parser.parse(varargin{:});
     options = parser.Results;
 
@@ -95,8 +94,14 @@ function [handleUndeformed,handleDeformed] = plot_truss_deformation(figureHandle
 		elementCrossSectionArea = elementCrossSectionArea * ones(nElement,1);
 	end
 
-    defaultPlotOptions = {'Marker','o'};
-    [~,plotOptions] = merge_name_value_pair_argument(defaultPlotOptions,options.PlotOptions);
+    defaultTrussPlotOptions = {'Color',color_palette_tol('blue'),'Marker','o'};
+    [~,trussPlotOptions] = merge_name_value_pair_argument(defaultTrussPlotOptions,options.TrussPlotOptions);
+
+    defaultUndeformedPlotOptions = {'Linestyle','-'};
+    [~,undeformedPlotOptions] = merge_name_value_pair_argument(defaultUndeformedPlotOptions,trussPlotOptions,options.UndeformedPlotOptions);
+    
+    defaultDeformedPlotOptions = {'Linestyle',':'};
+    [~,deformedPlotOptions] = merge_name_value_pair_argument(defaultDeformedPlotOptions,trussPlotOptions,options.DeformedPlotOptions);
     
     % calculate linewidth based on areas
     if(isempty(options.MinimumLinewidth) || isnan(options.MinimumLinewidth))
@@ -152,14 +157,12 @@ function [handleUndeformed,handleDeformed] = plot_truss_deformation(figureHandle
         end
 
         handleUndeformed = plotFunction(plotInputArgumentUndeformed{:},...
-            'Color',options.ColorUndeformed,...
             'Linewidth',elementLinewidth(i),...
-            plotOptions{:});
+            undeformedPlotOptions{:});
         if(isPlotDeformed)
             handleDeformed = plotFunction(plotInputArgumentDeformed{:},...
-                'Color',options.ColorDeformed,...
                 'Linewidth',elementLinewidth(i),...
-                plotOptions{:});
+                deformedPlotOptions{:});
         end
     end
 end

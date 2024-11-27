@@ -5,6 +5,11 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
     parser.addParameter('SaveFigureOptions',{});
     parser.addParameter('BoxLabel',{});
     parser.addParameter('ComponentLabel',{});
+    parser.addParameter('BoxColor',[]);
+    parser.addParameter('ComponentColor',[]);
+    parser.addParameter('GeneralPlotOptions',{});
+    parser.addParameter('BoxPlotOptions',{});
+    parser.addParameter('ComponentPlotOptions',{});
     parser.parse(varargin{:});
     options = parser.Results;
 
@@ -24,6 +29,9 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
             options.BoxLabel{i} = [options.BoxLabel{i},' '];
         end
     end
+    if(isempty(options.BoxColor))
+        options.BoxColor = color_palette_tol(1:nBox)
+    end
 
     % create different labels for components
     nComponent = length(algoDataComponent);
@@ -41,6 +49,20 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
             options.ComponentLabel{i} = [options.ComponentLabel{i},' '];
         end
     end
+    if(isempty(options.ComponentColor))
+        options.BoxColor = color_palette_tol((nBox+1):(nBox+1+nComponent))
+    end
+
+    defaultGeneralPlotOptions = {'linewidth',1.1,'Marker','.','MarkerSize',8};
+    [~,generalPlotOptions] = merge_name_value_pair_argument(defaultGeneralPlotOptions,options.GeneralPlotOptions);
+
+    defaultBoxPlotOptions = {};
+    [~,boxPlotOptions] = merge_name_value_pair_argument(defaultBoxPlotOptions,...
+        generalPlotOptions,options.BoxPlotOptions);
+
+    defaultComponentPlotOptions = {};
+    [~,componentPlotOptions] = merge_name_value_pair_argument(defaultComponentPlotOptions,...
+        generalPlotOptions,options.ComponentPlotOptions);
 
     %% Plots
     % Volume of Box
@@ -51,8 +73,10 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
     xAxisMaxLimit = -inf;
     explorationEnd = [];
     for i=1:nBox
-        plot([algoDataBox{i}.MeasureBeforeTrim]);
-        plot([algoDataBox{i}.MeasureAfterTrim]);
+        plot([algoDataBox{i}.MeasureBeforeTrim],'Color',options.BoxColor(i,:),...
+            boxPlotOptions{:});
+        plot([algoDataBox{i}.MeasureAfterTrim],'Color',options.BoxColor(i,:),...
+            'linestyle','--',boxPlotOptions{:});
 
         [legendEntry{end+1},legendEntry{end+2}] = deal(...
             ['Box ',char(options.BoxLabel{i}),'- Before Trimming Operation'],...
@@ -63,8 +87,10 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
         explorationEnd = [explorationEnd,algoDataBox{i}.IndexExplorationEnd];
     end
     for i=1:nComponent
-        plot(algoDataComponent{i}.TotalMeasureBeforeTrim);
-        plot(algoDataComponent{i}.TotalMeasureAfterTrim);
+        plot(algoDataComponent{i}.TotalMeasureBeforeTrim,'Color',options.ComponentColor(i,:),...
+            componentPlotOptions{:});
+        plot(algoDataComponent{i}.TotalMeasureAfterTrim,'Color',options.ComponentColor(i,:),...
+            'linestyle','--',componentPlotOptions{:});
 
         [legendEntry{end+1},legendEntry{end+2}] = deal(...
             ['Component ',char(options.ComponentLabel{i}),'- Before Trimming Operation'],...
@@ -92,8 +118,10 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
     xAxisMaxLimit = -inf;
     explorationEnd = [];
     for i=1:nBox
-        plot([algoDataBox{i}.MeasureBeforeTrimNormalized]);
-        plot([algoDataBox{i}.MeasureAfterTrimNormalized]);
+        plot([algoDataBox{i}.MeasureBeforeTrimNormalized],'Color',options.BoxColor(i,:),...
+            boxPlotOptions{:});
+        plot([algoDataBox{i}.MeasureAfterTrimNormalized],'Color',options.BoxColor(i,:),...
+            'linestyle','--',boxPlotOptions{:});
 
         [legendEntry{end+1},legendEntry{end+2}] = deal(...
             ['Box ',char(options.BoxLabel{i}),'- Before Trimming Operation'],...
@@ -104,8 +132,10 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
         explorationEnd = [explorationEnd,algoDataBox{i}.IndexExplorationEnd];
     end
     for i=1:nComponent
-        plot(algoDataComponent{i}.TotalMeasureBeforeTrimNormalized);
-        plot(algoDataComponent{i}.TotalMeasureAfterTrimNormalized);
+        plot(algoDataComponent{i}.TotalMeasureBeforeTrimNormalized,'Color',options.ComponentColor(i,:),...
+            componentPlotOptions{:});
+        plot(algoDataComponent{i}.TotalMeasureAfterTrimNormalized,'Color',options.ComponentColor(i,:),...
+            'linestyle','--',componentPlotOptions{:});
 
         [legendEntry{end+1},legendEntry{end+2}] = deal(...
             ['Component ',char(options.ComponentLabel{i}),'- Before Trimming Operation'],...
@@ -133,7 +163,7 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
     xAxisMaxLimit = -inf;
     explorationEnd = [];
     for i=1:nBox
-        plot([algoDataBox{i}.GrowthRate]);
+        plot([algoDataBox{i}.GrowthRate],'Color',options.BoxColor(i,:),boxPlotOptions{:});
         legendEntry{end+1} = ['Box ',char(options.BoxLabel{i})];
 
         xAxisMinLimit = min(xAxisMinLimit,algoDataBox{i}.IndexExplorationStart);
@@ -141,7 +171,7 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
         explorationEnd = [explorationEnd,algoDataBox{i}.IndexExplorationEnd];
     end
     for i=1:nComponent
-        plot(algoDataComponent{i}.GrowthRate);
+        plot(algoDataComponent{i}.GrowthRate,'Color',options.ComponentColor(i,:),componentPlotOptions{:});
         legendEntry{end+1} = ['Component ',char(options.ComponentLabel{i})];
 
         xAxisMinLimit = min(xAxisMinLimit,algoDataComponent{i}.IndexExplorationStart);
@@ -167,15 +197,16 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
     explorationEnd = [];
     for i=1:nBox
         if(algoDataBox{i}.IsUsingRequirementSpaces)
-            plot(algoDataBox{i}.NumberAcceptableAndUsefulDesigns);
-            plot(algoDataBox{i}.NumberAcceptableDesigns);
-            plot(algoDataBox{i}.NumberUsefulDesigns);
+            plot(algoDataBox{i}.NumberAcceptableAndUsefulDesigns,boxPlotOptions{:});
+            plot(algoDataBox{i}.NumberAcceptableDesigns,boxPlotOptions{:});
+            plot(algoDataBox{i}.NumberUsefulDesigns,boxPlotOptions{:});
             [legendEntry{end+1},legendEntry{end+2},legendEntry{end+3}] = deal(...
                 ['Box ',char(options.BoxLabel{i}),'- Number of Acceptable & Useful Samples'],...
                 ['Box ',char(options.BoxLabel{i}),'- Number of Acceptable Samples'],...
                 ['Box ',char(options.BoxLabel{i}),'- Number of Useful Samples']);
         else
-            plot([algoDataBox{i}.NumberAcceptableAndUsefulDesigns]);
+            plot([algoDataBox{i}.NumberAcceptableAndUsefulDesigns],'Color',options.BoxColor(i,:),...
+                boxPlotOptions{:});
             legendEntry{end+1} = ['Box ',char(options.BoxLabel{i}),' - Number of Good Samples'];
         end
 
@@ -188,15 +219,16 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
     end
     for i=1:nComponent
         if(algoDataComponent{i}.IsUsingRequirementSpaces)
-            plot(algoDataComponent{i}.NumberAcceptableAndUsefulDesigns);
-            plot(algoDataComponent{i}.NumberAcceptableDesigns);
-            plot(algoDataComponent{i}.NumberUsefulDesigns);
+            plot(algoDataComponent{i}.NumberAcceptableAndUsefulDesigns,componentPlotOptions{:});
+            plot(algoDataComponent{i}.NumberAcceptableDesigns,componentPlotOptions{:});
+            plot(algoDataComponent{i}.NumberUsefulDesigns,componentPlotOptions{:});
             [legendEntry{end+1},legendEntry{end+2},legendEntry{end+3}] = deal(...
                 ['Component ',char(options.ComponentLabel{i}),'- Number of Acceptable & Useful Samples'],...
                 ['Component ',char(options.ComponentLabel{i}),'- Number of Acceptable Samples'],...
                 ['Component ',char(options.ComponentLabel{i}),'- Number of Useful Samples']);
         else
-            plot([algoDataComponent{i}.NumberAcceptableAndUsefulDesigns]);
+            plot([algoDataComponent{i}.NumberAcceptableAndUsefulDesigns],'Color',options.ComponentColor(i,:),...
+                componentPlotOptions{:});
             legendEntry{end+1} = ['Component ',char(options.ComponentLabel{i}),' - Number of Good Samples'];
         end
 
@@ -225,8 +257,8 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
     xAxisMaxLimit = -inf;
     explorationEnd = [];
     for i=1:nBox
-        plot(algoDataBox{i}.RatioMeasureChangeBeforeTrim);
-        plot(algoDataBox{i}.SamplePurity);
+        plot(algoDataBox{i}.RatioMeasureChangeBeforeTrim,'Color',options.BoxColor(i,:),boxPlotOptions{:});
+        plot(algoDataBox{i}.SamplePurity,'Color',options.BoxColor(i,:),'linestyle','--',boxPlotOptions{:});
 
         [legendEntry{end+1},legendEntry{end+2}] = deal(...
             ['Box ',char(options.BoxLabel{i}),'- V_i/V_{i-1}'],...
@@ -237,8 +269,10 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
         explorationEnd = [explorationEnd,algoDataBox{i}.IndexExplorationEnd];
     end
     for i=1:nComponent
-        plot(algoDataComponent{i}.RatioTotalMeasureChangeBeforeTrim);
-        plot(algoDataComponent{i}.SamplePurity);
+        plot(algoDataComponent{i}.RatioTotalMeasureChangeBeforeTrim,'Color',options.ComponentColor(i,:),...
+            componentPlotOptions{:});
+        plot(algoDataComponent{i}.SamplePurity,'Color',options.ComponentColor(i,:),...
+            'linestyle','--',componentPlotOptions{:});
 
         [legendEntry{end+1},legendEntry{end+2}] = deal(...
             ['Component ',char(options.ComponentLabel{i}),'- V_i/V_{i-1}'],...
@@ -263,11 +297,13 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
     hold all;
     legendEntry = {};
     for i=1:nBox
-        plot(algoDataBox{i}.SamplePurity,algoDataBox{i}.MeasureBeforeTrimNormalized,'.-');
+        plot(algoDataBox{i}.SamplePurity,algoDataBox{i}.MeasureBeforeTrimNormalized,'-',...
+            'Color',options.BoxColor(i,:),'Marker','.',boxPlotOptions{:});
         legendEntry{end+1} = ['Box ',char(options.BoxLabel{i})];
     end
     for i=1:nComponent
-        plot(algoDataComponent{i}.SamplePurity,algoDataComponent{i}.TotalMeasureBeforeTrimNormalized,'.-');
+        plot(algoDataComponent{i}.SamplePurity,algoDataComponent{i}.TotalMeasureBeforeTrimNormalized,'-',...
+            'Color',options.ComponentColor(i,:),'Marker','.',componentPlotOptions{:});
         legendEntry{end+1} = ['Component ',char(options.ComponentLabel{i})];
     end
     grid minor;
@@ -284,7 +320,7 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
             algoDataBox{i}.TotalFunctionEvaluations,...
             algoDataBox{i}.SamplePurity,...
             algoDataBox{i}.MeasureBeforeTrimNormalized,...
-            '.-');
+            '-','Color',options.BoxColor(i,:),'Marker','.',boxPlotOptions{:});
         legendEntry{end+1} = ['Box ',char(options.BoxLabel{i})];
     end
     for i=1:nComponent
@@ -292,7 +328,7 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
             algoDataComponent{i}.TotalFunctionEvaluations,...
             algoDataComponent{i}.SamplePurity,...
             algoDataComponent{i}.TotalMeasureBeforeTrimNormalized,...
-            '.-');
+            '-','Color',options.ComponentColor(i,:),'Marker','.',componentPlotOptions{:});
         legendEntry{end+1} = ['Component ',char(options.ComponentLabel{i})];
     end
     grid minor;

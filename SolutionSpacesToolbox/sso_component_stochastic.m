@@ -123,7 +123,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
 
     % growth rate parameters
     nDimension = size(designSpaceLowerBound,2);
-    growthFlexibilityExponent = linspace(nDimension,1,options.MaxIterExploration);
+    growthFlexibilityExponent = linspace(1,nDimension,options.MaxIterExploration);
                              
     %% Log Initialization
     if(nargout>=2)
@@ -185,11 +185,11 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             console.info('Adapting growth rate... ');
             tic
 
-            purity = (nAcceptable/nSample);
+            purity = max(min(nAcceptable/nSample,options.MaximumGrowthPurity),options.MinimumGrowthPurity);
             % Change step size to a bigger or smaller value depending on whether
             % the achieved purity is smaller or larger than the desired one
             %growthRate = purity/options.TargetAcceptedRatioExploration*growthRate;
-            growthRate = ((1-options.TargetAcceptedRatioExploration)./(1-purity)).^(growthFlexibilityExponent(iExploration)./nDimension).*growthRate;
+            growthRate = ((1-options.TargetAcceptedRatioExploration)./(1-purity)).^(1./growthFlexibilityExponent(iExploration)).*growthRate;
             %growthRate = (((1-options.TargetAcceptedRatioExploration)*purity)./((1-purity)*options.TargetAcceptedRatioExploration)).^(growthFlexibilityExponent(iExploration)./nDimension).*growthRate;
             growthRate = max(min(growthRate,options.MaximumGrowthRate),options.MinimumGrowthRate);
 
