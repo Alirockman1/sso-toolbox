@@ -39,12 +39,12 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %%
-trussAnalysisChoice = '9-DoF-3D';
+trussAnalysisChoice = '16-DoF-2D';
 computeDisplacement = true;
 computeMass = false;
 computeDisplacementAndMass = true;
 computeDelaunayComponent = false;
-useBoxResultForComponent = true;
+useBoxResultForComponent = false;
 
 
 %% function call
@@ -52,7 +52,7 @@ systemFunction = @truss_generic_moving_node;
 
 switch trussAnalysisChoice
     case '2-DoF-2D'
-        maxIter = 30;
+        maxIter = 20;
         nSample = 100;
         growthRateDisplacement = 0.07;
         growthRateMass = 0.07;
