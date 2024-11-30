@@ -27,7 +27,12 @@ function performanceMeasure = truss_generic_moving_node(designSample,systemParam
 	    elementLength = vecnorm(nodeDistance,2,2);
 		totalMass = sum(systemParameter.ElementDensity.*elementLength.*systemParameter.ElementCrossSectionArea);
 
-		performanceMeasure(i,:) = [-nodeDisplacement(isTrussTip),totalMass,abs(elementStress')];
+        % deal with numerical errors
+        displacement = -nodeDisplacement(isTrussTip);
+        displacement(isnan(displacement)) = +inf;
+        elementStress(isnan(elementStress)) = +inf;
+
+		performanceMeasure(i,:) = [displacement,totalMass,abs(elementStress')];
 	end
 end
 

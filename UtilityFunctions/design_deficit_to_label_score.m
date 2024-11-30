@@ -48,8 +48,8 @@ function [label,score] = design_deficit_to_label_score(measureDeficit,deficitWei
     label = (worstCase<=0);
     
     if(nargout>1)
-        % ignore inf entries for score calculation
-        weightedDeficit(isinf(weightedDeficit)) = nan;
+        % ignore -inf entries for score calculation (no limit)
+        weightedDeficit(weightedDeficit==-inf) = nan;
 
         % see which limits were violated, if any
         violatedLimit = max(weightedDeficit,0);
