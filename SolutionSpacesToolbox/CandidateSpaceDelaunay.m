@@ -305,11 +305,12 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
 
             nSimplex = size(obj.DelaunayIndex,1);
             nDimension = size(obj.DesignSampleDefinition,2);
-            designSampleNew = nan(nSimplex*(nDimension+1),nDimension);
-            delauynayIndexNew = nan(nSimplex,nDimension+1);
+            designSampleGrown = nan(nSimplex*(nDimension+1),nDimension);
+            delauynayIndexGrown = nan(nSimplex,nDimension+1);
             designSpaceFactor = obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound;
             designSpace = [obj.DesignSpaceLowerBound;obj.DesignSpaceUpperBound];
         
+            % expand each vertex independently for each simplex
             for i=1:nSimplex
                 simplexVertices = obj.DelaunaySimplex(i).Vertices;
                 simplexCenter = mean(simplexVertices,1);
@@ -325,24 +326,19 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
                 verticesNew = max(verticesNew, obj.DesignSpaceLowerBound); % lower bound limit
                 verticesNew = min(verticesNew, obj.DesignSpaceUpperBound); % upper bound limit
                 verticesNew = unique(verticesNew,'rows');
-                
-                [convexHullIndex,measure] = compute_convex_hull(verticesNew,obj.SimplexConvexHullOptions{:});
-
-                obj.DelaunaySimplex(i) = struct(...
-                    'Vertices',verticesNew,...
-                    'HullIndex',convexHullIndex,...
-                    'Measure',measure);
 
                 simplexIndex = 1 + (nDimension+1)*(i-1) + [0:nDimension];
-                designSampleNew(simplexIndex,:) = verticesNew;
-                delauynayIndexNew(i,:) = simplexIndex;
+                designSampleGrown(simplexIndex,:) = verticesNew;
+                delauynayIndexGrown(i,:) = simplexIndex;
             end
-            obj.DesignSampleDefinition = designSampleNew;
-            obj.DelaunayIndex = delauynayIndexNew;
 
-            nSample = size(designSampleNew,1);
-            obj.IsInsideDefinition = true(nSample,1);
-            obj.IsShapeDefinition = true(nSample,1);
+            % check which designs are inside/outside the new structure
+            insideSimplex = tsearchn(designSampleGrown,delauynayIndexGrown,obj.DesignSampleDefinition);
+
+            % create new delaunay object
+            designSampleNew = [designSampleGrown;obj.DesignSampleDefinition];
+            isInsideNew = [true(size(designSampleGrown,1),1);~isnan(insideSimplex)];
+            obj = obj.define_candidate_space(designSampleNew,isInsideNew);
         end
 
         function [label, score] = is_in_candidate_space(obj,designSample)

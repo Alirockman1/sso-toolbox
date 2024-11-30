@@ -115,15 +115,15 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
     % Initial Candidate Space
     if(size(initialDesign,1)==1)
         samplingBox = [initialDesign;initialDesign]; % single point
+        measureTrimmed = 0;
     elseif(size(initialDesign,1)==2)
         samplingBox = initialDesign; % candidate box
+        measureTrimmed = prod(samplingBox(2,:)-samplingBox(1,:));
     else
         console.error('SSOBoxOptStochastic:InitialDesignWrong','Error. Initial guess/region incompatible in ''sso_component_stochastic''.');
     end
-
-    % growth rate parameters
     nDimension = size(designSpaceLowerBound,2);
-    growthFlexibilityExponent = linspace(1,nDimension,options.MaxIterExploration);
+    nComponent = size(componentIndex,2);
                              
     %% Log Initialization
     if(nargout>=2)
@@ -165,7 +165,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
     
     %% Exploration: While mu(Omega) is changing, grow box
     % Create first instantiation of the candidate spaces for each component
-    for i=1:size(componentIndex,2)
+    for i=1:nComponent
         candidateSpace(i) = options.CandidateSpaceConstructorExploration(...
             designSpaceLowerBound(componentIndex{i}),...
             designSpaceUpperBound(componentIndex{i}),...
@@ -185,16 +185,26 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             console.info('Adapting growth rate... ');
             tic
 
-            purity = max(min(nAcceptable/nSample,options.MaximumGrowthPurity),options.MinimumGrowthPurity);
+            purity = nAcceptable/nSample;
+            purity = max(min(purity,options.MaximumGrowthPurity),options.MinimumGrowthPurity);
+
+            increaseMeasure = measureGrown - measurePrevious;
+            increaseMeasureAcceptable = max(measureGrown*purity - measurePrevious,0);
+            growthFlexibilityExponent = interp1([0,increaseMeasure],[nDimension,1],increaseMeasureAcceptable);
+
             % Change step size to a bigger or smaller value depending on whether
             % the achieved purity is smaller or larger than the desired one
-            %growthRate = purity/options.TargetAcceptedRatioExploration*growthRate;
-            growthRate = ((1-options.TargetAcceptedRatioExploration)./(1-purity)).^(1./growthFlexibilityExponent(iExploration)).*growthRate;
-            %growthRate = (((1-options.TargetAcceptedRatioExploration)*purity)./((1-purity)*options.TargetAcceptedRatioExploration)).^(growthFlexibilityExponent(iExploration)./nDimension).*growthRate;
+            %growthAdaptationFactor = purity/options.TargetAcceptedRatioExploration;
+            %growthAdaptationFactor = ((1-options.TargetAcceptedRatioExploration)./(1-purity)).^(1./growthFlexibilityExponent);
+            growthAdaptationFactor = (((1-options.TargetAcceptedRatioExploration)*purity)./((1-purity)*options.TargetAcceptedRatioExploration)).^(1./growthFlexibilityExponent);
+            growthAdaptationFactor = max(min(growthAdaptationFactor,options.MaximumGrowthAdaptationFactor),options.MinimumGrowthAdaptationFactor);
+
+            growthRate = growthAdaptationFactor * growthRate;
             growthRate = max(min(growthRate,options.MaximumGrowthRate),options.MinimumGrowthRate);
 
             console.info('Elapsed time is %g seconds.\n',toc);
         end
+        measurePrevious = measureTrimmed;
 
         %% Modification Step B - Growth: Extend Candidate Space
         console.info('Growing candidate space... ');
@@ -204,10 +214,13 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             % Expand candidate solution box in both sides of each interval isotroply
             samplingBoxGrown = design_box_grow_fixed(samplingBox,designSpaceLowerBound,designSpaceUpperBound,growthRate);
             candidateSpaceGrown = candidateSpace;
+            measureGrown = prod(samplingBoxGrown(2,:)-samplingBoxGrown(1,:));
         else
-            for i=1:size(componentIndex,2)
+            measureGrown = 1;
+            for i=1:nComponent
                 candidateSpaceGrown(i) = candidateSpace(i).grow_candidate_space(growthRate);
                 samplingBoxGrown(:,componentIndex{i}) = candidateSpaceGrown(i).SamplingBox;
+                measureGrown = measureGrown*candidateSpaceGrown(i).Measure;
             end
         end
         
@@ -328,7 +341,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             options.UsePaddingSamplesInTrimming);
         
         % define which samples are inside the candidate space
-        activeComponent = true(size(trimmingSample,1),size(componentIndex,2));
+        activeComponent = true(size(trimmingSample,1),nComponent);
         if(candidateSpaceDefined)
             for i=1:size(componentIndex,2)
                 activeComponent(:,i) = candidateSpaceGrown(i).is_in_candidate_space(trimmingSample(:,componentIndex{i}));
@@ -371,7 +384,12 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         [candidateSpaceTrimmed,samplingBoxTrimmed] = component_sso_update_candidate_spaces(trimmingSample,activeComponent,componentIndex,candidateSpace);
         candidateSpaceDefined = true;
         console.info('Elapsed time is %g seconds.\n',toc);
-        
+
+        %% getting new measure
+        measureTrimmed = 1;
+        for i=1:nComponent
+            measureTrimmed = measureTrimmed*candidateSpaceTrimmed(i).Measure;
+        end
         
         %% Convergence Criteria
         console.info('Checking convergence... ');

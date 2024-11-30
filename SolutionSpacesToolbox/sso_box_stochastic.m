@@ -99,14 +99,11 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
     end
     
     % Initial Measure
-    measure = options.MeasureFunction(candidateBox, [], options.MeasureOptions{:});
-    if(isinf(measure) || isnan(measure))
-        measure = 0;
+    measureTrimmed = options.MeasureFunction(candidateBox, [], options.MeasureOptions{:});
+    if(isinf(measureTrimmed) || isnan(measureTrimmed))
+        measureTrimmed = 0;
     end
-
-    % growth rate parameters
     nDimension = size(designSpaceLowerBound,2);
-    growthFlexibilityExponent = linspace(1,nDimension,options.MaxIterExploration);
     
     %% Log Initialization
     if(nargout>=2)
@@ -141,34 +138,44 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
 
     %% Phase I - Exploration
     iExploration = 1;
-    hasConvergedExploration = false;
-    measurePrevious = measure;
     growthRate = options.GrowthRate;
+    hasConvergedExploration = false;
     while((~hasConvergedExploration) && (iExploration<=options.MaxIterExploration))
         %% Modification Step B - Growth: Extend Candidate Box
         console.info([repelem('=',120),'\n']);
         console.info('Initiating Phase I - Exploration: Iteration %d\n',iExploration);
-        console.info('Growing candidate box... ');
-        tic
-
+        
         % Change growth rate depending on previous result
         if(iExploration>1 && options.UseAdaptiveGrowthRate)
             console.info('Adapting growth rate... ');
             tic
 
-            purity = max(min(nAcceptable/nSample,options.MaximumGrowthPurity),options.MinimumGrowthPurity);
+            purity = nAcceptable/nSample;
+            purity = max(min(purity,options.MaximumGrowthPurity),options.MinimumGrowthPurity);
+
+            increaseMeasure = measureGrown - measurePrevious;
+            increaseMeasureAcceptable = max(measureGrown*purity - measurePrevious,0);
+            growthFlexibilityExponent = interp1([0,increaseMeasure],[nDimension,1],increaseMeasureAcceptable);
+
             % Change step size to a bigger or smaller value depending on whether
             % the achieved purity is smaller or larger than the desired one
-            %growthRate = purity/options.TargetAcceptedRatioExploration*growthRate;
-            growthRate = ((1-options.TargetAcceptedRatioExploration)./(1-purity)).^(1./growthFlexibilityExponent(iExploration)).*growthRate;
-            %growthRate = (((1-options.TargetAcceptedRatioExploration)*purity)./((1-purity)*options.TargetAcceptedRatioExploration)).^(growthFlexibilityExponent(iExploration)./nDimension).*growthRate;
+            %growthAdaptationFactor = purity/options.TargetAcceptedRatioExploration;
+            %growthAdaptationFactor = ((1-options.TargetAcceptedRatioExploration)./(1-purity)).^(1./growthFlexibilityExponent);
+            growthAdaptationFactor = (((1-options.TargetAcceptedRatioExploration)*purity)./((1-purity)*options.TargetAcceptedRatioExploration)).^(1./growthFlexibilityExponent);
+            growthAdaptationFactor = max(min(growthAdaptationFactor,options.MaximumGrowthAdaptationFactor),options.MinimumGrowthAdaptationFactor);
+
+            growthRate = growthAdaptationFactor * growthRate;
             growthRate = max(min(growthRate,options.MaximumGrowthRate),options.MinimumGrowthRate);
 
             console.info('Elapsed time is %g seconds.\n',toc);
         end
+        measurePrevious = measureTrimmed;
         
         % Where design variables aren't fixed, expand candidate solution box 
         %   in both sides of each interval isotroply
+        console.info('Growing candidate box... ');
+        tic
+
         candidateBoxGrown = design_box_grow_fixed(candidateBox,designSpaceLowerBound,designSpaceUpperBound,growthRate);
         
         console.info('Elapsed time is %g seconds.\n',toc);
@@ -328,7 +335,6 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
         console.info('Done with iteration %d!\n\n',iExploration);
     
         candidateBox = candidateBoxTrimmed;
-        measurePrevious = measureTrimmed;
         iExploration = iExploration + 1;
     end
     console.info('\nDone with Phase I - Exploration in iteration %d!\n\n',iExploration-1);
