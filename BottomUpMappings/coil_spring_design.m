@@ -12,7 +12,7 @@ function performanceMeasure = coil_spring_design(designSample,systemParameter)
 	% k + G*d^4/(8*D^3*n)
 	stiffness = (shearModulus.*wireDiameter.^4)./(8.*coilDiameter.^3.*nWindings);
 	% m = pi^2/4*rho*d^2*D*n
-	mass = (pi^2/4).*density.*wireDiameter.^2*coilDiameter.*nWindings;
+	mass = (pi^2/4).*density.*(wireDiameter.^2).*coilDiameter.*nWindings;
 	% Wo = D + d
 	outerDiameterOperationSpace = coilDiameter + wireDiameter;
 	% Wi = D - d
@@ -25,13 +25,13 @@ function performanceMeasure = coil_spring_design(designSample,systemParameter)
 	deformationEndLinearity = 0.1.*coilDiameter.*nWindings;
 	% H + L0 + uop (uop + min(uY,uL))
 	lengthRelaxedState = spacingWiresRelaxed.*nWindings;
-	heightOperatingSpace = lengthRelaxedState + min(deformationPlasticYield,deformationEndLinearity);
+	heightOperationSpace = lengthRelaxedState + min(deformationPlasticYield,deformationEndLinearity);
 
 
 	%% wrap quantities of interest
 	performanceMeasure(:,1) = stiffness; % K
 	performanceMeasure(:,2) = mass; % m
-	performanceMeasure(:,3) = heightOperatingSpace; % H
+	performanceMeasure(:,3) = heightOperationSpace; % H
 	performanceMeasure(:,4) = outerDiameterOperationSpace; % Wo
 	performanceMeasure(:,5) = innerDiameterOperationSpace; % Wi
 	performanceMeasure(:,6) = deformationCompaction; % uc
