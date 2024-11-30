@@ -17,14 +17,6 @@ function save_print_figure(figureHandle,filename,varargin)
 %       size.
 %       - 'Position' : position of the figure relative to the primary monitor. 
 %       Default is the current position.
-%       - 'AdditionalProperties' : name-value pair cell for other properties one
-%       may wish to change. By default, the following are set:
-%           -- 'Color' : 'white'
-%           -- 'Renderer' : 'opengl'
-%           -- 'PaperType' : 'A4'
-%           -- 'PaperPositionMode' : 'manual'
-%       These may be overwritten, and other options may be set according to
-%       'matlab.ui.Figure'.
 %       - 'PrintFormat' : formats to save/print the figure as; available are:
 %           -- 'jpg' : JPEG 24-bit
 %           -- 'png' : PNG 24-bit
@@ -35,6 +27,14 @@ function save_print_figure(figureHandle,filename,varargin)
 %           -- 'eps' : Encapsulated PostScript (EPS) Level 3 color
 %           -- 'eps-b&w' : Encapsulated PostScript (EPS) Level 3 black and white
 %           -- 'svg' : SVG (Scalable Vector Graphics)
+%       - 'AdditionalProperties' : name-value pair cell for other properties one
+%       may wish to change. By default, the following are set:
+%           -- 'Color' : 'white'
+%           -- 'Renderer' : 'opengl'
+%           -- 'PaperType' : 'A4'
+%           -- 'PaperPositionMode' : 'manual'
+%       These may be overwritten, and other options may be set according to
+%       'matlab.ui.Figure'.
 %
 %   Input:
 %       - FIGUREHANDLE : Figure

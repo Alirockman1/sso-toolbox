@@ -39,7 +39,7 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %%
-trussAnalysisChoice = '16-DoF-2D';
+trussAnalysisChoice = '2-DoF-2D';
 computeDisplacement = true;
 computeMass = false;
 computeDisplacementAndMass = true;
@@ -91,6 +91,7 @@ switch trussAnalysisChoice
         designSpaceUpperBoundDisplacement = [2.0 1.5];
         designSpaceLowerBoundMass = [0 -0.5];
         designSpaceUpperBoundMass = [2  1.5];
+        cameraPositionFigureSave = [];
     case '4-DoF-2D'
         maxIter = 30;
         nSample = 100;
@@ -131,6 +132,7 @@ switch trussAnalysisChoice
         designSpaceUpperBoundDisplacement = [1.5  0.5 2.0 1.5];
         designSpaceLowerBoundMass = [0 -0.5 0 -0.5];
         designSpaceUpperBoundMass = [2  1.5 2  1.5];
+        cameraPositionFigureSave = [];
     case '16-DoF-2D'
         maxIter = 400;
         nSample = 100;
@@ -209,6 +211,7 @@ switch trussAnalysisChoice
         designSpaceUpperBoundDisplacement = initialDesign+0.9;
         designSpaceLowerBoundMass = repmat([0 -0.5],1,8);
         designSpaceUpperBoundMass = repmat([10 1.5],1,8);
+        cameraPositionFigureSave = [];
     case '36-DoF-2D'
         maxIter = 300;
         nSample = 100;
@@ -349,6 +352,7 @@ switch trussAnalysisChoice
         designSpaceUpperBoundDisplacement = initialDesign+0.9;
         designSpaceLowerBoundMass = repmat([0 -0.5],1,18);
         designSpaceUpperBoundMass = repmat([10 1.5],1,18);
+        cameraPositionFigureSave = [];
     case '9-DoF-3D'
         maxIter = 100;
         nSample = 100;
@@ -404,8 +408,9 @@ switch trussAnalysisChoice
         designSpaceUpperBoundDisplacement = [2.0  0.5  0.5 2.0  1.0 1.5 2.0 2.0  1.0];
         designSpaceLowerBoundMass = [0 -0.5 -0.5 0 -0.5 -0.5 0 -0.5 -0.5];
         designSpaceUpperBoundMass = [2  1.5  1.5 2  1.5  1.5 2  1.5  1.5];
+        cameraPositionFigureSave = [4.7185  -11.2817    7.6322];
     case '36-DoF-3D'
-        maxIter = 500;
+        maxIter = 300;
         nSample = 100;
         growthRateDisplacement = 0.004;
         growthRateMass = 0.007;
@@ -527,6 +532,7 @@ switch trussAnalysisChoice
         designSpaceUpperBoundDisplacement = initialDesign + repmat([0.9 0.5 0.5],1,12);
         designSpaceLowerBoundMass = repmat([0 -0.5 -0.5],1,12);
         designSpaceUpperBoundMass = repmat([5  1.5  1.5],1,12);
+        cameraPositionFigureSave = [7.3696  -14.9327    9.8425];
 end
 
 
@@ -545,8 +551,8 @@ is3dPlot = (nDimension==3);
 %% Analyse initial truss
 plot_results_truss_generic_moving_node(systemParameter,...
     'NodePositionInitial',initialDesign);
-save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialTruss']);
-save_print_figure(gcf,[saveFolder,'InitialTruss'],'PrintFormat',{'png','pdf'});
+save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialTruss'],cameraPositionFigureSave);
+save_print_figure(gcf,[saveFolder,'InitialTruss'],'PrintFormat',{'png','pdf'},'Size',figureSize);
 
 % deformed nitial truss
 nodePositionInitial = systemParameter.BaseNodePosition;
@@ -563,8 +569,8 @@ nodeDisplacementInitial = ...
 plot_results_truss_generic_moving_node(systemParameter,...
     'NodePositionInitial',initialDesign,...
     'DeformationInitial',nodeDisplacementInitial);
-save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialTrussDeformation']);
-save_print_figure(gcf,[saveFolder,'InitialTrussDeformation'],'PrintFormat',{'png','pdf'});
+save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialTrussDeformation'],cameraPositionFigureSave);
+save_print_figure(gcf,[saveFolder,'InitialTrussDeformation'],'PrintFormat',{'png','pdf'},'Size',figureSize);
 
 %% establish upper performance limits
 nElement = size(systemParameter.NodeElement,1);
@@ -596,8 +602,8 @@ if(computeDisplacement)
     plot_results_truss_generic_moving_node(systemParameter,...
         'NodePositionInitial',initialDesign,...
         'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement);
-    save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialOptimizedTrussDisplacement']);
-    save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussDisplacement'],'PrintFormat',{'png','pdf'});
+    save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialOptimizedTrussDisplacement'],cameraPositionFigureSave);
+    save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussDisplacement'],'PrintFormat',{'png','pdf'},'Size',figureSize);
 end
 
 % compute optimal mass
@@ -618,8 +624,8 @@ if(computeMass)
     plot_results_truss_generic_moving_node(systemParameter,...
         'NodePositionInitial',initialDesign,...
         'NodePositionOptimalMass',nodePositionOptimalMass);
-    save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialOptimizedTrussMass']);
-    save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussMass'],'PrintFormat',{'png','pdf'});
+    save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialOptimizedTrussMass'],cameraPositionFigureSave);
+    save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussMass'],'PrintFormat',{'png','pdf'},'Size',figureSize);
 end
 
 % compute optimal displacement and mass
@@ -645,8 +651,8 @@ if(computeDisplacementAndMass)
     plot_results_truss_generic_moving_node(systemParameter,...
         'NodePositionInitial',initialDesign,...
         'NodePositionOptimalDisplacement',nodePositionOptimalDisplacementAndMass);
-    save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialOptimizedTrussDisplacementAndMass']);
-    save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussDisplacementAndMass'],'PrintFormat',{'png','pdf'});
+    save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialOptimizedTrussDisplacementAndMass'],cameraPositionFigureSave);
+    save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussDisplacementAndMass'],'PrintFormat',{'png','pdf'},'Size',figureSize);
 end
 
 % display deformed optimal displacement
@@ -667,8 +673,8 @@ if(computeDisplacement)
         'NodePositionOptimalDisplacement',nodePositionOptimalDisplacement,...
         'DeformationInitial',nodeDisplacementInitial,...
         'DeformationOptimalDisplacement',nodeDisplacementOptimal);
-    save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialOptimizedTrussDeformation']);
-    save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussDeformation'],'PrintFormat',{'png','pdf'});
+    save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialOptimizedTrussDeformation'],cameraPositionFigureSave);
+    save_print_figure(gcf,[saveFolder,'InitialOptimizedTrussDeformation'],'PrintFormat',{'png','pdf'},'Size',figureSize);
 end
 
 
@@ -683,11 +689,13 @@ if(computeDisplacement)
         performanceUpperLimitDisplacement);
 
     [solutionSpaceBoxDisplacement,componentSolutionSpaceConvexDisplacement,componentSolutionSpaceDelaunayDisplacement] = ...
-    compute_truss_solution_spaces('Displacement',designEvaluatorDisplacement,initialDesign,designSpaceLowerBoundDisplacement,designSpaceUpperBoundDisplacement,componentIndex,...
-        nSample,maxIter,growthRateDisplacement,trimmingPasses,useBoxResultForComponent,computeDelaunayComponent,rngState,saveFolder,figureSize);
+    compute_truss_solution_spaces('Displacement',designEvaluatorDisplacement,initialDesign,designSpaceLowerBoundDisplacement,...
+        designSpaceUpperBoundDisplacement,componentIndex,nSample,maxIter,growthRateDisplacement,trimmingPasses,...
+        useBoxResultForComponent,computeDelaunayComponent,rngState,saveFolder,figureSize);
 
     plot_relevant_results_truss_moving_node('Displacement',systemParameter,initialDesign,nodePositionOptimalDisplacement,...
-        solutionSpaceBoxDisplacement,componentSolutionSpaceConvexDisplacement,componentSolutionSpaceDelaunayDisplacement,componentIndex,nRandomTruss,saveFolder);
+        solutionSpaceBoxDisplacement,componentSolutionSpaceConvexDisplacement,componentSolutionSpaceDelaunayDisplacement,...
+        componentIndex,nRandomTruss,saveFolder,figureSize,cameraPositionFigureSave);
 end
 
 % mass
@@ -700,21 +708,25 @@ if(computeMass)
         performanceUpperLimitMass);
 
     [solutionSpaceBoxMass,componentSolutionSpaceConvexMass,componentSolutionSpaceDelaunayMass] = ...
-    compute_truss_solution_spaces('Mass',designEvaluatorMass,initialDesign,designSpaceLowerBoundMass,designSpaceUpperBoundMass,componentIndex,...
-        nSample,maxIter,growthRateMass,trimmingPasses,useBoxResultForComponent,computeDelaunayComponent,rngState,saveFolder,figureSize);
+        compute_truss_solution_spaces('Mass',designEvaluatorMass,initialDesign,designSpaceLowerBoundMass,designSpaceUpperBoundMass,...
+            componentIndex,nSample,maxIter,growthRateMass,trimmingPasses,useBoxResultForComponent,computeDelaunayComponent,...
+            rngState,saveFolder,figureSize);
 
     plot_relevant_results_truss_moving_node('Mass',systemParameter,initialDesign,nodePositionOptimalMass,...
-        solutionSpaceBoxMass,componentSolutionSpaceConvexMass,componentSolutionSpaceDelaunayMass,componentIndex,nRandomTruss,saveFolder);
+        solutionSpaceBoxMass,componentSolutionSpaceConvexMass,componentSolutionSpaceDelaunayMass,componentIndex,nRandomTruss,...
+        saveFolder,figureSize,cameraPositionFigureSave);
 end
 
 % displacement + mass
 if(computeDisplacementAndMass)
     [solutionSpaceBoxDisplacementAndMass,componentSolutionSpaceConvexDisplacementAndMass,componentSolutionSpaceDelaunayDisplacementAndMass] = ...
-    compute_truss_solution_spaces('DisplacementAndMass',designEvaluatorDisplacementAndMass,initialDesign,designSpaceLowerBoundDisplacement,designSpaceUpperBoundDisplacement,componentIndex,...
-        nSample,maxIter,growthRateDisplacement,trimmingPasses,useBoxResultForComponent,computeDelaunayComponent,rngState,saveFolder,figureSize);
+    compute_truss_solution_spaces('DisplacementAndMass',designEvaluatorDisplacementAndMass,initialDesign,...
+        designSpaceLowerBoundDisplacement,designSpaceUpperBoundDisplacement,componentIndex,nSample,maxIter,...
+        growthRateDisplacement,trimmingPasses,useBoxResultForComponent,computeDelaunayComponent,rngState,saveFolder,figureSize);
 
     plot_relevant_results_truss_moving_node('DisplacementAndMass',systemParameter,initialDesign,nodePositionOptimalDisplacementAndMass,...
-        solutionSpaceBoxDisplacementAndMass,componentSolutionSpaceConvexDisplacementAndMass,componentSolutionSpaceDelaunayDisplacementAndMass,componentIndex,nRandomTruss,saveFolder);
+        solutionSpaceBoxDisplacementAndMass,componentSolutionSpaceConvexDisplacementAndMass,componentSolutionSpaceDelaunayDisplacementAndMass,...
+        componentIndex,nRandomTruss,saveFolder,figureSize,cameraPositionFigureSave);
 end
 
 
@@ -856,7 +868,9 @@ function [solutionSpaceBox,componentSolutionSpaceConvex,componentSolutionSpaceDe
 end
 
 function plot_relevant_results_truss_moving_node(typeName,systemParameter,initialDesign,nodePositionOptimal,...
-    solutionSpaceBox,componentSolutionSpaceConvex,componentSolutionSpaceDelaunay,componentIndex,nRandomTruss,saveFolder)
+    solutionSpaceBox,componentSolutionSpaceConvex,componentSolutionSpaceDelaunay,componentIndex,nRandomTruss,saveFolder,...
+    figureSize,cameraPositionFigureSave)
+
     resultsFolder = [saveFolder,sprintf('TrussResult%s/',typeName)];
     mkdir(resultsFolder);
 
@@ -867,8 +881,8 @@ function plot_relevant_results_truss_moving_node(typeName,systemParameter,initia
         'NodePositionInitial',initialDesign,...
         sprintf('ComponentSolutionSpaceConvex%s',typeName),componentSolutionSpaceConvex,...
         sprintf('ComponentSolutionSpaceDelaunay%s',typeName),componentSolutionSpaceDelaunay);
-    save_3d_rotating_video_gif(is3dPlot,gcf,[resultsFolder,'InitialTrussComponent']);
-    save_print_figure(gcf,[resultsFolder,'InitialTrussComponent'],'PrintFormat',{'png','pdf'});
+    save_3d_rotating_video_gif(is3dPlot,gcf,[resultsFolder,'InitialTrussComponent'],cameraPositionFigureSave);
+    save_print_figure(gcf,[resultsFolder,'InitialTrussComponent'],'PrintFormat',{'png','pdf'},'Size',figureSize);
     
     % initial truss + optimized truss + component solution spaces
     plot_results_truss_generic_moving_node(systemParameter,...
@@ -876,8 +890,8 @@ function plot_relevant_results_truss_moving_node(typeName,systemParameter,initia
         sprintf('NodePositionOptimal%s',typeName),nodePositionOptimal,...
         sprintf('ComponentSolutionSpaceConvex%s',typeName),componentSolutionSpaceConvex,...
         sprintf('ComponentSolutionSpaceDelaunay%s',typeName),componentSolutionSpaceDelaunay);
-    save_3d_rotating_video_gif(is3dPlot,gcf,[resultsFolder,'InitialOptimizedTrussComponent']);
-    save_print_figure(gcf,[resultsFolder,'InitialOptimizedTrussComponent'],'PrintFormat',{'png','pdf'});
+    save_3d_rotating_video_gif(is3dPlot,gcf,[resultsFolder,'InitialOptimizedTrussComponent'],cameraPositionFigureSave);
+    save_print_figure(gcf,[resultsFolder,'InitialOptimizedTrussComponent'],'PrintFormat',{'png','pdf'},'Size',figureSize);
     
     % initial truss + optimized truss + box solution space + component solution spaces
     plot_results_truss_generic_moving_node(systemParameter,...
@@ -886,8 +900,8 @@ function plot_relevant_results_truss_moving_node(typeName,systemParameter,initia
         sprintf('BoxSolutionSpace%s',typeName),solutionSpaceBox,...
         sprintf('ComponentSolutionSpaceConvex%s',typeName),componentSolutionSpaceConvex,...
         sprintf('ComponentSolutionSpaceDelaunay%s',typeName),componentSolutionSpaceDelaunay);
-    save_3d_rotating_video_gif(is3dPlot,gcf,[resultsFolder,'InitialOptimizedTrussBoxComponent']);
-    save_print_figure(gcf,[resultsFolder,'InitialOptimizedTrussBoxComponent'],'PrintFormat',{'png','pdf'});
+    save_3d_rotating_video_gif(is3dPlot,gcf,[resultsFolder,'InitialOptimizedTrussBoxComponent'],cameraPositionFigureSave);
+    save_print_figure(gcf,[resultsFolder,'InitialOptimizedTrussBoxComponent'],'PrintFormat',{'png','pdf'},'Size',figureSize);
     
     % initial truss + box solution space + component solution spaces
     plot_results_truss_generic_moving_node(systemParameter,...
@@ -895,8 +909,8 @@ function plot_relevant_results_truss_moving_node(typeName,systemParameter,initia
         sprintf('BoxSolutionSpace%s',typeName),solutionSpaceBox,...
         sprintf('ComponentSolutionSpaceConvex%s',typeName),componentSolutionSpaceConvex,...
         sprintf('ComponentSolutionSpaceDelaunay%s',typeName),componentSolutionSpaceDelaunay);
-    save_3d_rotating_video_gif(is3dPlot,gcf,[resultsFolder,'InitialTrussBoxComponent']);
-    save_print_figure(gcf,[resultsFolder,'InitialTrussBoxComponent'],'PrintFormat',{'png','pdf'});
+    save_3d_rotating_video_gif(is3dPlot,gcf,[resultsFolder,'InitialTrussBoxComponent'],cameraPositionFigureSave);
+    save_print_figure(gcf,[resultsFolder,'InitialTrussBoxComponent'],'PrintFormat',{'png','pdf'},'Size',figureSize);
 
     % initial truss + sample trusses + component solution space
     nDimension = size(systemParameter.BaseNodePosition,2);
@@ -932,8 +946,8 @@ function plot_relevant_results_truss_moving_node(typeName,systemParameter,initia
             sprintf('DeformationRandom%s',typeName),nodeDisplacementRandom,...
             sprintf('ComponentSolutionSpaceConvex%s',typeName),componentSolutionSpaceConvex,...
             sprintf('ComponentSolutionSpaceDelaunay%s',typeName),componentSolutionSpaceDelaunay);
-        save_3d_rotating_video_gif(is3dPlot,gcf,[resultsFolder,currentName]);
-        save_print_figure(gcf,[resultsFolder,currentName],'PrintFormat',{'png','pdf'});
+        save_3d_rotating_video_gif(is3dPlot,gcf,[resultsFolder,currentName],cameraPositionFigureSave);
+        save_print_figure(gcf,[resultsFolder,currentName],'PrintFormat',{'png','pdf'},'Size',figureSize);
     end
 end
 
@@ -1380,7 +1394,7 @@ function figureHandle = plot_results_truss_generic_moving_node(systemParameter,v
     end
 
     if(is3dPlot)
-        axis('tight','equal','square','vis3d');
+        axis('tight','equal','vis3d');
         camproj('perspective');
         cameratoolbar; % better adjust angle/perspective
     end
@@ -1390,7 +1404,7 @@ function figureHandle = plot_results_truss_generic_moving_node(systemParameter,v
     end
 end
 
-function save_3d_rotating_video_gif(is3dPlot,figureHandle,filename,varargin)
+function save_3d_rotating_video_gif(is3dPlot,figureHandle,filename,cameraPositionFigureSave,varargin)
     if(~is3dPlot)
         return;
     end
@@ -1401,6 +1415,10 @@ function save_3d_rotating_video_gif(is3dPlot,figureHandle,filename,varargin)
     view(rotatedAzimuth,defaultElevation);
     rotating_video(figureHandle,filename,varargin{:});
     rotating_gif(figureHandle,filename,varargin{:});
+
+    if(~isempty(cameraPositionFigureSave))
+        campos(cameraPositionFigureSave);
+    end
 end
 
 function rotating_video(figureHandle,filename,varargin)
