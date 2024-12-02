@@ -39,12 +39,12 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %%
-trussAnalysisChoice = '2-DoF-2D';
+trussAnalysisChoice = '4-DoF-2D';
 computeDisplacement = true;
 computeMass = false;
 computeDisplacementAndMass = true;
 computeDelaunayComponent = false;
-useBoxResultForComponent = false;
+useBoxResultForComponent = true;
 
 
 %% function call
@@ -52,8 +52,10 @@ systemFunction = @truss_generic_moving_node;
 
 switch trussAnalysisChoice
     case '2-DoF-2D'
-        maxIter = 20;
         nSample = 100;
+        maxIterDisplacement = 25;
+        maxIterMass = 20;
+        maxIterDisplacementAndMass = 25;
         growthRateDisplacement = 0.07;
         growthRateMass = 0.07;
         trimmingPasses = 'full';
@@ -93,10 +95,12 @@ switch trussAnalysisChoice
         designSpaceUpperBoundMass = [2  1.5];
         cameraPositionFigureSave = [];
     case '4-DoF-2D'
-        maxIter = 30;
         nSample = 100;
-        growthRateDisplacement = 0.07;
-        growthRateMass = 0.07;
+        maxIterDisplacement = 30;
+        maxIterMass = 30;
+        maxIterDisplacementAndMass = 35;
+        growthRateDisplacement = 0.06;
+        growthRateMass = 0.06;
         trimmingPasses = 'full';
         nRandomTruss = 3;
         systemParameter.ElementCrossSectionArea = 10; % [mm^2]
@@ -134,10 +138,12 @@ switch trussAnalysisChoice
         designSpaceUpperBoundMass = [2  1.5 2  1.5];
         cameraPositionFigureSave = [];
     case '16-DoF-2D'
-        maxIter = 400;
         nSample = 100;
-        growthRateDisplacement = 0.005;
-        growthRateMass = 0.005;
+        maxIterDisplacement = 250;
+        maxIterMass = 250;
+        maxIterDisplacementAndMass = 250;
+        growthRateDisplacement = 0.01;
+        growthRateMass = 0.01;
         trimmingPasses = 'reduced';
         nRandomTruss = 3;
         systemParameter.ElementCrossSectionArea = 10; % [mm^2]
@@ -213,8 +219,10 @@ switch trussAnalysisChoice
         designSpaceUpperBoundMass = repmat([10 1.5],1,8);
         cameraPositionFigureSave = [];
     case '36-DoF-2D'
-        maxIter = 300;
         nSample = 100;
+        maxIterDisplacement = 300;
+        maxIterMass = 300;
+        maxIterDisplacementAndMass = 300;
         growthRateDisplacement = 0.007;
         growthRateMass = 0.007;
         trimmingPasses = 'reduced';
@@ -354,8 +362,10 @@ switch trussAnalysisChoice
         designSpaceUpperBoundMass = repmat([10 1.5],1,18);
         cameraPositionFigureSave = [];
     case '9-DoF-3D'
-        maxIter = 100;
         nSample = 100;
+        maxIterDisplacement = 80;
+        maxIterMass = 100;
+        maxIterDisplacementAndMass = 100;
         growthRateDisplacement = 0.04;
         growthRateMass = 0.04;
         trimmingPasses = 'reduced';
@@ -410,8 +420,10 @@ switch trussAnalysisChoice
         designSpaceUpperBoundMass = [2  1.5  1.5 2  1.5  1.5 2  1.5  1.5];
         cameraPositionFigureSave = [4.7185  -11.2817    7.6322];
     case '36-DoF-3D'
-        maxIter = 300;
         nSample = 100;
+        maxIterDisplacement = 300;
+        maxIterMass = 300;
+        maxIterDisplacementAndMass = 300;
         growthRateDisplacement = 0.004;
         growthRateMass = 0.007;
         trimmingPasses = 'single';
@@ -572,10 +584,11 @@ plot_results_truss_generic_moving_node(systemParameter,...
 save_3d_rotating_video_gif(is3dPlot,gcf,[saveFolder,'InitialTrussDeformation'],cameraPositionFigureSave);
 save_print_figure(gcf,[saveFolder,'InitialTrussDeformation'],'PrintFormat',{'png','pdf'},'Size',figureSize);
 
+
 %% establish upper performance limits
 nElement = size(systemParameter.NodeElement,1);
-performanceLowerLimit = [  0   0 repmat(-inf,1,nElement)];
-performanceUpperLimit = [nan nan repmat(inf,1,nElement)];
+performanceLowerLimit = [  0   0 repmat(-inf,1,2*nElement)];
+performanceUpperLimit = [nan nan repmat(inf,1,2*nElement)];
 
 % update uppwer limit based on either optimal value or initial value
 bottomUpMapping = BottomUpMappingFunction(systemFunction,'SystemParameter',systemParameter);
@@ -690,7 +703,7 @@ if(computeDisplacement)
 
     [solutionSpaceBoxDisplacement,componentSolutionSpaceConvexDisplacement,componentSolutionSpaceDelaunayDisplacement] = ...
     compute_truss_solution_spaces('Displacement',designEvaluatorDisplacement,initialDesign,designSpaceLowerBoundDisplacement,...
-        designSpaceUpperBoundDisplacement,componentIndex,nSample,maxIter,growthRateDisplacement,trimmingPasses,...
+        designSpaceUpperBoundDisplacement,componentIndex,nSample,maxIterDisplacement,growthRateDisplacement,trimmingPasses,...
         useBoxResultForComponent,computeDelaunayComponent,rngState,saveFolder,figureSize);
 
     plot_relevant_results_truss_moving_node('Displacement',systemParameter,initialDesign,nodePositionOptimalDisplacement,...
@@ -709,7 +722,7 @@ if(computeMass)
 
     [solutionSpaceBoxMass,componentSolutionSpaceConvexMass,componentSolutionSpaceDelaunayMass] = ...
         compute_truss_solution_spaces('Mass',designEvaluatorMass,initialDesign,designSpaceLowerBoundMass,designSpaceUpperBoundMass,...
-            componentIndex,nSample,maxIter,growthRateMass,trimmingPasses,useBoxResultForComponent,computeDelaunayComponent,...
+            componentIndex,nSample,maxIterMass,growthRateMass,trimmingPasses,useBoxResultForComponent,computeDelaunayComponent,...
             rngState,saveFolder,figureSize);
 
     plot_relevant_results_truss_moving_node('Mass',systemParameter,initialDesign,nodePositionOptimalMass,...
@@ -721,7 +734,7 @@ end
 if(computeDisplacementAndMass)
     [solutionSpaceBoxDisplacementAndMass,componentSolutionSpaceConvexDisplacementAndMass,componentSolutionSpaceDelaunayDisplacementAndMass] = ...
     compute_truss_solution_spaces('DisplacementAndMass',designEvaluatorDisplacementAndMass,initialDesign,...
-        designSpaceLowerBoundDisplacement,designSpaceUpperBoundDisplacement,componentIndex,nSample,maxIter,...
+        designSpaceLowerBoundDisplacement,designSpaceUpperBoundDisplacement,componentIndex,nSample,maxIterDisplacementAndMass,...
         growthRateDisplacement,trimmingPasses,useBoxResultForComponent,computeDelaunayComponent,rngState,saveFolder,figureSize);
 
     plot_relevant_results_truss_moving_node('DisplacementAndMass',systemParameter,initialDesign,nodePositionOptimalDisplacementAndMass,...

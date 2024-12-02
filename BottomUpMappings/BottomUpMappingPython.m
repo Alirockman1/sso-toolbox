@@ -147,10 +147,10 @@ classdef BottomUpMappingPython < BottomUpMappingBase
         %	These are:
         %       - 'PhysicalFeasibilityDefaultValue' : default value used for the measure
         %		when no information regarding physical feasibility is available. 
-        %		Default: -1.
+        %		Default is empty.
         %       - 'PhysicalFeasibilityFunction' : function handle to be used to compute
         %		physical feasibility measures when that is not a part of the main 
-        %		response function. Default: [].
+        %		response function. Default is empty.
         %       - 'PhysicalFeasibilityParameter' : constant system parameters used
         %		exclusively when computing physical feasibility measures with the
         %		correspondent specific function. By default it is given the same value 

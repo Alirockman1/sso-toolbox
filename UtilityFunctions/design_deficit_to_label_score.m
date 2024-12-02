@@ -41,8 +41,7 @@ function [label,score] = design_deficit_to_label_score(measureDeficit,deficitWei
         deficitWeight = 1;
     end
 
-    % calculate score based on worst-case objective meta function and 
-    % label accordingly
+    % label based on worst-case (if any deficit is positive, design is bad)
     weightedDeficit = deficitWeight.*measureDeficit;
     worstCase = max(weightedDeficit,[],2);
     label = (worstCase<=0);

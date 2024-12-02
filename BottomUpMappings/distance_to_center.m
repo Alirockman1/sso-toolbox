@@ -22,7 +22,7 @@ function performanceMeasure = distance_to_center(designSample,systemParameter)
 %
 %   Output:
 %       - PERFORMANCEMEASURE : (nSample,nCenter) double 
-%           -- (i,j) : L2-norm distance i to reference center j
+%           -- (i,j) : L2-norm distance of sample point i to reference center j
 %
 %   See also sphere_nd.
 %

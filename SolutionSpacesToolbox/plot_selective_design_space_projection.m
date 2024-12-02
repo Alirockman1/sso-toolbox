@@ -136,7 +136,7 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
     parser.addOptional('CurrentFigure',[],@(x)isa(x,'matlab.ui.Figure')||isempty(x));
     parser.addParameter('NumberSamplesPerPlot',3000,@(x)isnumeric(x)&&isscalar(x)&&x>0);
     parser.addParameter('AxesLabels',{},@(x)iscell(x));
-    parser.addParameter('MarkerColorsViolatedRequirements','r');
+    parser.addParameter('MarkerColorsViolatedRequirements',color_palette_tol('red'));
     parser.addParameter('MarkerColorsCriterion','worst',@(x)any(stcpmi(x,{'worst','random'})));
     parser.addParameter('SamplingMethod',@sampling_latin_hypercube,@(x)isa(x,'function_handle'));
     parser.addParameter('SamplingOptions',{},@(x)iscell(x));
@@ -156,13 +156,13 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
     plotGrid = parser.Results.PlotGrid;
     options = parser.Results;
 
-    defaultPlotOptionsGood = {'Linestyle','none','Marker','.','Color','g'};
+    defaultPlotOptionsGood = {'Linestyle','none','Marker','o','Color',color_palette_tol('green')};
     [~,plotOptionsGood] = merge_name_value_pair_argument(defaultPlotOptionsGood,options.PlotOptionsGood);
 
-    defaultPlotOptionsBad = {'Linestyle','none','Marker','.','Color','r'};
+    defaultPlotOptionsBad = {'Linestyle','none','Marker','x'};
     [~,plotOptionsBad] = merge_name_value_pair_argument(defaultPlotOptionsBad,options.PlotOptionsBad);
 
-    defaultPlotOptionsPhysicallyInfeasible = {'Linestyle','none','Marker','.','Color',[0.8 0.8 0.8]};
+    defaultPlotOptionsPhysicallyInfeasible = {'Linestyle','none','Marker','.','Color',color_palette_tol('grey')};
     [~,plotOptionsPhysicallyInfeasible] = merge_name_value_pair_argument(defaultPlotOptionsPhysicallyInfeasible,...
         options.PlotOptionsPhysicallyInfeasible);
 
