@@ -19,7 +19,7 @@ figureSize = [goldenRatio 1]*8.5;
 
 %% 
 R = 1;
-nDimensionMaxPlot = 20;
+nDimensionMaxPlot = 36;
 
 nDimensionMaxTest = 2*nDimensionMaxPlot;
 allDimension = 1:nDimensionMaxTest;

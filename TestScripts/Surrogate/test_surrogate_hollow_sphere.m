@@ -56,7 +56,7 @@ options = active_learning_model_training_options(...
     'FixIter',true,...
     'LoggingLevel','all',...
     'ActiveLearningSamplingFunction',@active_learning_sampling_line_search,...
-    'ExplorationToBoundaryRatio',0,...
+    'ExplorationToBoundaryRatio',0.0,...
     'FastForwardModelInitial',@DesignFastForwardAnn);
 
 
@@ -100,6 +100,7 @@ xlabel('x_1');
 ylabel('x_2');
 zlabel('x_3');
 title(['Surrogate Modeling - ',methodDescription,'; Training Data']);
+axis('equal','vis3d','square','tight');
 save_print_figure(gcf,[saveFolder,'TrainingSamples']);
 
 
@@ -146,6 +147,7 @@ falsePredictionTitle = sprintf(...
     100*sum(isUncertain)/size(isUncertain,1));
 title(falsePredictionTitle);
 legend('location','southeast');
+axis('equal','vis3d','square','tight');
 save_print_figure(gcf,[saveFolder,'FalsePredictions']);
 
 

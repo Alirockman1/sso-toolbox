@@ -22,39 +22,38 @@ targetPurity = 0.7;
 growthExponent = [1,3,9];
 colorExponent = color_palette_tol({'blue','red','green'});
 purity = 0:0.0001:1;
-growthRateBase = 0.1;
 
 legendEntry = {};
 for i=1:size(growthExponent,2)
-    growthRate1(i,:) = ((1-targetPurity)*purity./((1-purity)*targetPurity)).^(1/growthExponent(i)).*growthRateBase;
-    growthRate2(i,:) = ((1-targetPurity)./(1-purity)).^(1./growthExponent(i)).*growthRateBase;
+    growthRateFactor1(i,:) = ((1-targetPurity)*purity./((1-purity)*targetPurity)).^(1/growthExponent(i));
+    growthRateFactor2(i,:) = ((1-targetPurity)./(1-purity)).^(1./growthExponent(i));
     [legendEntry{end+1},legendEntry{end+2}] = deal(...
-        sprintf('Exponent: %d - Modified Scheme 1: $$(1-a)/a$$',growthExponent(i)),...
-        sprintf('Exponent: %d - Modified Scheme 2: $$1-a$$',growthExponent(i)));
+        sprintf('$$g_e = %d$$ - Update Strategy 1',growthExponent(i)),...
+        sprintf('$$g_e = %d$$ - Update Strategy 2',growthExponent(i)));
 end
 
 figure;
 hold all;
 for i=1:size(growthExponent,2)
-    plot(purity,growthRate1(i,:),'-','color',colorExponent(i,:),'linewidth',2.5);
-    plot(purity,growthRate2(i,:),'-.','color',colorExponent(i,:),'linewidth',2.5);
+    plot(purity,growthRateFactor1(i,:),'-','color',colorExponent(i,:),'linewidth',2.5);
+    plot(purity,growthRateFactor2(i,:),'-.','color',colorExponent(i,:),'linewidth',2.5);
 end
-plot(purity,purity./targetPurity*growthRateBase,'--','color',color_palette_tol('grey'),'linewidth',2.5);
+plot(purity,purity./targetPurity,'--','color',color_palette_tol('grey'),'linewidth',2.5);
 grid minor;
 lim = axis;
-plot([0 1],[growthRateBase growthRateBase],'k--','linewidth',1.5);
+plot([0 1],[1 1],'k--','linewidth',1.0,'HandleVisibility','off');
 plot([targetPurity targetPurity],lim(3:4),'k:','linewidth',1.5);
 axis([min(purity) max(purity) lim(3) lim(4)]);
-xlabel('Purity $$p_{i-1}$$','interpreter','latex','FontSize',16);
-ylabel('Growth Rate $$g_i$$','interpreter','latex','FontSize',16)
-legend([legendEntry,{'Original Scheme','Previous Growth Rate $$g_{i-1}$$','Target Purity $$p^t$$'}],...
-    'Location','northwest','interpreter','latex');
+xlabel('Purity $$a_{i-1}$$','interpreter','latex','FontSize',14);
+ylabel('Growth Rate Adaptation Factor $$(g_i/g_{i-1})$$','interpreter','latex','FontSize',14);
+legend([legendEntry,{'Original Strategy','Target Purity $$p^t$$'}],...
+    'Location','northwest','interpreter','latex','FontSize',10);
 lim = axis;
 axis([...
     0 ... % x min
     1 ... % x max
     0 ... % y min
-    min(lim(4),0.2) % y max
+    min(lim(4),2) % y max
     ]);
 save_print_figure(gcf,[saveFolder,'ModifiedGrowthRate'],'Size',figureSize*1.25,'PrintFormat',{'png','pdf'});
 

@@ -39,12 +39,12 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %%
-trussAnalysisChoice = '4-DoF-2D';
+trussAnalysisChoice = '9-DoF-3D';
 computeDisplacement = true;
 computeMass = false;
-computeDisplacementAndMass = true;
+computeDisplacementAndMass = false;
 computeDelaunayComponent = false;
-useBoxResultForComponent = true;
+useBoxResultForComponent = false;
 
 
 %% function call
@@ -95,7 +95,7 @@ switch trussAnalysisChoice
         designSpaceUpperBoundMass = [2  1.5];
         cameraPositionFigureSave = [];
     case '4-DoF-2D'
-        nSample = 100;
+        nSample = 200;
         maxIterDisplacement = 30;
         maxIterMass = 30;
         maxIterDisplacementAndMass = 35;
@@ -834,8 +834,8 @@ function [solutionSpaceBox,componentSolutionSpaceConvex,componentSolutionSpaceDe
             'FixIterNumberConsolidation',true,...
             'MaxIterExploration',maxIter,...
             'MaxIterConsolidation',maxIter,...
-            'CandidateSpaceConstructorExploration',@CandidateSpaceDelaunay,...
-            'CandidateSpaceConstructorConsolidation',@CandidateSpaceDelaunay,...
+            'CandidateSpaceConstructorExploration',@CandidateSpaceSvm,...
+            'CandidateSpaceConstructorConsolidation',@CandidateSpaceSvm,...
             'TrimmingMethodFunction',@component_trimming_method_corner_box_removal,...
             'UseAdaptiveGrowthRate',true,...
             'GrowthRate',growthRate,...
@@ -873,7 +873,7 @@ function [solutionSpaceBox,componentSolutionSpaceConvex,componentSolutionSpaceDe
         {algoDataBox},...
         comparisonComponent,...
         'ComponentLabel',componentLabel,...
-        'BoxColor',color_palette_tol('yellow'),...
+        'BoxColor','k',...
         'ComponentColor',color_palette_tol({'cyan','purple'}),...
         'SaveFolder',resultsFolder,...
         'CloseFigureAfterSaving',true,...
@@ -1018,7 +1018,7 @@ function figureHandle = plot_results_truss_generic_moving_node(systemParameter,v
     is3dPlot = (size(systemParameter.BaseNodePosition,2)==3);
 
     if(is3dPlot)
-        [wallY,wallZ] = meshgrid(-0.5:1.5);
+        [wallY,wallZ] = meshgrid([-0.5,1.5]);
         wallX = zeros(size(wallY));
     else
         wallX = [0 0];
@@ -1028,35 +1028,35 @@ function figureHandle = plot_results_truss_generic_moving_node(systemParameter,v
 
     if(is3dPlot)
         % 1
-        defaultInitialTrussOptions = {'TrussPlotOptions',{'Color',color_palette_tol('grey')},'MaximumLinewidth',4.0,'DisplacementScaleFactor',25};
+        defaultInitialTrussOptions = {'TrussPlotOptions',{'Color',color_palette_tol('grey')},'MaximumLinewidth',3.0,'DisplacementScaleFactor',25};
         % 2
-        defaultOptimalTrussDisplacementOptions = {'TrussPlotOptions',{'Color',color_palette_tol('blue')},'MaximumLinewidth',4.0,'DisplacementScaleFactor',25};
+        defaultOptimalTrussDisplacementOptions = {'TrussPlotOptions',{'Color',color_palette_tol('blue')},'MaximumLinewidth',3.0,'DisplacementScaleFactor',25};
         % 3
-        defaultOptimalTrussMassOptions = {'TrussPlotOptions',{'Color',color_palette_tol('yellow')},'MaximumLinewidth',4.0,'DisplacementScaleFactor',25};
+        defaultOptimalTrussMassOptions = {'TrussPlotOptions',{'Color',color_palette_tol('yellow')},'MaximumLinewidth',3.0,'DisplacementScaleFactor',25};
         % 4
-        defaultOptimalTrussDisplacementAndMassOptions = {'TrussPlotOptions',{'Color',color_palette_tol('blue')},'MaximumLinewidth',4.0,'DisplacementScaleFactor',25};
+        defaultOptimalTrussDisplacementAndMassOptions = {'TrussPlotOptions',{'Color',color_palette_tol('blue')},'MaximumLinewidth',3.0,'DisplacementScaleFactor',25};
         % 5
-        defaultRandomTrussDisplacementOptions = {'MaximumLinewidth',4.0,'DisplacementScaleFactor',25};
+        defaultRandomTrussDisplacementOptions = {'MaximumLinewidth',3.0,'DisplacementScaleFactor',25};
         % 6
-        defaultRandomTrussMassOptions = {'MaximumLinewidth',4.0,'DisplacementScaleFactor',25};
+        defaultRandomTrussMassOptions = {'MaximumLinewidth',3.0,'DisplacementScaleFactor',25};
         % 7
-        defaultRandomTrussDisplacementAndMassOptions = {'MaximumLinewidth',4.0,'DisplacementScaleFactor',25};
+        defaultRandomTrussDisplacementAndMassOptions = {'MaximumLinewidth',3.0,'DisplacementScaleFactor',25};
         % 8
-        defaultWallOptions = {'FaceColor','k','EdgeColor','none','FaceAlpha',0.9};
+        defaultWallOptions = {'FaceColor','w','EdgeColor','k','FaceAlpha',0.9};
         % 9
         defaultAppliedForceOptions = {'Color',color_palette_tol('red'),'LineWidth',3.0};
         % 10
-        defaultBoxSolutionDisplacementOptions = {'FaceColor',color_palette_tol('yellow'),'FaceAlpha',0.2};
+        defaultBoxSolutionDisplacementOptions = {'EdgeColor','k','FaceAlpha',0.0};
         % 11
         defaultBoxSolutionMassOptions = {'FaceColor','m','FaceAlpha',0.2};
         % 12
-        defaultBoxSolutionDisplacementAndMassOptions = {'FaceColor',color_palette_tol('yellow'),'FaceAlpha',0.2};
+        defaultBoxSolutionDisplacementAndMassOptions = {'EdgeColor','k','FaceAlpha',0.0};
         % 13
-        defaultComponentSolutionConvexDisplacementOptions = {'FaceColor',color_palette_tol('cyan'),'FaceAlpha',0.2};
+        defaultComponentSolutionConvexDisplacementOptions = {'FaceColor',color_palette_tol('cyan'),'EdgeColor',color_palette_tol('cyan'),'FaceAlpha',0.2};
         % 14
         defaultComponentSolutionConvexMassOptions = {'FaceColor','m','FaceAlpha',0.2};
         % 15
-        defaultComponentSolutionConvexDisplacementAndMassOptions = {'FaceColor',color_palette_tol('cyan'),'FaceAlpha',0.2};
+        defaultComponentSolutionConvexDisplacementAndMassOptions = {'FaceColor',color_palette_tol('cyan'),'EdgeColor',color_palette_tol('cyan'),'FaceAlpha',0.2};
         % 16
         defaultComponentSolutionDelaunayDisplacementOptions = {'FaceColor',color_palette_tol('purple'),'FaceAlpha',0.2};
         % 17
@@ -1083,11 +1083,11 @@ function figureHandle = plot_results_truss_generic_moving_node(systemParameter,v
         % 9
         defaultAppliedForceOptions = {'Color',color_palette_tol('red'),'LineWidth',3.0};
         % 10
-        defaultBoxSolutionDisplacementOptions = {'EdgeColor',color_palette_tol('yellow'),'Linewidth',2.0};
+        defaultBoxSolutionDisplacementOptions = {'EdgeColor','k','Linewidth',2.0};
         % 11
         defaultBoxSolutionMassOptions = {'EdgeColor','m','Linewidth',2.0};
         % 12
-        defaultBoxSolutionDisplacementAndMassOptions = {'EdgeColor',color_palette_tol('yellow'),'Linewidth',2.0};
+        defaultBoxSolutionDisplacementAndMassOptions = {'EdgeColor','k','Linewidth',2.0};
         % 13
         defaultComponentSolutionConvexDisplacementOptions = {'EdgeColor',color_palette_tol('cyan'),'FaceColor','none','FaceAlpha',0.5,'Linewidth',2.0};
         % 14
@@ -1347,7 +1347,7 @@ function figureHandle = plot_results_truss_generic_moving_node(systemParameter,v
     end
 
     % axis
-    grid minor;
+    grid('off');
     if(~options.IncludeAxesInformation)
         if(is3dPlot)
             set(gca,'XColor', 'none','YColor','none','ZColor','none');

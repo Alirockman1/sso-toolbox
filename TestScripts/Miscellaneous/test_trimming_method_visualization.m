@@ -38,16 +38,16 @@ anchorPosition3d = [0.3 0.3 0.3];
 
 %% color choice
 colorCandidateSpaceInside = color_palette_tol('cyan');
-colorCandidateSpaceOutside = color_palette_tol('yellow');
+colorCandidateSpaceOutside = color_palette_tol('grey');
 colorPointInside = color_palette_tol('green');
 colorPointOutside = color_palette_tol('red');
 colorGrowthPoint = color_palette_tol('yellow');
-colorVector = color_palette_tol('purple');
+colorVector = color_palette_tol('yellow');
 
 optionsCandidateSpaceInside1d = {'-','color',colorCandidateSpaceInside,'linewidth',3.0};
 optionsCandidateSpaceOutside1d = {'-','color',colorCandidateSpaceOutside,'linewidth',3.0};
 optionsCandidateSpaceInside2d3d = {'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.4,'LineStyle','none'};
-optionsCandidateSpaceOutside2d3d = {'FaceColor',colorCandidateSpaceOutside,'FaceAlpha',0.5,'LineStyle','none'};
+optionsCandidateSpaceOutside2d3d = {'FaceColor',colorCandidateSpaceOutside,'FaceAlpha',0.6,'LineStyle','none'};
 optionsPointOutside = {'x','color',colorPointOutside,'MarkerSize',10,'linewidth',2.0};
 
 
@@ -66,7 +66,7 @@ quiver(...
     'AutoScale','off','LineWidth',2.0,'Color',colorVector);
 plot([anchorPosition1d],[1],optionsPointOutside{:},'HandleVisibility','off');
 set(gca,'XColor', 'none','YColor','none');
-grid minor;
+grid off;
 ylim([-2 2]);
 legend({'Removed Region','Kept Region','Normal Vector','Removed Design'},'location','east');
 save_print_figure(gcf,[saveFolder,'PlanarTrimming1D'],'Size',[figureSize(1) figureSize(2)/2],'PrintFormat',{'png','pdf'});
@@ -188,7 +188,7 @@ plot([designSpaceLowerBound1d anchorPosition1d],[1 1],optionsCandidateSpaceOutsi
 plot([anchorPosition1d designSpaceUpperBound1d],[1 1],optionsCandidateSpaceInside1d{:});
 plot([anchorPosition1d],[1],optionsPointOutside{:});
 set(gca,'XColor', 'none','YColor','none');
-grid minor;
+grid off;
 ylim([-2 2])
 legend({'Kept Region','Removed Region','Removed Design'},'location','east');
 save_print_figure(gcf,[saveFolder,'CornerBoxRemoval1D'],'Size',[figureSize(1) figureSize(2)/2],'PrintFormat',{'png','pdf'});
@@ -324,7 +324,7 @@ plot([anchorPosition1d+holeSize designSpaceUpperBound1d],[0 0],optionsCandidateS
 plot([anchorPosition1d-holeSize anchorPosition1d+holeSize],[0 0],optionsCandidateSpaceOutside1d{:});
 plot(anchorPosition1d,0,optionsPointOutside{:});
 set(gca,'XColor', 'none','YColor','none');
-grid minor;
+grid off;
 legend({'Kept Region','Removed Region','Removed Design'},'location','northeast');
 save_print_figure(gcf,[saveFolder,'HolePunching1D'],'Size',[figureSize(1) figureSize(2)/2],'PrintFormat',{'png','pdf'});
 
