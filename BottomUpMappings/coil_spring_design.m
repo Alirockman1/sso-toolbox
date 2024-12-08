@@ -65,8 +65,8 @@ function performanceMeasure = coil_spring_design(designSample,systemParameter)
 	outerDiameterOperationSpace = coilDiameter + wireDiameter;
 	% Wi = D - d
 	innerDiameterOperationSpace = coilDiameter - wireDiameter;
-	% uc = (s-d)*n
-	deformationCompaction = (spacingWiresRelaxed - wireDiameter).*nWindings;
+	% uc = -(s-d)*n
+	deformationCompaction = -(spacingWiresRelaxed - wireDiameter).*nWindings;
 	% uY = sigmaY*(2*pi*d^3)/(K*D) (tau_max = d/2 * MT/Jp = MT/(pi*d^3) = K*uY*D/(2*pi*d^3) =~ sigma_eq^max)
 	deformationPlasticYield = yieldStress.*(2*pi.*wireDiameter.^3)./(stiffness.*coilDiameter);
 	% uL = 0.1*D*n (change of angle: delta alpha =~ u/(Dn) << 0.1)
