@@ -9,6 +9,7 @@ function color = colormap_cmocean(varargin)
 %		2016. True colors of oceanography: Guidelines for effective and accurate 
 %		colormap selection. Oceanography 29(3):9–13. 
 %		http://dx.doi.org/10.5670/oceanog.2016.66
+%		link: http://tos.org/oceanography/assets/docs/29-3_thyng.pdf
 %
 %	COLOR = COLORMAP_CMOCEAN returns the colormap as a three-column matrix of 
 %	RGB triplets. 
