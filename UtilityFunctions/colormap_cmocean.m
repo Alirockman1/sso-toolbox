@@ -14,29 +14,30 @@ function color = colormap_cmocean(varargin)
 %	RGB triplets. 
 %
 %	COLOR = COLORMAP_CMOCEAN(MAP) allows one to choose one of the color maps
-%	available. The options are:
-%		- 'algae'
-%		- 'amp'
-%		- 'balance'
-%		- 'curl'
-%		- 'deep'
-%		- 'delta'
-%		- 'dense'
-%		- 'diff'
-%		- 'gray'
-%		- 'haline'
-%		- 'ice'
-%		- 'matter'
-%		- 'oxy'
-%		- 'phase'
-%		- 'rain'
-%		- 'solar'
-%		- 'speed'
-%		- 'tarn'
-%		- 'tempo'
-%		- 'thermal'
-%		- 'topo'
-%		- 'turbid'
+%	available. These schema can be sequential, divergent or cyclic. The options 
+%	are:
+%		- 'thermal' : sequential.
+%		- 'haline' : sequential.
+%		- 'solar' : sequential.
+%		- 'ice' : sequential.
+%		- 'gray' : sequential.
+%		- 'oxy' : sequential for most of the colormap, divergent at 80%.
+%		- 'deep' : sequential.
+%		- 'dense' : sequential.
+%		- 'algae' : sequential.
+%		- 'matter' : sequential.
+%		- 'turbid' : sequential.
+%		- 'speed' : sequential.
+%		- 'amp' : sequential.
+%		- 'tempo' : sequential.
+%		- 'rain' : sequential.
+%		- 'phase' : cyclic, set lightness value.
+%		- 'topo' : two distinct parts.
+%		- 'balance' : divergent.
+%		- 'delta' : divergent.
+%		- 'curl' : divergent.
+%		- 'diff' : divergent.
+%		- 'tarn' : divergent.
 %	More about each choice should be seen on the official documentation:
 %	https://matplotlib.org/cmocean/ . Default: 'algae'.
 %
