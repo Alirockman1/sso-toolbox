@@ -1,5 +1,5 @@
 function color = color_palette_tol(index,paletteType)
-%COLOR_PALETTE_TOL Colorblind-friendly color palette from Dr. Paul Tol
+%COLOR_PALETTE_TOL Color Blind Accessible color palette from Dr. Paul Tol
 %	COLOR_PALETTE_TOL returns a color palette developed by Dr. Paul Tol which is 
 %	more accessible to colorblind people. Multiple palettes are available, and 
 %	the choice of which one to get can be specified.

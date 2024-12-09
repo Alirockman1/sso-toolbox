@@ -1,5 +1,5 @@
 function color = colormap_viridis(varargin)
-%COLORMAP_VIRIDIS Using viridis colormaps in MATLAB (Color-blindness Friendly)
+%COLORMAP_VIRIDIS Using viridis colormaps in MATLAB (Color Blind Accessibility)
 %	COLORMAP_VIRIDIS creates a MATLAB [R,G,B] triplet matrix for colormaps using  
 %	one of the color schemes from color scheme from 'viridis'.
 %	Link to repository with data used: https://github.com/sjmgarnier/viridisLite

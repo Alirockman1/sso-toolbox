@@ -1,5 +1,5 @@
 function color = color_palette_okabe_ito(index)
-%COLOR_PALETTE_OKABE_ITO Colorblind-friendly color palette from Okabe, Ito
+%COLOR_PALETTE_OKABE_ITO Color Blind Accessible color palette from Okabe, Ito
 %	COLOR_PALETTE_OKABE_ITO returns a color palette developed by Masataka Okabe
 %	and Kei Ito which is more accessible to colorblind people.
 %	Source of palette: https://jfly.uni-koeln.de/color/

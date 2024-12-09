@@ -1,5 +1,5 @@
 function color = colormap_cmocean(varargin)
-%COLORMAP_CMOCEAN Using cmocean colormaps in MATLAB (Color-blindness Friendly)
+%COLORMAP_CMOCEAN Using cmocean colormaps in MATLAB (Color Blind Accessibility)
 %	COLORMAP_CMOCEAN creates a MATLAB [R,G,B] triplet matrix for colormaps using  
 %	one of the color schemes from 'cmocean'.
 %	Link to project description: https://matplotlib.org/cmocean/
