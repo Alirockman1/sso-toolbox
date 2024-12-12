@@ -313,6 +313,13 @@ classdef CandidateSpaceDecisionTree < CandidateSpaceBase
         %   
         %   See also predict.
 
+            nSample = size(designSample,1);
+            if(isempty(obj.DesignSampleDefinition))
+                label = true(nSample,1);
+                score = zeros(nSample,1);
+                return;
+            end
+
             [isInside,score] = predict(obj.DecisionTree,designSample);
     
             % convert to true (1) / false (0)

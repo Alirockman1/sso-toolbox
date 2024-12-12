@@ -258,7 +258,7 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
                 outsideInsideSimplex = tsearchn(insideSample,obj.DelaunayIndex,designSample(~isInside,:));
                 isInsideWrong = unique(outsideInsideSimplex(~isnan(outsideInsideSimplex)));
     
-                % delete simplices where bad designs are inside
+                % delete simplices where removed designs are inside
                 obj.DelaunayIndex(isInsideWrong,:) = [];
             end
 
@@ -341,7 +341,7 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             obj = obj.define_candidate_space(designSampleNew,isInsideNew);
         end
 
-        function [label, score] = is_in_candidate_space(obj,designSample)
+        function [isInside, score] = is_in_candidate_space(obj,designSample)
         %IS_IN_CANDIDATE_SPACE Verification if given design samples are inside
         %   IS_IN_CANDIDATE_SPACE uses the currently defined candidate space to 
         %   determine if given design sample points are inside or outside the candidate 
@@ -369,10 +369,17 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %   
         %   See also tsearchn.
 
+            nSample = size(designSample,1);
+            if(isempty(obj.DesignSampleDefinition))
+                isInside = true(nSample,1);
+                score = zeros(nSample,1);
+                return;
+            end
+
             [insideSimplex,barycentricCoordinate] = tsearchn(obj.ActiveDesign,obj.DelaunayIndex,designSample);
             isInsideSpace = ~isnan(insideSimplex);
             isInBoundary = ismember(designSample,obj.DesignSampleDefinition(obj.IsShapeDefinition,:),'rows');
-            label = isInsideSpace | isInBoundary;
+            isInside = isInsideSpace | isInBoundary;
 
             if(nargout>1)
         	    nSample = size(designSample,1);
@@ -381,7 +388,7 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
                 score(isInsideSpace) = max(barycentricCoordinate(isInsideSpace,:)-1,[],2);
                 %TODO: barycentric coordinate perhaps not most appropriate, as that only tells
                 %how 'inside' that is of the particular simplex, not the tesselation as a whole
-                score(~label) = 1;
+                score(~isInside) = 1;
             end
         end
 

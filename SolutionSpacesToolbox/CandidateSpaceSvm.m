@@ -298,6 +298,13 @@ classdef CandidateSpaceSvm < CandidateSpaceBase
         %   
         %   See also predict.
 
+            nSample = size(designSample,1);
+            if(isempty(obj.DesignSampleDefinition))
+                isInside = true(nSample,1);
+                score = zeros(nSample,1);
+                return;
+            end
+
             [isInside,score] = predict(obj.Svm,designSample);
     
             % convert to true (1) / false (0)

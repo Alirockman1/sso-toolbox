@@ -58,7 +58,7 @@ function removalCost = component_trimming_cost(designSample,activeKeep,removalCa
     removalCost = nan(1,nRemovalCandidate);
     if(isa(options.CostType,'function_handle'))
         removalCost = options.CostType(designSample,activeKeep,removalCandidate);
-    elseif(strcmpi(options.CostType,'ComponentDimension'))
+    elseif(strcmpi(options.CostType,'RemovedKeepVolume'))
         nSample = size(designSample,1);
         keepFraction = sum(removalCandidate & activeKeep,1)./nSample;
 

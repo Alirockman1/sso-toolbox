@@ -274,7 +274,7 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             obj = obj.define_candidate_space(newSamples);
         end
         
-        function [label, score] = is_in_candidate_space(obj,designSample)
+        function [isInside, score] = is_in_candidate_space(obj,designSample)
         %IS_IN_CANDIDATE_SPACE Verification if given design samples are inside
         %   IS_IN_CANDIDATE_SPACE uses the currently defined candidate space to 
         %   determine if given design sample points are inside or outside the candidate 
@@ -302,9 +302,16 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         %   
         %   See also is_in_convex_hull_with_plane.
 
-            [label,score] = is_in_convex_hull_with_facet_normal(obj.ConvexHullFacePoint,obj.ConvexHullFaceNormal,designSample);
+            nSample = size(designSample,1);
+            if(isempty(obj.DesignSampleDefinition))
+                isInside = true(nSample,1);
+                score = zeros(nSample,1);
+                return;
+            end
+
+            [isInside,score] = is_in_convex_hull_with_facet_normal(obj.ConvexHullFacePoint,obj.ConvexHullFaceNormal,designSample);
             isInBoundary = ismember(designSample,obj.ActiveDesign,'rows');
-            label = label | isInBoundary;
+            isInside = isInside | isInBoundary;
             score(isInBoundary) = -abs(score(isInBoundary));
         end
 

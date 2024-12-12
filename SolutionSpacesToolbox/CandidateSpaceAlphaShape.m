@@ -303,7 +303,7 @@ classdef CandidateSpaceAlphaShape < CandidateSpaceBase
             obj.IsShapeDefinition = ismember((1:nSample)',globalBoundaryIndex);
     	end
 
-    	function [label, score] = is_in_candidate_space(obj,designSample)
+    	function [isInside, score] = is_in_candidate_space(obj,designSample)
         %IS_IN_CANDIDATE_SPACE Verification if given design samples are inside
         %   IS_IN_CANDIDATE_SPACE uses the currently defined candidate space to 
         %   determine if given design sample points are inside or outside the candidate 
@@ -331,9 +331,16 @@ classdef CandidateSpaceAlphaShape < CandidateSpaceBase
         %   
         %   See also inShape, nearestNeighbor.
 
-    		label = obj.AlphaShapeObject.inShape(designSample);
+            nSample = size(designSample,1);
+            if(isempty(obj.DesignSampleDefinition))
+                isInside = true(nSample,1);
+                score = zeros(nSample,1);
+                return;
+            end
+
+    		isInside = obj.AlphaShapeObject.inShape(designSample);
     		[~,score] = obj.AlphaShapeObject.nearestNeighbor(designSample);
-    		score(label) = -score(label);
+    		score(isInside) = -score(isInside);
     	end
 
         function obj = grow_candidate_space(obj,growthRate)

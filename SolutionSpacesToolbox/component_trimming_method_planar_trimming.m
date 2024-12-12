@@ -1,4 +1,4 @@
-function removalCandidate = component_trimming_method_planar_trimming(designSampleComponent,iRemove,isKeep,varargin)
+function [removalCandidate,removalInformation] = component_trimming_method_planar_trimming(designSampleComponent,iRemove,isKeep,varargin)
 %COMPONENT_TRIMMING_METHOD_PLANAR_TRIMMING Component SSO Convex Trimming
 %   COMPONENT_TRIMMING_METHOD_PLANAR_TRIMMING uses the planar trimming method to
 %   find the sample points for candidate removal during the trimming operation 
@@ -97,5 +97,10 @@ function removalCandidate = component_trimming_method_planar_trimming(designSamp
     for i=1:nRemovalCandidate
         dotProduct = sum(normalizedDistanceReference(i,:).*normalizedDistanceAll,2);
         removalCandidate(:,i) = (dotProduct<=0);
+
+        if(nargout>1)
+            removalInformation(i).Anchor = designSampleComponent(iRemove,:);
+            removalInformation(i).PlaneOrientation = normalizedDistanceReference(i,:);
+        end
     end
 end

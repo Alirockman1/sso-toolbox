@@ -279,6 +279,13 @@ classdef CandidateSpaceBoundingBox < CandidateSpaceBase
         %   
         %   See also is_in_design_box.
 
+            nSample = size(designSample,1);
+            if(isempty(obj.DesignSampleDefinition))
+                isInside = true(nSample,1);
+                score = zeros(nSample,1);
+                return;
+            end
+
             [isInside,score] = is_in_design_box(designSample,obj.BoundingBox);
         end
 

@@ -1,4 +1,4 @@
-function removalCandidate = component_trimming_method_hole_punching(designSampleComponent,iRemove,varargin)
+function [removalCandidate,removalInformation] = component_trimming_method_hole_punching(designSampleComponent,iRemove,varargin)
 %COMPONENT_TRIMMING_METHOD_HOLE_PUNCHING Component SSO Trimming
 %   COMPONENT_TRIMMING_METHOD_HOLE_PUNCHING uses the hole punching method to 
 %   find the sample points for candidate removal during the trimming operation 
@@ -45,4 +45,9 @@ function removalCandidate = component_trimming_method_hole_punching(designSample
     holeSize = (designSampleMax-designSampleMin)*((1/sqrt(nSample))^(1/nDesignVariable));
     
     removalCandidate = all(abs(designSampleComponent-designSampleComponent(iRemove,:))<=holeSize./2,2);
+
+    if(nargout>1)
+        removalInformation.Anchor = designSampleComponent(iRemove,:);
+        removalInformation.HoleSize = holeSize;
+    end
 end

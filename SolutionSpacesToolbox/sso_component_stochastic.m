@@ -339,22 +339,14 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             isPadding,...
             paddingSample,...
             options.UsePaddingSamplesInTrimming);
-        
-        % define which samples are inside the candidate space
-        activeComponent = true(size(trimmingSample,1),nComponent);
-        if(candidateSpaceDefined)
-            for i=1:size(componentIndex,2)
-                activeComponent(:,i) = candidateSpaceGrown(i).is_in_candidate_space(trimmingSample(:,componentIndex{i}));
-            end
-        end
 
         % define order of trimming operation for samples that must be excluded
         trimmingOrder = options.TrimmingOrderFunction(~trimmingIsAcceptable,trimmingScore,options.TrimmingOrderOptions{:});
 
         % trim
         trimmingLabelViable = trimmingIsAcceptable & trimmingIsUseful;
-        activeComponent = component_trimming_operation(trimmingSample,trimmingLabelViable,trimmingOrder,componentIndex,activeComponent,trimmingOperationOptions{:});
-        active = all(activeComponent,2);
+        candidateSpaceTrimmed = component_trimming_operation(trimmingSample,trimmingLabelViable,trimmingOrder,componentIndex,candidateSpaceGrown,trimmingOperationOptions{:});
+        candidateSpaceDefined = true;
         console.info('Elapsed time is %g seconds.\n',toc);
 
         if(applyLeannessEachTrim)
@@ -363,34 +355,21 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             labelRemoveLeanness = ~trimmingIsUseful & ~isPadding;
             labelKeep = trimmingIsAcceptable & trimmingIsUseful;
             trimmingOrder = trimming_order(labelRemoveLeanness,trimmingScore,'OrderPreference','score-low-to-high');
-            activeComponent = component_trimming_leanness(trimmingSample,labelKeep,trimmingOrder,componentIndex,activeComponent,trimmingOperationOptions{:});
-            active = all(activeComponent,2);
+            candidateSpaceTrimmed = component_trimming_leanness(trimmingSample,labelKeep,trimmingOrder,componentIndex,candidateSpaceTrimmed,trimmingOperationOptions{:});
 
             console.info('Elapsed time is %g seconds.\n',toc);
         end
         
-        acceptedInsideSpace = active & trimmingIsAcceptable;
-        usefulInsideSpace = active & trimmingIsUseful;
-        % console.debug('- Number of samples removed from candidate space: %g (%g%%)\n',sum(~active),100*sum(~active)/size(active,2));
-        % console.debug('- Number of acceptable samples lost: %g\n',sum(~active & trimmingIsAcceptable));
-        % console.debug('- Number of useful samples lost: %g\n',sum(~active & trimmingIsUseful));
-        % console.debug('- Number of acceptable samples inside trimmed candidate space: %g\n',sum(acceptedInsideSpace));
-        % console.debug('- Number of useful samples inside trimmed candidate space: %g\n',sum(usefulInsideSpace));
         
-        
-        %% Retraining Candidate Spaces
-        console.info('Updating candidate spaces... ');
-        tic
-        [candidateSpaceTrimmed,samplingBoxTrimmed] = component_sso_update_candidate_spaces(trimmingSample,activeComponent,componentIndex,candidateSpace);
-        candidateSpaceDefined = true;
-        console.info('Elapsed time is %g seconds.\n',toc);
-
-        %% getting new measure
+        %% Update information around Candidate Spaces
+        samplingBoxTrimmed = nan(2,nDimension);
         measureTrimmed = 1;
         for i=1:nComponent
+            samplingBoxTrimmed(:,componentIndex{i}) = candidateSpaceTrimmed(i).SamplingBox;
             measureTrimmed = measureTrimmed*candidateSpaceTrimmed(i).Measure;
         end
         
+
         %% Convergence Criteria
         console.info('Checking convergence... ');
         tic
@@ -450,7 +429,8 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
     
     % Create first instantiation of the candidate spaces for each component
     % in addition, find which designs help define the shape of each space.
-    isShapeDefinition = false(size(activeComponent));
+    samplingBox = nan(2,nDimension);
+    isShapeDefinition = false(size(trimmingSample,1),nComponent);
     for i=1:size(componentIndex,2)
         candidateSpaceConsolidation(i) = options.CandidateSpaceConstructorConsolidation(...
             designSpaceLowerBound(componentIndex{i}),...
@@ -467,7 +447,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
     clear candidateSpaceConsolidation
     
     % create new arrays for designs to be used/cconsidered
-    isKept = false(size(activeComponent,1),3);
+    isKept = false(size(trimmingSample,1),3);
     isKept(:,1) = any(isShapeDefinition,2);
     isKept(:,2) = (~isPadding) & options.UsePreviousEvaluatedSamplesConsolidation;
     isKept(:,3) = (isPadding) & options.UsePreviousPaddingSamplesConsolidation;
@@ -545,28 +525,20 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
 
             [trimmingSample,trimmingIsAcceptable,trimmingIsUseful,trimmingScore,trimmingIsPadding] = ...
                 component_sso_prepare_trimming_samples(...
-                consideredSample,...
-                consideredisAcceptable,...
-                consideredisUseful,...
-                consideredScore,...
-                consideredIsPadding,...
-                paddingSample,...
-                options.UsePaddingSamplesInTrimming);
-
-            
-            % define which samples are inside the candidate spaces
-            activeComponent = true(size(trimmingSample,1),size(componentIndex,2));
-            for i=1:size(componentIndex,2)
-                activeComponent(:,i) = candidateSpace(i).is_in_candidate_space(trimmingSample(:,componentIndex{i}));
-            end
+                    consideredSample,...
+                    consideredisAcceptable,...
+                    consideredisUseful,...
+                    consideredScore,...
+                    consideredIsPadding,...
+                    paddingSample,...
+                    options.UsePaddingSamplesInTrimming);
 
             % define order of trimming operation for samples that must be excluded
             trimmingOrder = options.TrimmingOrderFunction(~trimmingIsAcceptable,trimmingScore,options.TrimmingOrderOptions{:});
 
             % trim
             trimmingLabelViable = trimmingIsAcceptable & trimmingIsUseful;
-            activeComponent = component_trimming_operation(trimmingSample,trimmingLabelViable,trimmingOrder,componentIndex,activeComponent,trimmingOperationOptions{:});
-            active = all(activeComponent,2);
+            candidateSpaceTrimmed = component_trimming_operation(trimmingSample,trimmingLabelViable,trimmingOrder,componentIndex,candidateSpace,trimmingOperationOptions{:});
             console.info('Elapsed time is %g seconds.\n',toc);
 
             if(applyLeannessEachTrim)
@@ -575,29 +547,23 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
                 labelRemoveLeanness = ~trimmingIsUseful & ~trimmingIsPadding;
                 labelKeep = trimmingIsAcceptable & trimmingIsUseful;
                 trimmingOrder = trimming_order(labelRemoveLeanness,trimmingScore,'OrderPreference','score-low-to-high');
-                activeComponent = component_trimming_leanness(trimmingSample,labelKeep,trimmingOrder,componentIndex,activeComponent,trimmingOperationOptions{:});
-                active = all(activeComponent,2);
+                candidateSpaceTrimmed = component_trimming_leanness(trimmingSample,labelKeep,trimmingOrder,componentIndex,candidateSpaceTrimmed,trimmingOperationOptions{:});
 
                 console.info('Elapsed time is %g seconds.\n',toc);
             end
             
-            acceptedInsideSpace = active & trimmingIsAcceptable;
-            usefulInsideSpace = active & trimmingIsUseful;
-            % console.debug('- Number of samples removed from candidate space: %g (%g%%)\n',sum(~active),100*sum(~active)/size(active,2));
-            % console.debug('- Number of acceptable samples lost: %g\n',sum(~active & trimmingIsAcceptable));
-            % console.debug('- Number of useful samples lost: %g\n',sum(~active & trimmingIsUseful));
-            % console.debug('- Number of acceptable samples inside trimmed candidate space: %g\n',sum(acceptedInsideSpace));
-            % console.debug('- Number of useful samples inside trimmed candidate space: %g\n',sum(usefulInsideSpace));
-            
-            %% Retraining Candidate Spaces
-            console.info('Updating candidate spaces... ');
-            tic
-            
-            [candidateSpaceTrimmed,samplingBoxTrimmed,isShapeDefinition] = ...
-                component_sso_update_candidate_spaces(trimmingSample,activeComponent,componentIndex,candidateSpace);
+            %% Update information around Candidate Spaces
+            samplingBoxTrimmed = nan(2,nDimension);
+            measureTrimmed = 1;
+            isShapeDefinition = false(size(trimmingSample,1),nComponent);
+            for i=1:nComponent
+                samplingBoxTrimmed(:,componentIndex{i}) = candidateSpaceTrimmed(i).SamplingBox;
+                measureTrimmed = measureTrimmed*candidateSpaceTrimmed(i).Measure;
+                isShapeDefinition(:,i) = candidateSpaceTrimmed(i).IsShapeDefinition;
+            end
 
             %% update samples being kept
-            isKept = false(size(activeComponent,1),3);
+            isKept = false(size(trimmingSample,1),3);
             isKept(:,1) = any(isShapeDefinition,2);
             isKept(:,2) = (~trimmingIsPadding) & options.UsePreviousEvaluatedSamplesConsolidation;
             isKept(:,3) = (trimmingIsPadding) & options.UsePreviousPaddingSamplesConsolidation;

@@ -43,7 +43,7 @@ trussAnalysisChoice = '9-DoF-3D';
 computeDisplacement = true;
 computeMass = false;
 computeDisplacementAndMass = false;
-computeDelaunayComponent = false;
+computeDelaunayComponent = true;
 useBoxResultForComponent = false;
 
 
@@ -52,7 +52,7 @@ systemFunction = @truss_generic_moving_node;
 
 switch trussAnalysisChoice
     case '2-DoF-2D'
-        nSample = 100;
+        nSample = 200;
         maxIterDisplacement = 25;
         maxIterMass = 20;
         maxIterDisplacementAndMass = 25;
@@ -95,7 +95,7 @@ switch trussAnalysisChoice
         designSpaceUpperBoundMass = [2  1.5];
         cameraPositionFigureSave = [];
     case '4-DoF-2D'
-        nSample = 200;
+        nSample = 100;
         maxIterDisplacement = 30;
         maxIterMass = 30;
         maxIterDisplacementAndMass = 35;
@@ -1042,7 +1042,7 @@ function figureHandle = plot_results_truss_generic_moving_node(systemParameter,v
         % 7
         defaultRandomTrussDisplacementAndMassOptions = {'MaximumLinewidth',3.0,'DisplacementScaleFactor',25};
         % 8
-        defaultWallOptions = {'FaceColor','w','EdgeColor','k','FaceAlpha',0.9};
+        defaultWallOptions = {'FaceColor','w','EdgeColor','k','FaceAlpha',0.7};
         % 9
         defaultAppliedForceOptions = {'Color',color_palette_tol('red'),'LineWidth',3.0};
         % 10
