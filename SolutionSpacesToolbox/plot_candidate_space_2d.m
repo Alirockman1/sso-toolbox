@@ -43,7 +43,7 @@ function plotHandle = plot_candidate_space_2d(figureHandle,candidateSpace,vararg
     inputPlotOptions = parser_variable_input_to_structure(varargin{:});
 
     % set step size for fine sampling
-    stepSize = 0.01;
+    stepSize = 0.001;
 
     % make the intervals for each variable
     [~,positiveRegionBox] = design_bounding_box(candidateSpace.DesignSampleDefinition,candidateSpace.IsInsideDefinition);
