@@ -64,7 +64,7 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
     [lowerValueDesignVariable,lowerBoundaryDesignIndexKeep] = min(designSampleComponent(isKeep,:),[],1);
     
     % normalize values for better numerical behavior
-    designSampleComponent = designSampleComponent./(upperValueDesignVariable-lowerValueDesignVariable);
+    % designSampleComponent = designSampleComponent./(upperValueDesignVariable-lowerValueDesignVariable);
 
     if(strcmpi(options.ReferenceDesigns,'all'))
         designReference = designSampleComponent;
@@ -81,26 +81,26 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
     end
 
     % find all distances
-    distanceAll = designSampleComponent(iRemove,:) - designSampleComponent;
-    normalizedDistanceAll = distanceAll./vecnorm(distanceAll,2,2);
+    distanceToAnchor = designSampleComponent(iRemove,:) - designSampleComponent;
+    normalizedDistanceToAnchor = distanceToAnchor./vecnorm(distanceToAnchor,2,2);
 
-    distanceReference = designSampleComponent(iRemove,:) - designReference;
-    normalizedDistanceReference = distanceReference./vecnorm(distanceReference,2,2);
+    planeOrientation = designSampleComponent(iRemove,:) - designReference;
+    normalizedPlaneOrientation = planeOrientation./vecnorm(planeOrientation,2,2);
 
     % for each plane, points being removed are all whose dot product between the 
     % distance to the anchor and each normal is non-positive
     % note: full product could be written as a matrix multiplication, but in my
     % experience, that actually makes the performance worse
     nSample = size(designSampleComponent,1);
-    nRemovalCandidate = size(normalizedDistanceReference,1);
+    nRemovalCandidate = size(normalizedPlaneOrientation,1);
     removalCandidate = false(nSample,nRemovalCandidate);
     for i=1:nRemovalCandidate
-        dotProduct = sum(normalizedDistanceReference(i,:).*normalizedDistanceAll,2);
+        dotProduct = sum(normalizedPlaneOrientation(i,:).*normalizedDistanceToAnchor,2);
         removalCandidate(:,i) = (dotProduct<=0);
 
         if(nargout>1)
             removalInformation(i).Anchor = designSampleComponent(iRemove,:);
-            removalInformation(i).PlaneOrientation = normalizedDistanceReference(i,:);
+            removalInformation(i).PlaneOrientationInside = -normalizedPlaneOrientation(i,:);
         end
     end
 end

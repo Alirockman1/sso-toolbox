@@ -345,7 +345,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
 
         % trim
         trimmingLabelViable = trimmingIsAcceptable & trimmingIsUseful;
-        candidateSpaceTrimmed = component_trimming_operation(trimmingSample,trimmingLabelViable,trimmingOrder,componentIndex,candidateSpaceGrown,trimmingOperationOptions{:});
+        candidateSpaceTrimmed = options.TrimmingOperationFunction(trimmingSample,trimmingLabelViable,trimmingOrder,componentIndex,candidateSpaceGrown,trimmingOperationOptions{:});
         candidateSpaceDefined = true;
         console.info('Elapsed time is %g seconds.\n',toc);
 
@@ -429,22 +429,27 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
     
     % Create first instantiation of the candidate spaces for each component
     % in addition, find which designs help define the shape of each space.
+
+    if(~isempty(options.CandidateSpaceConstructorConsolidation))
+        for i=1:size(componentIndex,2)
+            candidateSpaceConsolidation(i) = options.CandidateSpaceConstructorConsolidation(...
+                designSpaceLowerBound(componentIndex{i}),...
+                designSpaceUpperBound(componentIndex{i}),...
+                options.CandidateSpaceOptionsConsolidation{:});
+            
+            candidateSpaceConsolidation(i) = candidateSpaceConsolidation(i).define_candidate_space(...
+                candidateSpace(i).DesignSampleDefinition,candidateSpace(i).IsInsideDefinition);
+        end
+        candidateSpace = candidateSpaceConsolidation;
+        clear candidateSpaceConsolidation
+    end
+
     samplingBox = nan(2,nDimension);
     isShapeDefinition = false(size(trimmingSample,1),nComponent);
     for i=1:size(componentIndex,2)
-        candidateSpaceConsolidation(i) = options.CandidateSpaceConstructorConsolidation(...
-            designSpaceLowerBound(componentIndex{i}),...
-            designSpaceUpperBound(componentIndex{i}),...
-            options.CandidateSpaceOptionsConsolidation{:});
-        
-        candidateSpaceConsolidation(i) = candidateSpaceConsolidation(i).define_candidate_space(...
-            candidateSpace(i).DesignSampleDefinition,candidateSpace(i).IsInsideDefinition);
-
-        samplingBox(:,componentIndex{i}) = candidateSpaceConsolidation(i).SamplingBox;
-        isShapeDefinition(:,i) = candidateSpaceConsolidation(i).IsShapeDefinition;
+        samplingBox(:,componentIndex{i}) = candidateSpace(i).SamplingBox;
+        isShapeDefinition(:,i) = candidateSpace(i).IsShapeDefinition;
     end
-    candidateSpace = candidateSpaceConsolidation;
-    clear candidateSpaceConsolidation
     
     % create new arrays for designs to be used/cconsidered
     isKept = false(size(trimmingSample,1),3);
@@ -538,7 +543,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
 
             % trim
             trimmingLabelViable = trimmingIsAcceptable & trimmingIsUseful;
-            candidateSpaceTrimmed = component_trimming_operation(trimmingSample,trimmingLabelViable,trimmingOrder,componentIndex,candidateSpace,trimmingOperationOptions{:});
+            candidateSpaceTrimmed = options.TrimmingOperationFunction(trimmingSample,trimmingLabelViable,trimmingOrder,componentIndex,candidateSpace,trimmingOperationOptions{:});
             console.info('Elapsed time is %g seconds.\n',toc);
 
             if(applyLeannessEachTrim)
