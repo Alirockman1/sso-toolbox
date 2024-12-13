@@ -305,10 +305,8 @@ function options = sso_stochastic_options(solutionSpaceType,varargin)
         parser.addParameter('UsePreviousEvaluatedSamplesConsolidation',false,@(x)islogical(x)&&isscalar(x));
         parser.addParameter('UsePreviousPaddingSamplesConsolidation',false,@(x)islogical(x)&&isscalar(x));
         % candidate spaces
-        parser.addParameter('CandidateSpaceConstructorExploration',@CandidateSpaceConvexHull,@(x)isa(x,'function_handle'));
-        parser.addParameter('CandidateSpaceConstructorConsolidation',[],@(x)isa(x,'function_handle')||isempty(x));
-        parser.addParameter('CandidateSpaceOptionsExploration',{},@(x)iscell(x));
-        parser.addParameter('CandidateSpaceOptionsConsolidation',{},@(x)iscell(x));
+        parser.addParameter('CandidateSpaceConstructor',@CandidateSpaceConvexHull,@(x)isa(x,'function_handle'));
+        parser.addParameter('CandidateSpaceOptions',{},@(x)iscell(x));
     end    
 
     parser.parse(varargin{:});

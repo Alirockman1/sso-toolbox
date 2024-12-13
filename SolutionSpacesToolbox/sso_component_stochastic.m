@@ -112,18 +112,41 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
     
     
     %% Initial Setup
-    % Initial Candidate Space
-    if(size(initialDesign,1)==1)
-        samplingBox = [initialDesign;initialDesign]; % single point
-        measureTrimmed = 0;
-    elseif(size(initialDesign,1)==2)
-        samplingBox = initialDesign; % candidate box
-        measureTrimmed = prod(samplingBox(2,:)-samplingBox(1,:));
-    else
-        console.error('SSOBoxOptStochastic:InitialDesignWrong','Error. Initial guess/region incompatible in ''sso_component_stochastic''.');
-    end
     nDimension = size(designSpaceLowerBound,2);
     nComponent = size(componentIndex,2);
+
+    % Initial Candidate Space
+    if(all(isa(initialDesign,'CandidateSpaceBase')))
+        candidateSpace = initialDesign;
+        candidateSpaceDefined = true;
+        
+        measureTrimmed = 1;
+        samplingBox = nan(2,nDimension);
+        for i=1:nComponent
+            samplingBox(:,componentIndex{i}) = candidateSpace(i).SamplingBox;
+            measureTrimmed = measureTrimmed*candidateSpace(i).Measure;
+        end
+    else
+        if(size(initialDesign,1)==1)
+            samplingBox = [initialDesign;initialDesign]; % single point
+            measureTrimmed = 0;
+        elseif(size(initialDesign,1)==2)
+            samplingBox = initialDesign; % candidate box
+            measureTrimmed = prod(samplingBox(2,:)-samplingBox(1,:));
+        else
+            console.error('SSOBoxOptStochastic:InitialDesignWrong','Error. Initial guess/region incompatible in ''sso_component_stochastic''.');
+        end
+
+        % Create first instantiation of the candidate spaces for each component
+        for i=1:nComponent
+            candidateSpace(i) = options.CandidateSpaceConstructor(...
+                designSpaceLowerBound(componentIndex{i}),...
+                designSpaceUpperBound(componentIndex{i}),...
+                options.CandidateSpaceOptions{:});
+        end
+        candidateSpaceDefined = false;
+    end
+    
                              
     %% Log Initialization
     if(nargout>=2)
@@ -163,16 +186,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
     end
     
     
-    %% Exploration: While mu(Omega) is changing, grow box
-    % Create first instantiation of the candidate spaces for each component
-    for i=1:nComponent
-        candidateSpace(i) = options.CandidateSpaceConstructorExploration(...
-            designSpaceLowerBound(componentIndex{i}),...
-            designSpaceUpperBound(componentIndex{i}),...
-            options.CandidateSpaceOptionsExploration{:});
-        candidateSpaceDefined = false;
-    end
-    
+    %% Exploration: While mu(Omega) is changing, grow candidate space    
     % initialize iterators and loop
     iExploration = 1;
     growthRate = options.GrowthRate;
@@ -338,6 +352,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             score,...
             isPadding,...
             paddingSample,...
+            [],...
             options.UsePaddingSamplesInTrimming);
 
         % define order of trimming operation for samples that must be excluded
@@ -427,40 +442,15 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
     console.info([repelem('=',120),'\n']);
     console.info('Initiating Phase II - Consolidation...\n');
     
-    % Create first instantiation of the candidate spaces for each component
-    % in addition, find which designs help define the shape of each space.
-
-    if(~isempty(options.CandidateSpaceConstructorConsolidation))
-        for i=1:size(componentIndex,2)
-            candidateSpaceConsolidation(i) = options.CandidateSpaceConstructorConsolidation(...
-                designSpaceLowerBound(componentIndex{i}),...
-                designSpaceUpperBound(componentIndex{i}),...
-                options.CandidateSpaceOptionsConsolidation{:});
-            
-            candidateSpaceConsolidation(i) = candidateSpaceConsolidation(i).define_candidate_space(...
-                candidateSpace(i).DesignSampleDefinition,candidateSpace(i).IsInsideDefinition);
-        end
-        candidateSpace = candidateSpaceConsolidation;
-        clear candidateSpaceConsolidation
-    end
-
-    samplingBox = nan(2,nDimension);
-    isShapeDefinition = false(size(trimmingSample,1),nComponent);
-    for i=1:size(componentIndex,2)
-        samplingBox(:,componentIndex{i}) = candidateSpace(i).SamplingBox;
-        isShapeDefinition(:,i) = candidateSpace(i).IsShapeDefinition;
-    end
-    
-    % create new arrays for designs to be used/cconsidered
-    isKept = false(size(trimmingSample,1),3);
-    isKept(:,1) = any(isShapeDefinition,2);
-    isKept(:,2) = (~isPadding) & options.UsePreviousEvaluatedSamplesConsolidation;
-    isKept(:,3) = (isPadding) & options.UsePreviousPaddingSamplesConsolidation;
+    % create new arrays for designs to be used/considered
+    isKept = false(size(trimmingSample,1),2);
+    isKept(:,1) = (~isPadding) & options.UsePreviousEvaluatedSamplesConsolidation;
+    isKept(:,2) = (isPadding) & options.UsePreviousPaddingSamplesConsolidation;
     keepSample = any(isKept,2);
 
     previousTrimmingSample = trimmingSample(keepSample,:);
-    previousTrimmingisAcceptable = trimmingIsAcceptable(keepSample,:);
-    previousTrimmingisUseful = trimmingIsUseful(keepSample,:);
+    previousTrimmingIsAcceptable = trimmingIsAcceptable(keepSample,:);
+    previousTrimmingIsUseful = trimmingIsUseful(keepSample,:);
     previousTrimmingScore = trimmingScore(keepSample,:);
     previousIsPadding = isPadding(keepSample,:);
     iConsolidation = 1;
@@ -522,9 +512,27 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         if(performTrim)
             console.info('Performing component trimming operation... ');
             tic
+            % get shape definition for each candidate space
+            for i=1:nComponent
+                shapeDefinition{i} = candidateSpace(i).DesignSampleDefinition(candidateSpace(i).IsShapeDefinition,:);
+            end
+            nShape = cellfun(@(x)size(x,1),shapeDefinition);
+            maxShape = max(nShape);
+            shapeSample = nan(maxShape,nDimension);
+            for i=1:nComponent
+                shapeSample(1:nShape(i),componentIndex{i}) = shapeDefinition{i};
+
+                nShapeMissing = maxShape - nShape(i);
+                if(nShapeMissing>0)
+                    shapeMissing = options.SamplingMethodFunction(samplingBox(:,componentIndex{i}),nShapeMissing,options.SamplingMethodOptions{:});
+                    shapeSample(nShape(i)+1:maxShape,componentIndex{i}) = shapeMissing;
+                end
+            end
+
+            % bundle together designs
             consideredSample = [previousTrimmingSample;designSample];
-            consideredisAcceptable = [previousTrimmingisAcceptable;isAcceptable];
-            consideredisUseful = [previousTrimmingisUseful;isUseful];
+            consideredisAcceptable = [previousTrimmingIsAcceptable;isAcceptable];
+            consideredisUseful = [previousTrimmingIsUseful;isUseful];
             consideredScore = [previousTrimmingScore;score];
             consideredIsPadding = [previousIsPadding;false(size(designSample,1),1)];
 
@@ -536,6 +544,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
                     consideredScore,...
                     consideredIsPadding,...
                     paddingSample,...
+                    shapeSample,...
                     options.UsePaddingSamplesInTrimming);
 
             % define order of trimming operation for samples that must be excluded
@@ -560,23 +569,20 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             %% Update information around Candidate Spaces
             samplingBoxTrimmed = nan(2,nDimension);
             measureTrimmed = 1;
-            isShapeDefinition = false(size(trimmingSample,1),nComponent);
             for i=1:nComponent
                 samplingBoxTrimmed(:,componentIndex{i}) = candidateSpaceTrimmed(i).SamplingBox;
                 measureTrimmed = measureTrimmed*candidateSpaceTrimmed(i).Measure;
-                isShapeDefinition(:,i) = candidateSpaceTrimmed(i).IsShapeDefinition;
             end
 
             %% update samples being kept
-            isKept = false(size(trimmingSample,1),3);
-            isKept(:,1) = any(isShapeDefinition,2);
-            isKept(:,2) = (~trimmingIsPadding) & options.UsePreviousEvaluatedSamplesConsolidation;
-            isKept(:,3) = (trimmingIsPadding) & options.UsePreviousPaddingSamplesConsolidation;
+            isKept = false(size(trimmingSample,1),2);
+            isKept(:,1) = (~trimmingIsPadding) & options.UsePreviousEvaluatedSamplesConsolidation;
+            isKept(:,2) = (trimmingIsPadding) & options.UsePreviousPaddingSamplesConsolidation;
             keepSample = any(isKept,2);
 
             previousTrimmingSample = trimmingSample(keepSample,:);
-            previousTrimmingisAcceptable = trimmingIsAcceptable(keepSample,:);
-            previousTrimmingisUseful = trimmingIsUseful(keepSample,:);
+            previousTrimmingIsAcceptable = trimmingIsAcceptable(keepSample,:);
+            previousTrimmingIsUseful = trimmingIsUseful(keepSample,:);
             previousTrimmingScore = trimmingScore(keepSample,:);
             previousIsPadding = trimmingIsPadding(keepSample,:);
             
@@ -733,18 +739,22 @@ end
 
 
 %% 
-function [dvTrim,labelAccTrim,labelUseTrim,scoreTrim,isPadding] = component_sso_prepare_trimming_samples(dv,labelAcc,labelUse,score,isPadding,dvPad,usePadInTrimming)
-    dvTrim = dv;
-    labelAccTrim = labelAcc;
-    labelUseTrim = labelUse;
-    scoreTrim = score;
+function [dvTrim,labelAccTrim,labelUseTrim,scoreTrim,isPadding] = component_sso_prepare_trimming_samples(dv,labelAcc,labelUse,score,isPadding,dvPad,shapeSample,usePadInTrimming)
+    nShape = size(shapeSample,1);
+    nPad = size(dvPad,1);
+
+    dvTrim = [dv;shapeSample];
+    labelAccTrim = [labelAcc;true(nShape,1)];
+    labelUseTrim = [labelUse;false(nShape,1)];
+    scoreTrim = [score;zeros(nShape,1)];
+    isPadding = [isPadding;false(nShape,1)];
     
     if(usePadInTrimming)
         % for trimming purposes, may consider the designs for padding unnaceptable and useless
         dvTrim = [dvTrim;dvPad];
-        labelAccTrim = [labelAccTrim;true(size(dvPad,1),1)];
-        labelUseTrim = [labelUseTrim;false(size(dvPad,1),1)];
-        scoreTrim = [scoreTrim;-ones(size(dvPad,1),1)];
-        isPadding = [isPadding;true(size(dvPad,1),1)];
+        labelAccTrim = [labelAccTrim;true(nPad,1)];
+        labelUseTrim = [labelUseTrim;false(nPad,1)];
+        scoreTrim = [scoreTrim;-ones(nPad,1)];
+        isPadding = [isPadding;true(nPad,1)];
     end
 end
