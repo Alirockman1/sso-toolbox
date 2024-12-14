@@ -229,6 +229,15 @@ classdef (Abstract) CandidateSpaceBase
     end
 
     methods
+        function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
+            isInsideCurrent = obj.is_in_candidate_space(designSample);
+            if(all(isInsideCurrent==isInside) && ~isempty(obj.DesignSampleDefinition))
+                return;
+            else
+                obj = obj.define_candidate_space(designSample,isInside);
+            end
+        end
+
         function plotHandle = plot_candidate_space(obj,figureHandle,varargin)
         %PLOT_CANDIDATE_SPACE Visualization of the boundary of the canidate space 2D/3D
         %   PLOT_CANDIDATE_SPACE allows for the visualization of the boundary of the

@@ -443,10 +443,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
     console.info('Initiating Phase II - Consolidation...\n');
     
     % create new arrays for designs to be used/considered
-    isKept = false(size(trimmingSample,1),2);
-    isKept(:,1) = (~isPadding) & options.UsePreviousEvaluatedSamplesConsolidation;
-    isKept(:,2) = (isPadding) & options.UsePreviousPaddingSamplesConsolidation;
-    keepSample = any(isKept,2);
+    keepSample = (~isPadding) & options.UsePreviousEvaluatedSamplesConsolidation;
 
     previousTrimmingSample = trimmingSample(keepSample,:);
     previousTrimmingIsAcceptable = trimmingIsAcceptable(keepSample,:);
@@ -575,10 +572,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             end
 
             %% update samples being kept
-            isKept = false(size(trimmingSample,1),2);
-            isKept(:,1) = (~trimmingIsPadding) & options.UsePreviousEvaluatedSamplesConsolidation;
-            isKept(:,2) = (trimmingIsPadding) & options.UsePreviousPaddingSamplesConsolidation;
-            keepSample = any(isKept,2);
+            keepSample = (~trimmingIsPadding) & options.UsePreviousEvaluatedSamplesConsolidation;
 
             previousTrimmingSample = trimmingSample(keepSample,:);
             previousTrimmingIsAcceptable = trimmingIsAcceptable(keepSample,:);
@@ -745,9 +739,9 @@ function [dvTrim,labelAccTrim,labelUseTrim,scoreTrim,isPadding] = component_sso_
 
     dvTrim = [dv;shapeSample];
     labelAccTrim = [labelAcc;true(nShape,1)];
-    labelUseTrim = [labelUse;false(nShape,1)];
+    labelUseTrim = [labelUse;true(nShape,1)];
     scoreTrim = [score;zeros(nShape,1)];
-    isPadding = [isPadding;false(nShape,1)];
+    isPadding = [isPadding;true(nShape,1)];
     
     if(usePadInTrimming)
         % for trimming purposes, may consider the designs for padding unnaceptable and useless

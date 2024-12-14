@@ -280,6 +280,40 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             end
         end
 
+        function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
+            if(isempty(obj.DesignSampleDefinition) || isempty(obj.DelaunayIndex))
+                obj = obj.define_candidate_space(designSample,isInside);
+                return;
+            end
+
+            isInsideCurrent = obj.is_in_candidate_space(designSample);
+            if(all(isInsideCurrent==isInside))
+                return;
+            else
+                % if any designs should be inside and aren't, retrain
+                if(~all(isInsideCurrent(isInside)))
+                    designSample = [obj.DesignSampleDefinition;designSample];
+                    isInside = [obj.IsInsideDefinition;isInside];
+                    obj = obj.define_candidate_space(designSample,isInside);
+                    isInsideCurrent = obj.is_in_candidate_space(designSample);
+                end
+
+                % if any designs should be outside and aren't, remove relevant simplices
+                if(~all(~isInsideCurrent(~isInside)))
+                    insideSimplex = tsearchn(obj.ActiveDesign,obj.DelaunayIndex,designSample(~isInside,:));
+                    isInsideWrong = unique(insideSimplex(~isnan(insideSimplex)));
+
+                    % delete simplices where removed designs are inside
+                    obj.DelaunayIndex(isInsideWrong,:) = [];
+                    obj.DelaunaySimplex(isInsideWrong) = [];
+
+                    obj.IsShapeDefinition = false(size(obj.DesignSampleDefinition,1),1);
+                    [~,~,freeBoundaryVertex] = find_triangulation_facets(obj.DelaunayIndex);
+                    obj.IsShapeDefinition(convert_index_base(isInside,freeBoundaryVertex,'backward')) = true;
+                end
+            end
+        end
+
         function obj = grow_candidate_space(obj,growthRate)
         %GROW_CANDIDATE_SPACE Expansion of candidate space by given factor
         %   GROW_CANDIDATE_SPACE will grow the region considered inside the current 

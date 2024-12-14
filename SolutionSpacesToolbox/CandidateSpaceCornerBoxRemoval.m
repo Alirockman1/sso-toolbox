@@ -27,6 +27,14 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
         %   See also IsInsideDefinition, IsShapeDefinition.
         DesignSampleDefinition
         
+        %
+        AnchorPoint
+
+        % 
+        CornerDirection
+    end
+
+    properties (SetAccess = protected, Dependent)
         %ISINSIDEDEFINITION Labels of sample points used in candidate space definition
         %   ISINSIDEDEFINITION are the labels of design samples used in the definition 
         %   of the current candidate space. A label of 'true' indicates the respective 
@@ -48,14 +56,6 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
         %   See also DesignSampleDefinition, IsInsideDefinition.
         IsShapeDefinition
 
-        %
-        AnchorPoint
-
-        % 
-        CornerDirection
-    end
-
-    properties (SetAccess = protected, Dependent)
         %MEASURE Size measure of the candidate space
         %   MEASURE is a value that works as the measure of the candidate space. This 
         %   may be its volume, or normalized volume relative to its design space, or
@@ -112,9 +112,6 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             obj.SamplingBoxSlack = parser.Results.SamplingBoxSlack;
 
             obj.DesignSampleDefinition = [];
-            obj.IsInsideDefinition = [];
-            obj.IsShapeDefinition = [];
-
             obj.AnchorPoint = [];
             obj.CornerDirection = [];
         end
@@ -145,19 +142,14 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             obj.DesignSampleDefinition = designSample;
 
             if(isempty(trimmingInformation))
-                obj.IsInsideDefinition = true(size(designSample,1),1);
-                obj.IsShapeDefinition = true(size(designSample,1),1);
                 return;
             end
 
             obj.AnchorPoint = vertcat(trimmingInformation.Anchor);
             obj.CornerDirection = vertcat(trimmingInformation.CornerDirection);
-            obj.IsShapeDefinition = ismember(designSample,obj.AnchorPoint,'rows');
-
-            obj.IsInsideDefinition = obj.is_in_candidate_space(designSample);
         end
 
-        function obj = update_candidate_space(obj,designSample,trimmingInformation)
+        function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
             if(isempty(obj.DesignSampleDefinition) || isempty(obj.AnchorPoint))
                 obj = obj.define_candidate_space(designSample,trimmingInformation);
                 return;
@@ -169,14 +161,23 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
 
             anchorPointNew = vertcat(trimmingInformation.Anchor);
             cornerDirectionNew = vertcat(trimmingInformation.CornerDirection);
-            isShapeDefinitionNew = ismember(designSample,obj.AnchorPoint,'rows');
 
             obj.AnchorPoint = [obj.AnchorPoint;anchorPointNew];
             obj.CornerDirection = [obj.CornerDirection;cornerDirectionNew];
-            obj.IsShapeDefinition = isShapeDefinitionNew;
+            
+            % keep samples in inside/outside
+            [~,iLowerBoundaryAll] = min(obj.DesignSampleDefinition,[],1);
+            [~,iUpperBoundaryAll] = max(obj.DesignSampleDefinition,[],1);
 
-            obj.DesignSampleDefinition = [obj.DesignSampleDefinition;designSample];
-            obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition);
+            isInsideDefinition = obj.IsInsideDefinition;
+            [~,iLowerBoundaryInside] = min(obj.DesignSampleDefinition(isInsideDefinition,:),[],1);
+            [~,iUpperBoundaryInside] = max(obj.DesignSampleDefinition(isInsideDefinition,:),[],1);
+            iBoundaryInside = convert_index_base(isInsideDefinition,[iLowerBoundaryInside,iUpperBoundaryInside]','backward');
+
+            obj.DesignSampleDefinition = unique(...
+                [obj.DesignSampleDefinition([iLowerBoundaryAll,iUpperBoundaryAll,iBoundaryInside'],:);...
+                designSample;...
+                obj.AnchorPoint],'rows');
         end
         
         function obj = grow_candidate_space(obj,growthRate)
@@ -223,8 +224,8 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                 anchorGrowthRate = min(growthRate,maxGrowthRate);
                 obj.AnchorPoint = obj.AnchorPoint + growthRate.*designSpaceFactor.*directionGrowth;
 
-                % update inside/outside
-                obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition);
+                % update definition
+                obj.DesignSampleDefinition = [obj.DesignSampleDefinition;obj.AnchorPoint];
             end
         end
         
@@ -281,6 +282,30 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             end
             score(isInside) = -1;
             score(~isInside) = 1;
+        end
+
+        function isInside = get.IsInsideDefinition(obj)
+            isInside = obj.is_in_candidate_space(obj.DesignSampleDefinition);
+        end
+
+        function isShapeDefinition = get.IsShapeDefinition(obj)
+            if(isempty(obj.DesignSampleDefinition))
+                isShapeDefinition = [];
+            else
+                [~,iLowerBoundaryAll] = min(obj.DesignSampleDefinition,[],1);
+                [~,iUpperBoundaryAll] = max(obj.DesignSampleDefinition,[],1);
+
+                isInsideDefinition = obj.IsInsideDefinition;
+                [~,iLowerBoundaryInside] = min(obj.DesignSampleDefinition(isInsideDefinition,:),[],1);
+                [~,iUpperBoundaryInside] = max(obj.DesignSampleDefinition(isInsideDefinition,:),[],1);
+                iBoundaryInside = convert_index_base(isInsideDefinition,[iLowerBoundaryInside,iUpperBoundaryInside]','backward');
+
+                isShapeDefinition = false(size(obj.DesignSampleDefinition,1),1);
+                isShapeDefinition([iLowerBoundaryAll,iUpperBoundaryAll,iBoundaryInside']) = true;
+                if(~isempty(obj.AnchorPoint))
+                    isShapeDefinition(ismember(obj.DesignSampleDefinition,obj.AnchorPoint,'rows')) = true;
+                end
+            end
         end
 
         function volume = get.Measure(obj)

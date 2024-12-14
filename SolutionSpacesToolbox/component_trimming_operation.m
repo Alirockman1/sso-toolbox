@@ -125,6 +125,8 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
 
     totalCostMinimum = inf;
     optimalActiveComponent = activeComponentInitial;
+    optimalTrimmingInformation = cell(1,nComponent);
+    
     iAnchorViable = [];
     canBeAnchorViable = labelViable & activeAllInitial;
     hasBeenAnchorViable = false(1,sum(canBeAnchorViable));
@@ -136,6 +138,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
             activeComponentPass = activeComponentInitial;
             activeAllPass = activeAllInitial;
             trimTotalPass = false(nSample,1);
+            trimmingInformation = cell(1,nComponent);
 
             for j=1:nExclude
                 iExclude = trimmingOrder(j,i);
@@ -153,7 +156,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
                     iRemovalComponent = convert_index_base(activeComponentDesign,iExclude,'forward');
                     activeKeepComponent = activeKeep(activeComponentDesign);
 
-                    removalCandidateComponent = trimmingMethodFunction(...
+                    [removalCandidateComponent,trimmingInformationCandidateComponent] = trimmingMethodFunction(...
                         designSampleComponent,iRemovalComponent,activeKeepComponent,trimmingMethodOptions{:});
 
                     removalCandidate = false(nSample,size(removalCandidateComponent,2));
@@ -166,6 +169,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
                     
                     [componentCost(k),iMinimumCostRemoval] = min(removalCost);
                     componentRemoval(:,k) = removalCandidate(:,iMinimumCostRemoval);
+                    trimmingInformationComponent(k) = trimmingInformationCandidateComponent(iMinimumCostRemoval);
                 end
 
                 % decide between components
@@ -177,6 +181,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
                 activeComponentPass(trimRemoval,iComponentTrim) = false;
                 activeAllPass(trimRemoval) = false;
                 trimTotalPass(trimRemoval) = true;
+                trimmingInformation{iComponentTrim} = [trimmingInformation{iComponentTrim},trimmingInformationComponent(iComponentTrim)];
             end
 
             % check total cost
@@ -184,6 +189,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
             totalCostPass = trimmingCostFunction(designSample,activeKeepInitial,trimTotalPass,trimmingCostOptions{:});
             if(totalCostPass<totalCostMinimum)
                 optimalActiveComponent = activeComponentPass;
+                optimalTrimmingInformation = trimmingInformation;
                 totalCostMinimum = totalCostPass;
             end
         end
@@ -219,6 +225,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
         % Eliminate from sampling designs that were taken out by other components
         designSampleComponent = designSample(:,componentIndex{i});
         isInsideComponent = optimalActiveComponent(:,i);
-        trimmedCandidateSpace(i) = candidateSpace(i).define_candidate_space(designSampleComponent,isInsideComponent);
+        trimmingInformation = optimalTrimmingInformation{i};
+        trimmedCandidateSpace(i) = candidateSpace(i).update_candidate_space(designSampleComponent,isInsideComponent,trimmingInformation);
     end
 end

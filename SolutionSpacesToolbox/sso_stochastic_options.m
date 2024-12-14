@@ -303,7 +303,6 @@ function options = sso_stochastic_options(solutionSpaceType,varargin)
         parser.addParameter('TrimmingComponentChoiceOptions',{},@(x)iscell(x));
         parser.addParameter('UsePaddingSamplesInTrimming',true,@(x)islogical(x)&&isscalar(x));
         parser.addParameter('UsePreviousEvaluatedSamplesConsolidation',false,@(x)islogical(x)&&isscalar(x));
-        parser.addParameter('UsePreviousPaddingSamplesConsolidation',false,@(x)islogical(x)&&isscalar(x));
         % candidate spaces
         parser.addParameter('CandidateSpaceConstructor',@CandidateSpaceConvexHull,@(x)isa(x,'function_handle'));
         parser.addParameter('CandidateSpaceOptions',{},@(x)iscell(x));
