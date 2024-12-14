@@ -280,39 +280,37 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             end
         end
 
-        function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
-            if(isempty(obj.DesignSampleDefinition) || isempty(obj.DelaunayIndex))
-                obj = obj.define_candidate_space(designSample,isInside);
-                return;
-            end
-
-            isInsideCurrent = obj.is_in_candidate_space(designSample);
-            if(all(isInsideCurrent==isInside))
-                return;
-            else
-                % if any designs should be inside and aren't, retrain
-                if(~all(isInsideCurrent(isInside)))
-                    designSample = [obj.DesignSampleDefinition;designSample];
-                    isInside = [obj.IsInsideDefinition;isInside];
-                    obj = obj.define_candidate_space(designSample,isInside);
-                    isInsideCurrent = obj.is_in_candidate_space(designSample);
-                end
-
-                % if any designs should be outside and aren't, remove relevant simplices
-                if(~all(~isInsideCurrent(~isInside)))
-                    insideSimplex = tsearchn(obj.ActiveDesign,obj.DelaunayIndex,designSample(~isInside,:));
-                    isInsideWrong = unique(insideSimplex(~isnan(insideSimplex)));
-
-                    % delete simplices where removed designs are inside
-                    obj.DelaunayIndex(isInsideWrong,:) = [];
-                    obj.DelaunaySimplex(isInsideWrong) = [];
-
-                    obj.IsShapeDefinition = false(size(obj.DesignSampleDefinition,1),1);
-                    [~,~,freeBoundaryVertex] = find_triangulation_facets(obj.DelaunayIndex);
-                    obj.IsShapeDefinition(convert_index_base(isInside,freeBoundaryVertex,'backward')) = true;
-                end
-            end
-        end
+        %function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
+        %    if(isempty(obj.DesignSampleDefinition) || isempty(obj.DelaunayIndex))
+        %        obj = obj.define_candidate_space(designSample,isInside);
+        %        return;
+        %    end
+        %
+        %    isInsideCurrent = obj.is_in_candidate_space(designSample);
+        %    if(all(isInsideCurrent==isInside))
+        %        return;
+        %    else
+        %        % if any designs should be inside and aren't, retrain
+        %        if(~all(isInsideCurrent(isInside)))
+        %            obj = obj.define_candidate_space(designSample,isInside);
+        %            isInsideCurrent = obj.is_in_candidate_space(designSample);
+        %        end
+        %        
+        %        % if any designs should be outside and aren't, remove relevant simplices
+        %        if(~all(~isInsideCurrent(~isInside)))
+        %            insideSimplex = tsearchn(obj.ActiveDesign,obj.DelaunayIndex,designSample(~isInside,:));
+        %            isInsideWrong = unique(insideSimplex(~isnan(insideSimplex)));
+        %            
+        %            % delete simplices where removed designs are inside
+        %            obj.DelaunayIndex(isInsideWrong,:) = [];
+        %            obj.DelaunaySimplex(isInsideWrong) = [];
+        %            
+        %            obj.IsShapeDefinition = false(size(obj.DesignSampleDefinition,1),1);
+        %            [~,~,freeBoundaryVertex] = find_triangulation_facets(obj.DelaunayIndex);
+        %            obj.IsShapeDefinition(convert_index_base(obj.IsInsideDefinition,freeBoundaryVertex,'backward')) = true;
+        %        end
+        %    end
+        %end
 
         function obj = grow_candidate_space(obj,growthRate)
         %GROW_CANDIDATE_SPACE Expansion of candidate space by given factor
@@ -339,8 +337,10 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
 
             nSimplex = size(obj.DelaunayIndex,1);
             nDimension = size(obj.DesignSampleDefinition,2);
+            
             designSampleGrown = nan(nSimplex*(nDimension+1),nDimension);
             delauynayIndexGrown = nan(nSimplex,nDimension+1);
+
             designSpaceFactor = obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound;
             designSpace = [obj.DesignSpaceLowerBound;obj.DesignSpaceUpperBound];
         
@@ -367,10 +367,11 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             end
 
             % check which designs are inside/outside the new structure
-            insideSimplex = tsearchn(designSampleGrown,delauynayIndexGrown,obj.DesignSampleDefinition);
+            outsideSample = obj.DesignSampleDefinition(~obj.IsInsideDefinition,:);
+            insideSimplex = tsearchn(designSampleGrown,delauynayIndexGrown,outsideSample);
 
             % create new delaunay object
-            designSampleNew = [designSampleGrown;obj.DesignSampleDefinition];
+            designSampleNew = [designSampleGrown;outsideSample];
             isInsideNew = [true(size(designSampleGrown,1),1);~isnan(insideSimplex)];
             obj = obj.define_candidate_space(designSampleNew,isInsideNew);
         end

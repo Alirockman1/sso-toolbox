@@ -348,7 +348,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         shapeSample = [];
         if(candidateSpaceDefined && options.UseShapeSamplesExploration)
             for i=1:nComponent
-                shapeDefinition{i} = candidateSpace(i).DesignSampleDefinition(candidateSpace(i).IsShapeDefinition,:);
+                shapeDefinition{i} = candidateSpaceGrown(i).DesignSampleDefinition(candidateSpaceGrown(i).IsShapeDefinition,:);
             end
             nShape = cellfun(@(x)size(x,1),shapeDefinition);
             maxShape = max(nShape);
@@ -373,7 +373,8 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             isPadding,...
             paddingSample,...
             shapeSample,...
-            options.UsePaddingSamplesInTrimming);
+            options.UsePaddingSamplesInTrimming,...
+            options.ShapeSamplesUsefulExploration);
 
         % define order of trimming operation for samples that must be excluded
         trimmingOrder = options.TrimmingOrderFunction(~trimmingIsAcceptable,trimmingScore,options.TrimmingOrderOptions{:});
@@ -562,7 +563,8 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
                     consideredIsPadding,...
                     paddingSample,...
                     shapeSample,...
-                    options.UsePaddingSamplesInTrimming);
+                    options.UsePaddingSamplesInTrimming,...
+                    options.ShapeSamplesUsefulConsolidation);
 
             % define order of trimming operation for samples that must be excluded
             trimmingOrder = options.TrimmingOrderFunction(~trimmingIsAcceptable,trimmingScore,options.TrimmingOrderOptions{:});
@@ -753,13 +755,13 @@ end
 
 
 %% 
-function [dvTrim,labelAccTrim,labelUseTrim,scoreTrim,isPadding] = component_sso_prepare_trimming_samples(dv,labelAcc,labelUse,score,isPadding,dvPad,shapeSample,usePadInTrimming)
+function [dvTrim,labelAccTrim,labelUseTrim,scoreTrim,isPadding] = component_sso_prepare_trimming_samples(dv,labelAcc,labelUse,score,isPadding,dvPad,shapeSample,usePadInTrimming,isUsefulShape)
     nShape = size(shapeSample,1);
     nPad = size(dvPad,1);
 
     dvTrim = [dv;shapeSample];
     labelAccTrim = [labelAcc;true(nShape,1)];
-    labelUseTrim = [labelUse;true(nShape,1)];
+    labelUseTrim = [labelUse;repmat(isUsefulShape,nShape,1)];
     scoreTrim = [score;zeros(nShape,1)];
     isPadding = [isPadding;true(nShape,1)];
     

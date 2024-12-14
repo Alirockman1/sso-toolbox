@@ -290,7 +290,7 @@ function options = sso_stochastic_options(solutionSpaceType,varargin)
     %% component parameters
     if(strcmpi(solutionSpaceType,'component'))
         % sampling
-        parser.addParameter('NumberPaddingSamples',1000,@(x)isnumeric(x)&&all(x>0));
+        parser.addParameter('NumberPaddingSamples',1000,@(x)isnumeric(x)&&all(x>=0));
         parser.addParameter('CandidateSpaceSamplingFunction',@candidate_space_sampling_individual_feasible,@(x)isa(x,'function_handle'));
         parser.addParameter('CandidateSpaceSamplingOptions',{},@(x)iscell(x));
         % trimming
@@ -303,6 +303,8 @@ function options = sso_stochastic_options(solutionSpaceType,varargin)
         parser.addParameter('TrimmingComponentChoiceOptions',{},@(x)iscell(x));
         parser.addParameter('UsePaddingSamplesInTrimming',true,@(x)islogical(x)&&isscalar(x));
         parser.addParameter('UseShapeSamplesExploration',false,@(x)islogical(x)&&isscalar(x));
+        parser.addParameter('ShapeSamplesUsefulExploration',false,@(x)islogical(x)&&isscalar(x));
+        parser.addParameter('ShapeSamplesUsefulConsolidation',false,@(x)islogical(x)&&isscalar(x));
         parser.addParameter('UsePreviousEvaluatedSamplesConsolidation',false,@(x)islogical(x)&&isscalar(x));
         % candidate spaces
         parser.addParameter('CandidateSpaceConstructor',@CandidateSpaceConvexHull,@(x)isa(x,'function_handle'));

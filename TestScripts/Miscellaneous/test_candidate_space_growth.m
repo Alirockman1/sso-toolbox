@@ -43,7 +43,7 @@ grid minor;
 
 
 %% train candidate space
-candidateSpace = CandidateSpaceSvm(designSpaceLowerBound,designSpaceUpperBound);
+candidateSpace = CandidateSpaceDelaunay(designSpaceLowerBound,designSpaceUpperBound);
 candidateSpace = candidateSpace.define_candidate_space(designSample,labelSample);
 isShapeDefinition = candidateSpace.IsShapeDefinition;
 
