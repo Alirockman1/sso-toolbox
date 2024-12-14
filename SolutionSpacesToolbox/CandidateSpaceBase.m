@@ -230,12 +230,7 @@ classdef (Abstract) CandidateSpaceBase
 
     methods
         function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
-            isInsideCurrent = obj.is_in_candidate_space(designSample);
-            if(all(isInsideCurrent==isInside) && ~isempty(obj.DesignSampleDefinition))
-                return;
-            else
-                obj = obj.define_candidate_space(designSample,isInside);
-            end
+            obj = obj.define_candidate_space(designSample,isInside);
         end
 
         function plotHandle = plot_candidate_space(obj,figureHandle,varargin)

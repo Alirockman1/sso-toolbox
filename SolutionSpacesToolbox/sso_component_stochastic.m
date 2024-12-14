@@ -343,6 +343,26 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         %% Modification Step A - Trimming: Remove Bad Points
         console.info('Performing component trimming operation... ');
         tic
+
+        % get shape definition for each candidate space
+        shapeSample = [];
+        if(candidateSpaceDefined && options.UseShapeSamplesExploration)
+            for i=1:nComponent
+                shapeDefinition{i} = candidateSpace(i).DesignSampleDefinition(candidateSpace(i).IsShapeDefinition,:);
+            end
+            nShape = cellfun(@(x)size(x,1),shapeDefinition);
+            maxShape = max(nShape);
+            shapeSample = nan(maxShape,nDimension);
+            for i=1:nComponent
+                shapeSample(1:nShape(i),componentIndex{i}) = shapeDefinition{i};
+
+                nShapeMissing = maxShape - nShape(i);
+                if(nShapeMissing>0)
+                    shapeMissing = options.SamplingMethodFunction(samplingBox(:,componentIndex{i}),nShapeMissing,options.SamplingMethodOptions{:});
+                    shapeSample(nShape(i)+1:maxShape,componentIndex{i}) = shapeMissing;
+                end
+            end
+        end
         
         isPadding = false(size(designSample,1),1);
         [trimmingSample,trimmingIsAcceptable,trimmingIsUseful,trimmingScore,isPadding] = component_sso_prepare_trimming_samples(...
@@ -352,7 +372,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             score,...
             isPadding,...
             paddingSample,...
-            [],...
+            shapeSample,...
             options.UsePaddingSamplesInTrimming);
 
         % define order of trimming operation for samples that must be excluded
