@@ -302,9 +302,9 @@ function options = sso_stochastic_options(solutionSpaceType,varargin)
         parser.addParameter('TrimmingComponentChoiceFunction',@component_trimming_choice,@(x)isa(x,'function_handle'));
         parser.addParameter('TrimmingComponentChoiceOptions',{},@(x)iscell(x));
         parser.addParameter('UsePaddingSamplesInTrimming',true,@(x)islogical(x)&&isscalar(x));
-        parser.addParameter('UseShapeSamplesExploration',false,@(x)islogical(x)&&isscalar(x));
+        parser.addParameter('UseShapeSamplesExploration',true,@(x)islogical(x)&&isscalar(x));
         parser.addParameter('ShapeSamplesUsefulExploration',false,@(x)islogical(x)&&isscalar(x));
-        parser.addParameter('ShapeSamplesUsefulConsolidation',false,@(x)islogical(x)&&isscalar(x));
+        parser.addParameter('ShapeSamplesUsefulConsolidation',true,@(x)islogical(x)&&isscalar(x));
         parser.addParameter('UsePreviousEvaluatedSamplesConsolidation',false,@(x)islogical(x)&&isscalar(x));
         % candidate spaces
         parser.addParameter('CandidateSpaceConstructor',@CandidateSpaceConvexHull,@(x)isa(x,'function_handle'));

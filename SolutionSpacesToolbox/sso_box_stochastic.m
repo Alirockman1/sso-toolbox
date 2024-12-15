@@ -160,8 +160,8 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
             % Change step size to a bigger or smaller value depending on whether
             % the achieved purity is smaller or larger than the desired one
             %growthAdaptationFactor = purity/options.TargetAcceptedRatioExploration;
-            %growthAdaptationFactor = ((1-options.TargetAcceptedRatioExploration)./(1-purity)).^(1./growthFlexibilityExponent);
-            growthAdaptationFactor = (((1-options.TargetAcceptedRatioExploration)*purity)./((1-purity)*options.TargetAcceptedRatioExploration)).^(1./growthFlexibilityExponent);
+            growthAdaptationFactor = ((1-options.TargetAcceptedRatioExploration)./(1-purity)).^(1./growthFlexibilityExponent);
+            %growthAdaptationFactor = (((1-options.TargetAcceptedRatioExploration)*purity)./((1-purity)*options.TargetAcceptedRatioExploration)).^(1./growthFlexibilityExponent);
             growthAdaptationFactor = max(min(growthAdaptationFactor,options.MaximumGrowthAdaptationFactor),options.MinimumGrowthAdaptationFactor);
 
             growthRate = growthAdaptationFactor * growthRate;

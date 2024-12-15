@@ -275,6 +275,8 @@ classdef (Abstract) CandidateSpaceBase
                 obj.DesignSampleDefinition,obj.IsInsideDefinition);
             samplingBox = (1-obj.SamplingBoxSlack).*boundingBoxStrict + ...
                 obj.SamplingBoxSlack.*boundingBoxRelaxed;
+            samplingBox(1,:) = max(samplingBox(1,:),obj.DesignSpaceLowerBound);
+            samplingBox(2,:) = min(samplingBox(2,:),obj.DesignSpaceUpperBound);
         end
     end
 end

@@ -204,14 +204,17 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             designSpaceFactor = obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound;
             designSpace = [obj.DesignSpaceLowerBound;obj.DesignSpaceUpperBound];
 
-            if(isempty(obj.AnchorPoint))
-                center = mean(obj.DesignSampleDefinition,1);
-                distanceToCenter = obj.DesignSampleDefinition - center;
-                directionGrowth = distanceToCenter./vecnorm(distanceToCenter,2,2);
+            center = mean(obj.DesignSampleDefinition(obj.IsInsideDefinition,:),1);
+            distanceToCenter = obj.DesignSampleDefinition - center;
+            directionGrowth = distanceToCenter./vecnorm(distanceToCenter,2,2);
 
-                maxGrowthRate = region_limit_line_search([],obj.DesignSampleDefinition,designSpaceFactor.*directionGrowth,designSpace);
-                obj.DesignSampleDefinition = obj.DesignSampleDefinition + maxGrowthRate.*designSpaceFactor.*directionGrowth;
-            else
+            maxGrowthRate = region_limit_line_search([],obj.DesignSampleDefinition,designSpaceFactor.*directionGrowth,designSpace);
+            sampleGrowthRate = min(growthRate,maxGrowthRate);
+            designSampleNew = obj.DesignSampleDefinition + sampleGrowthRate.*designSpaceFactor.*directionGrowth;
+            designSampleNew = min(max(designSampleNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
+            obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;designSampleNew],'rows');
+
+            if(~isempty(obj.AnchorPoint))
                 % connect each anchor to its respective corner
                 anchorCorner = nan(size(obj.AnchorPoint,1),size(obj.DesignSpaceLowerBound,2));
                 for i=1:size(obj.DesignSpaceLowerBound,2)
@@ -222,10 +225,11 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                 
                 maxGrowthRate = region_limit_line_search([],obj.AnchorPoint,designSpaceFactor.*directionGrowth,designSpace);
                 anchorGrowthRate = min(growthRate,maxGrowthRate);
-                obj.AnchorPoint = obj.AnchorPoint + growthRate.*designSpaceFactor.*directionGrowth;
+                anchorPointNew = obj.AnchorPoint + anchorGrowthRate.*designSpaceFactor.*directionGrowth;
+                obj.AnchorPoint = min(max(anchorPointNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
 
                 % update definition
-                obj.DesignSampleDefinition = [obj.DesignSampleDefinition;obj.AnchorPoint];
+                obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;obj.AnchorPoint],'rows');
             end
         end
         
@@ -302,6 +306,10 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
 
                 isShapeDefinition = false(size(obj.DesignSampleDefinition,1),1);
                 isShapeDefinition([iLowerBoundaryAll,iUpperBoundaryAll,iBoundaryInside']) = true;
+
+                isInBoundary = design_find_boundary_samples(obj.DesignSampleDefinition,isInsideDefinition);
+                isShapeDefinition = isShapeDefinition | isInBoundary;
+                
                 if(~isempty(obj.AnchorPoint))
                     isShapeDefinition(ismember(obj.DesignSampleDefinition,obj.AnchorPoint,'rows')) = true;
                 end

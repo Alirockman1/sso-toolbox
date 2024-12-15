@@ -339,13 +339,13 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
 
     % save if required
     if(~isempty(options.SaveFolder))
-        save_print_figure(figureHandle(1),[options.SaveFolder,'Comparison-Metrics-TotalMeasure'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(2),[options.SaveFolder,'Comparison-Metrics-TotalMeasureNormalized'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(3),[options.SaveFolder,'Comparison-Metrics-GrowthRate'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(4),[options.SaveFolder,'Comparison-Metrics-NumberLabelSamplePoints'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(5),[options.SaveFolder,'Comparison-Metrics-TotalMeasureRelativeRatio'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(6),[options.SaveFolder,'Comparison-Metrics-NormalizedMeasureSample'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(7),[options.SaveFolder,'Comparison-Metrics-TotalEvaluationsPurityNormalizedMeasure'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(1),[options.SaveFolder,'TotalMeasure'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(2),[options.SaveFolder,'TotalMeasureNormalized'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(3),[options.SaveFolder,'GrowthRate'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(4),[options.SaveFolder,'NumberLabelSamplePoints'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(5),[options.SaveFolder,'TotalMeasureRelativeRatio'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(6),[options.SaveFolder,'NormalizedMeasureSample'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(7),[options.SaveFolder,'TotalEvaluationsPurityNormalizedMeasure'],options.SaveFigureOptions{:});
 
         if(options.CloseFigureAfterSaving)
             close(figureHandle);

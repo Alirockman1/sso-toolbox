@@ -190,15 +190,15 @@ function figureHandle = plot_sso_component_stochastic_metrics(algorithmData,vara
 
     % save if required
     if(~isempty(options.SaveFolder))
-        save_print_figure(figureHandle(1),[options.SaveFolder,'Component-Metrics-TotalMeasure'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(2),[options.SaveFolder,'Component-Metrics-TotalMeasureNormalized'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(3),[options.SaveFolder,'Component-Metrics-ComponentMeasures'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(4),[options.SaveFolder,'Component-Metrics-GrowthRate'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(5),[options.SaveFolder,'Component-Metrics-NumberLabelSamplePoints'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(6),[options.SaveFolder,'Component-Metrics-TotalMeasureRelativeRatio'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(7),[options.SaveFolder,'Component-Metrics-NormalizedMeasureSample'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(8),[options.SaveFolder,'Component-Metrics-TotalEvaluationsPurityNormalizedMeasure'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(9),[options.SaveFolder,'Component-Metrics-PaddingRatio'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(1),[options.SaveFolder,'TotalMeasure'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(2),[options.SaveFolder,'TotalMeasureNormalized'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(3),[options.SaveFolder,'ComponentMeasures'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(4),[options.SaveFolder,'GrowthRate'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(5),[options.SaveFolder,'NumberLabelSamplePoints'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(6),[options.SaveFolder,'TotalMeasureRelativeRatio'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(7),[options.SaveFolder,'NormalizedMeasureSample'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(8),[options.SaveFolder,'TotalEvaluationsPurityNormalizedMeasure'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(9),[options.SaveFolder,'PaddingRatio'],options.SaveFigureOptions{:});
 
         if(options.CloseFigureAfterSaving)
             close(figureHandle);

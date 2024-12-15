@@ -47,6 +47,8 @@ function plotHandle = plot_candidate_space_2d(figureHandle,candidateSpace,vararg
 
     % make the intervals for each variable
     [~,positiveRegionBox] = design_bounding_box(candidateSpace.DesignSampleDefinition,candidateSpace.IsInsideDefinition);
+    positiveRegionBox(1,:) = max(positiveRegionBox(1,:),candidateSpace.DesignSpaceLowerBound);
+    positiveRegionBox(2,:) = min(positiveRegionBox(2,:),candidateSpace.DesignSpaceUpperBound);
     xInterval = positiveRegionBox(1,1) + (0:stepSize:1)*(positiveRegionBox(2,1)-positiveRegionBox(1,1));
     yInterval = positiveRegionBox(1,2) + (0:stepSize:1)*(positiveRegionBox(2,2)-positiveRegionBox(1,2));
 
