@@ -222,11 +222,16 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                     anchorCorner(obj.CornerDirection(:,i),i) = obj.DesignSpaceUpperBound(i);
                 end
                 directionGrowth = anchorCorner - obj.AnchorPoint;
+                directionGrowth = directionGrowth./vecnorm(directionGrowth,2,2);
                 
-                maxGrowthRate = region_limit_line_search([],obj.AnchorPoint,designSpaceFactor.*directionGrowth,designSpace);
-                anchorGrowthRate = min(growthRate,maxGrowthRate);
-                anchorPointNew = obj.AnchorPoint + anchorGrowthRate.*designSpaceFactor.*directionGrowth;
-                obj.AnchorPoint = min(max(anchorPointNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
+                anchorPointNew = obj.AnchorPoint + growthRate.*designSpaceFactor.*directionGrowth;
+                anchorPointNew = min(max(anchorPointNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
+
+                isAnchorInLowerBoundary = (anchorPointNew==obj.DesignSpaceLowerBound);
+                isAnchorInUpperBoundary = (anchorPointNew==obj.DesignSpaceUpperBound);
+                isAnchorInCorner = all(isAnchorInLowerBoundary|isAnchorInUpperBoundary,2);
+                obj.AnchorPoint = anchorPointNew(~isAnchorInCorner,:);
+                obj.CornerDirection = obj.CornerDirection(~isAnchorInCorner,:);
 
                 % update definition
                 obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;obj.AnchorPoint],'rows');
@@ -307,8 +312,10 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                 isShapeDefinition = false(size(obj.DesignSampleDefinition,1),1);
                 isShapeDefinition([iLowerBoundaryAll,iUpperBoundaryAll,iBoundaryInside']) = true;
 
-                isInBoundary = design_find_boundary_samples(obj.DesignSampleDefinition,isInsideDefinition);
-                isShapeDefinition = isShapeDefinition | isInBoundary;
+                %if(any(isInsideDefinition(1)~=isInsideDefinition))
+                %    isInBoundary = design_find_boundary_samples(obj.DesignSampleDefinition,isInsideDefinition);
+                %    isShapeDefinition = isShapeDefinition | isInBoundary;
+                %end
                 
                 if(~isempty(obj.AnchorPoint))
                     isShapeDefinition(ismember(obj.DesignSampleDefinition,obj.AnchorPoint,'rows')) = true;
@@ -320,7 +327,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             nSample = size(obj.DesignSampleDefinition,1);
             samplingBox = obj.SamplingBox;
             
-            volumeSample = sampling_latin_hypercube(samplingBox,nSample);
+            volumeSample = sampling_random(samplingBox,nSample);
             isInside = obj.is_in_candidate_space(volumeSample);
             volumeFactor = sum(isInside) / size(isInside,1);
             volume = volumeFactor * prod(samplingBox(2,:) - samplingBox(1,:));

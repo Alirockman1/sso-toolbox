@@ -99,22 +99,23 @@ function algorithmData = postprocess_sso_component_stochastic(problemData,iterat
     componentMeasuresAfterTrimNormalized = nan(iConsolidationEnd,nComponent);
     for i=1:iConsolidationEnd
         for j=1:nComponent
-            if(isempty(iterationData(i).CandidateSpacesBeforeTrim(j)) || isempty(iterationData(i).CandidateSpacesBeforeTrim(j).IsInsideDefinition))
+            if(isempty(iterationData(i).CandidateSpacesBeforeTrim(j)) || isempty(iterationData(i).CandidateSpacesBeforeTrim(j).DesignSampleDefinition))
                 if(isempty(iterationData(i).CandidateSpacesAfterTrim))
                     componentMeasuresBeforeTrim(i,j) = 0;
                 else
-                    sbU = iterationData(i).SamplingBoxBeforeTrim(2,componentIndex{j});
-                    sbL = iterationData(i).SamplingBoxBeforeTrim(1,componentIndex{j});
+                    samplingBox = iterationData(i).SamplingBoxBeforeTrim;
+                    sbU = samplingBox(2,componentIndex{j});
+                    sbL = samplingBox(1,componentIndex{j});
                     componentMeasuresBeforeTrim(i,j) = prod(sbU - sbL);
                 end
             else
-                componentMeasuresBeforeTrim(i,j) = iterationData(i).CandidateSpacesBeforeTrim(j).Measure;
+                componentMeasuresBeforeTrim(i,j) = iterationData(i).ComponentMeasureBeforeTrim(j);
             end
 
             if(isempty(iterationData(i).CandidateSpacesAfterTrim))
                 componentMeasuresAfterTrim(i,j) = componentMeasuresBeforeTrim(i,j);
             else
-                componentMeasuresAfterTrim(i,j) = iterationData(i).CandidateSpacesAfterTrim(j).Measure;
+                componentMeasuresAfterTrim(i,j) = iterationData(i).ComponentMeasureAfterTrim(j);
             end
 
             componentMeasuresBeforeTrimNormalized(i,j) = componentMeasuresBeforeTrim(i,j)...

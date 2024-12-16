@@ -1,4 +1,4 @@
-function iChoice = component_trimming_choice(cost,component,varargin)
+function iChoice = component_trimming_choice(cost,component,activeKeep,componentRemoval,varargin)
 %COMPONENT_TRIMMING_CHOICE Choice of which component trimming to perform
 %	COMPONENT_TRIMMING_CHOICE compares the costs of the candidate trimming 
 %	operation to be performed in every component and chooses the one with the
@@ -61,5 +61,17 @@ function iChoice = component_trimming_choice(cost,component,varargin)
 	end
 
 	% select index with minimum weighted cost
-	[~,iChoice] = min(weightedCost);
+	[sortedCost,iCost] = sort(weightedCost);
+    iTieBreaker = (sortedCost==sortedCost(1));
+
+    if(length(iTieBreaker)>1 && any(iTieBreaker(2:end)))
+        % tie-breaker: total amount of points eliminated
+        removalCostTieBreaker = sum(componentRemoval(:,iTieBreaker),1);
+        [~,iCostTieBreaker] = sort(removalCostTieBreaker);
+
+        iChoiceTieBreaker = iCost(iTieBreaker);
+        iChoice = iChoiceTieBreaker(iCostTieBreaker(1));
+    else
+        iChoice = iCost(1);
+    end
 end

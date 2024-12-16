@@ -219,7 +219,13 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 directionGrowth = -obj.PlaneOrientationAnchor./vecnorm(obj.PlaneOrientationAnchor,2,2);
                 
                 anchorPointNew = obj.AnchorPoint + growthRate.*designSpaceFactor.*directionGrowth;
-                obj.AnchorPoint = min(max(anchorPointNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
+                anchorPointNew = min(max(anchorPointNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
+
+                isAnchorInLowerBoundary = (anchorPointNew==obj.DesignSpaceLowerBound);
+                isAnchorInUpperBoundary = (anchorPointNew==obj.DesignSpaceUpperBound);
+                isAnchorInCorner = all(isAnchorInLowerBoundary|isAnchorInUpperBoundary,2);
+                obj.AnchorPoint = anchorPointNew(~isAnchorInCorner,:);
+                obj.PlaneOrientationAnchor = obj.PlaneOrientationAnchor(~isAnchorInCorner,:);
 
                 % update definition
                 obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;obj.AnchorPoint],'rows');
@@ -295,8 +301,10 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 isShapeDefinition = false(size(obj.DesignSampleDefinition,1),1);
                 isShapeDefinition([iLowerBoundaryAll,iUpperBoundaryAll,iBoundaryInside']) = true;
 
-                isInBoundary = design_find_boundary_samples(obj.DesignSampleDefinition,isInsideDefinition);
-                isShapeDefinition = isShapeDefinition | isInBoundary;
+                %if(any(isInsideDefinition(1)~=isInsideDefinition))
+                %    isInBoundary = design_find_boundary_samples(obj.DesignSampleDefinition,isInsideDefinition);
+                %    isShapeDefinition = isShapeDefinition | isInBoundary;
+                %end
                 
                 if(~isempty(obj.AnchorPoint))
                     isShapeDefinition(ismember(obj.DesignSampleDefinition,obj.AnchorPoint,'rows')) = true;
@@ -308,7 +316,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             nSample = size(obj.DesignSampleDefinition,1);
             samplingBox = obj.SamplingBox;
             
-            volumeSample = sampling_latin_hypercube(samplingBox,nSample);
+            volumeSample = sampling_random(samplingBox,nSample);
             isInside = obj.is_in_candidate_space(volumeSample);
             volumeFactor = sum(isInside) / size(isInside,1);
             volume = volumeFactor * prod(samplingBox(2,:) - samplingBox(1,:));

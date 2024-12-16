@@ -1,4 +1,4 @@
-function removalCost = component_trimming_cost(designSample,activeKeep,removalCandidate,varargin)
+function [removalCost,iChoice] = component_trimming_cost(designSample,activeKeep,removalCandidate,ineligibleCandidate,varargin)
 %COMPONENT_TRIMMING_COST Cost of removing selected designs from component space
 %   COMPONENT_TRIMMING_COST computes the cost associated with performing the
 %   candidate trimming operations on the component space. 
@@ -70,5 +70,21 @@ function removalCost = component_trimming_cost(designSample,activeKeep,removalCa
     else%if(strcmpi(options.CostType,'NumberKeep'))
         removalCost = sum(removalCandidate & activeKeep,1);
     end
+
+    removalCost(ineligibleCandidate) = inf;
+    [sortedCost,iCost] = sort(removalCost);
+    iTieBreaker = (sortedCost==sortedCost(1));
+
+    if(length(iTieBreaker)>1 && any(iTieBreaker(2:end)))
+        % tie-breaker: total amount of points eliminated
+        removalCostTieBreaker = sum(removalCandidate(:,iTieBreaker),1);
+        [~,iCostTieBreaker] = sort(removalCostTieBreaker);
+
+        iChoiceTieBreaker = iCost(iTieBreaker);
+        iChoice = iChoiceTieBreaker(iCostTieBreaker(1));
+    else
+        iChoice = iCost(1);
+    end
+    removalCost = removalCost(iChoice);
 end
 
