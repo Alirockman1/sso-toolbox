@@ -238,7 +238,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             candidateSpaceGrown = candidateSpace;
             componentMeasureGrown = nan(1,nComponent);
             for i=1:nComponent
-                componentMeasureGrown(i) = prod(samplingBoxGrown(2,componentIndex{i})-samplingBoxGrown(1,componentIndex{i}))
+                componentMeasureGrown(i) = prod(samplingBoxGrown(2,componentIndex{i})-samplingBoxGrown(1,componentIndex{i}));
             end
         else
             componentMeasureGrown = nan(1,nComponent);

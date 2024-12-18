@@ -32,6 +32,9 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
 
         % 
         CornerDirection
+
+        %
+        TrimmingApplicationSlack
     end
 
     properties (SetAccess = protected, Dependent)
@@ -101,15 +104,17 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
 
             % parse inputs
             parser = inputParser;
-            parser.addRequired('designSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
-            parser.addRequired('designSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
+            parser.addRequired('DesignSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
+            parser.addRequired('DesignSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addParameter('SamplingBoxSlack',0.5,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
+            parser.addParameter('TrimmingApplicationSlack',0.01,@(x)isnumeric(x)&&isscalar(x)&&(x>0)&&(x<=1));
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
             
-            obj.DesignSpaceLowerBound = parser.Results.designSpaceLowerBound;;
-            obj.DesignSpaceUpperBound = parser.Results.designSpaceUpperBound;
+            obj.DesignSpaceLowerBound = parser.Results.DesignSpaceLowerBound;;
+            obj.DesignSpaceUpperBound = parser.Results.DesignSpaceUpperBound;
             obj.SamplingBoxSlack = parser.Results.SamplingBoxSlack;
+            obj.TrimmingApplicationSlack = parser.Results.TrimmingApplicationSlack;
 
             obj.DesignSampleDefinition = [];
             obj.AnchorPoint = [];
@@ -161,18 +166,76 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
 
             anchorPointNew = vertcat(trimmingInformation.Anchor);
             cornerDirectionNew = vertcat(trimmingInformation.CornerDirection);
-
+            
+            isNewAnchor = [false(size(obj.AnchorPoint,1),1);true(size(anchorPointNew,1),1)];
             obj.AnchorPoint = [obj.AnchorPoint;anchorPointNew];
             obj.CornerDirection = [obj.CornerDirection;cornerDirectionNew];
-            
+
+            % verify if there are any redundant anchor points
+            % -> region removed includes a different anchor with same corner direction
+            nAnchor = size(obj.AnchorPoint,1);
+            isRedundantAnchor = false(nAnchor,1);
+            for i = 1:nAnchor
+                currentAnchor = obj.AnchorPoint(i,:);
+                currentCornerDirection = obj.CornerDirection(i,:);
+
+                isDesignLesser = (obj.AnchorPoint - currentAnchor<0);
+                isDesignGreater = (obj.AnchorPoint - currentAnchor>0);
+                combinationLesser = all(isDesignLesser(:,~currentCornerDirection),2);
+                combinationGreater = all(isDesignGreater(:,currentCornerDirection),2);
+                isSameDirection = all(obj.CornerDirection==currentCornerDirection,2);
+                isRedundantAnchor(combinationLesser & combinationGreater & isSameDirection) = true;
+            end
+            obj.AnchorPoint(isRedundantAnchor,:) = [];
+            obj.CornerDirection(isRedundantAnchor,:) = [];
+            isNewAnchor(isRedundantAnchor) = [];
+
             % keep samples in inside/outside
             [~,iLowerBoundaryAll] = min(obj.DesignSampleDefinition,[],1);
             [~,iUpperBoundaryAll] = max(obj.DesignSampleDefinition,[],1);
 
             isInsideDefinition = obj.IsInsideDefinition;
-            [~,iLowerBoundaryInside] = min(obj.DesignSampleDefinition(isInsideDefinition,:),[],1);
-            [~,iUpperBoundaryInside] = max(obj.DesignSampleDefinition(isInsideDefinition,:),[],1);
+            insideSample = obj.DesignSampleDefinition(isInsideDefinition,:);
+            [~,iLowerBoundaryInside] = min(insideSample,[],1);
+            [~,iUpperBoundaryInside] = max(insideSample,[],1);
             iBoundaryInside = convert_index_base(isInsideDefinition,[iLowerBoundaryInside,iUpperBoundaryInside]','backward');
+
+            % determine slack
+            if(obj.TrimmingApplicationSlack<1 && any(isNewAnchor))
+                % update to also include the new samples
+                insideSample = [insideSample;designSample(isInside,:)];
+                nDimension = size(insideSample,2);
+                insideToAnchorDistance = nan(size(insideSample,1),nDimension);
+                nAnchor = size(obj.AnchorPoint,1);
+                maximumSlack = nan(1,nDimension);
+                anchorSlack = nan(1,nDimension);
+
+                for i=1:nAnchor
+                    if(~isNewAnchor(i))
+                        continue;
+                    end
+
+                    distanceToAnchor = insideSample - obj.AnchorPoint(i,:);
+                    insideToAnchorDistance(:,~obj.CornerDirection(i,:)) = distanceToAnchor(:,~obj.CornerDirection(i,:));
+                    insideToAnchorDistance(:,obj.CornerDirection(i,:)) = -distanceToAnchor(:,obj.CornerDirection(i,:));
+                    [maximumSlackInside,iDimension] = max(insideToAnchorDistance,[],2);
+                    for j=1:nDimension
+                        allowedSlack = maximumSlackInside(iDimension==j);
+                        if(isempty(allowedSlack))
+                            if(~obj.CornerDirection(i,j))
+                                maximumSlack(j) = obj.DesignSpaceUpperBound(j) - obj.AnchorPoint(i,j);
+                            else
+                                maximumSlack(j) = obj.AnchorPoint(i,j) - obj.DesignSpaceLowerBound(j);
+                            end
+                        else
+                            maximumSlack(j) = min(allowedSlack);
+                        end
+                    end
+                    anchorSlack(~obj.CornerDirection(i,:)) = maximumSlack(~obj.CornerDirection(i,:));
+                    anchorSlack(obj.CornerDirection(i,:)) = -maximumSlack(obj.CornerDirection(i,:));
+                    obj.AnchorPoint(i,:) = obj.AnchorPoint(i,:) + (1-obj.TrimmingApplicationSlack)*anchorSlack;
+                end
+            end
 
             obj.DesignSampleDefinition = unique(...
                 [obj.DesignSampleDefinition([iLowerBoundaryAll,iUpperBoundaryAll,iBoundaryInside'],:);...
@@ -216,17 +279,20 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
 
             if(~isempty(obj.AnchorPoint))
                 % connect each anchor to its respective corner
-                anchorCorner = nan(size(obj.AnchorPoint,1),size(obj.DesignSpaceLowerBound,2));
-                for i=1:size(obj.DesignSpaceLowerBound,2)
-                    anchorCorner(~obj.CornerDirection(:,i),i) = obj.DesignSpaceLowerBound(i);
-                    anchorCorner(obj.CornerDirection(:,i),i) = obj.DesignSpaceUpperBound(i);
-                end
-                directionGrowth = anchorCorner - obj.AnchorPoint;
-                directionGrowth = directionGrowth./vecnorm(directionGrowth,2,2);
-                
+                %anchorCorner = nan(size(obj.AnchorPoint,1),size(obj.DesignSpaceLowerBound,2));
+                %for i=1:size(obj.DesignSpaceLowerBound,2)
+                %    anchorCorner(~obj.CornerDirection(:,i),i) = obj.DesignSpaceLowerBound(i);
+                %    anchorCorner(obj.CornerDirection(:,i),i) = obj.DesignSpaceUpperBound(i);
+                %end
+                %distanceAnchorToCorner = anchorCorner - obj.AnchorPoint;
+                %directionGrowth = distanceAnchorToCorner./vecnorm(distanceAnchorToCorner,2,2);
+
+                % grow away from center
+                distanceCenterToAnchor = obj.AnchorPoint - center;
+                directionGrowth = distanceCenterToAnchor./vecnorm(distanceCenterToAnchor,2,2);
+
                 anchorPointNew = obj.AnchorPoint + growthRate.*designSpaceFactor.*directionGrowth;
                 anchorPointNew = min(max(anchorPointNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
-
                 isAnchorInLowerBoundary = (anchorPointNew==obj.DesignSpaceLowerBound);
                 isAnchorInUpperBoundary = (anchorPointNew==obj.DesignSpaceUpperBound);
                 isAnchorInCorner = all(isAnchorInLowerBoundary|isAnchorInUpperBoundary,2);
@@ -267,6 +333,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
         %   See also is_in_convex_hull_with_plane.
 
             nSample = size(designSample,1);
+            nDimension = size(designSample,2);
             if(isempty(obj.DesignSampleDefinition))
                 isInside = true(nSample,1);
                 score = zeros(nSample,1);
@@ -281,16 +348,21 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             end
             
             nAnchor = size(obj.AnchorPoint,1);
+            removalDistance = nan(nSample,nDimension);
             for i=1:nAnchor
-                designLesser = (designSample-obj.AnchorPoint(i,:)<=0);
-                designGreater = (designSample-obj.AnchorPoint(i,:)>=0);
+                distanceToAnchor = designSample-obj.AnchorPoint(i,:);
 
-                combinationLesser = all(designLesser(:,~obj.CornerDirection(i,:)),2);
-                combinationGreater = all(designGreater(:,obj.CornerDirection(i,:)),2);
+                isDesignLesser = (distanceToAnchor<=0);
+                isDesignGreater = (distanceToAnchor>=0);
+                combinationLesser = all(isDesignLesser(:,~obj.CornerDirection(i,:)),2);
+                combinationGreater = all(isDesignGreater(:,obj.CornerDirection(i,:)),2);
                 isInside(combinationLesser & combinationGreater) = false;
+
+                removalDistance(:,~obj.CornerDirection(i,:)) = distanceToAnchor(:,~obj.CornerDirection(i,:));
+                removalDistance(:,obj.CornerDirection(i,:)) = -distanceToAnchor(:,obj.CornerDirection(i,:));
+                anchorScore = -max(removalDistance,[],2);
+                score = max(score,anchorScore);
             end
-            score(isInside) = -1;
-            score(~isInside) = 1;
         end
 
         function isInside = get.IsInsideDefinition(obj)
