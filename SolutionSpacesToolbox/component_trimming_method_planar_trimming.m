@@ -66,19 +66,18 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
     % normalize values for better numerical behavior
     % designSampleComponent = designSampleComponent./(upperValueDesignVariable-lowerValueDesignVariable);
 
+    designReference = [];
     if(strcmpi(options.ReferenceDesigns,'all'))
         designReference = designSampleComponent;
         designReference(iRemove,:) = [];
     elseif(strcmpi(options.ReferenceDesigns,'keep'))
         designReference = designSampleComponent(isKeep,:);
-    elseif(strcmpi(options.ReferenceDesigns,'boundary-center'))
+    elseif(strcmpi(options.ReferenceDesigns,'boundary'))
         boundaryIndexKeep = unique([upperBoundaryDesignIndexKeep,lowerBoundaryDesignIndexKeep])';
         boundaryIndex = convert_index_base(isKeep,boundaryIndexKeep,'backward');
         designReference = designSampleComponent(boundaryIndex,:);
-        designReference = [designReference;mean(designSampleComponent(isKeep,:),1)];
-    elseif(strcmpi(options.ReferenceDesigns,'center'))
-        designReference = mean(designSampleComponent(isKeep,:),1);
     end
+    %designReference = [designReference;mean(designSampleComponent(isKeep,:),1)];
 
     % find all distances
     distanceToAnchor = designSampleComponent(iRemove,:) - designSampleComponent;
