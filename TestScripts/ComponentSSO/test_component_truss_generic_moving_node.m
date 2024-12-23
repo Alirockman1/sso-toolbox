@@ -44,7 +44,7 @@ useBoxResultForComponent = true;
 
 computeDisplacement = true;
 computeMass = false;
-computeDisplacementAndMass = false;
+computeDisplacementAndMass = true;
 
 computePlanarTrimmingComponent = true;
 computeCornerBoxRemovalComponent = true;
@@ -860,7 +860,8 @@ function [solutionSpaceBox,componentSolutionSpacePlanarTrimming,componentSolutio
             'UsePreviousEvaluatedSamplesConsolidation',true,...
             'TrimmingOperationOptions',{'PassesCriterion',trimmingPasses},...
             'TrimmingOrderOptions',{'OrderPreference','score'},...
-            'ShapeSamplesUsefulConsolidation',false);
+            'ShapeSamplesUsefulConsolidation',false, ...
+            'MinimumGrowthAdaptationFactor',0.1);
         
         rng(rngState);
         [componentSolutionSpaceCornerBoxRemoval,problemDataComponentCornerBoxRemoval,iterDataComponentCornerBoxRemoval] = sso_component_stochastic(designEvaluator,...

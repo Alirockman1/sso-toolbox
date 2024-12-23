@@ -279,17 +279,20 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
 
             if(~isempty(obj.AnchorPoint))
                 % connect each anchor to its respective corner
-                %anchorCorner = nan(size(obj.AnchorPoint,1),size(obj.DesignSpaceLowerBound,2));
-                %for i=1:size(obj.DesignSpaceLowerBound,2)
-                %    anchorCorner(~obj.CornerDirection(:,i),i) = obj.DesignSpaceLowerBound(i);
-                %    anchorCorner(obj.CornerDirection(:,i),i) = obj.DesignSpaceUpperBound(i);
-                %end
-                %distanceAnchorToCorner = anchorCorner - obj.AnchorPoint;
-                %directionGrowth = distanceAnchorToCorner./vecnorm(distanceAnchorToCorner,2,2);
+                anchorCorner = nan(size(obj.AnchorPoint,1),size(obj.DesignSpaceLowerBound,2));
+                for i=1:size(obj.DesignSpaceLowerBound,2)
+                    anchorCorner(~obj.CornerDirection(:,i),i) = obj.DesignSpaceLowerBound(i);
+                    anchorCorner(obj.CornerDirection(:,i),i) = obj.DesignSpaceUpperBound(i);
+                end
+                distanceAnchorToCorner = anchorCorner - obj.AnchorPoint;
+                directionGrowthCorner = distanceAnchorToCorner./vecnorm(distanceAnchorToCorner,2,2);
 
                 % grow away from center
                 distanceCenterToAnchor = obj.AnchorPoint - center;
-                directionGrowth = distanceCenterToAnchor./vecnorm(distanceCenterToAnchor,2,2);
+                directionGrowthCenter = distanceCenterToAnchor./vecnorm(distanceCenterToAnchor,2,2);
+
+                directionGrowth = (directionGrowthCorner + directionGrowthCenter)/2;
+                directionGrowth = directionGrowth./vecnorm(directionGrowth,2,2);
 
                 anchorPointNew = obj.AnchorPoint + growthRate.*designSpaceFactor.*directionGrowth;
                 anchorPointNew = min(max(anchorPointNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
