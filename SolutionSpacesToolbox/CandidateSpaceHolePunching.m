@@ -401,7 +401,7 @@ classdef CandidateSpaceHolePunching < CandidateSpaceBase
                 anchorBox = [holeLowerBound(i,:);holeUpperBound(i,:)];
                 [isInsideAnchor,scoreAnchor] = is_in_design_box(designSample,anchorBox);
 
-                isInside(isInsideAnchor) = false;
+                isInside(isInsideAnchor & scoreAnchor~=0) = false;
                 score = max(score,-scoreAnchor);
             end
         end

@@ -40,14 +40,14 @@ figureSize = [goldenRatio 1]*8.5;
 
 %%
 trussAnalysisChoice = '9-DoF-3D';
-useBoxResultForComponent = false;
+useBoxResultForComponent = true;
 
 computeDisplacement = true;
 computeMass = false;
-computeDisplacementAndMass = true;
+computeDisplacementAndMass = false;
 
 computePlanarTrimmingComponent = true;
-computeCornerBoxRemovalComponent = false;
+computeCornerBoxRemovalComponent = true;
 computeHolePunchingComponent = false;
 
 
@@ -367,9 +367,9 @@ switch trussAnalysisChoice
         cameraPositionFigureSave = [];
     case '9-DoF-3D'
         nSample = 100;
-        maxIterDisplacement = 80;
+        maxIterDisplacement = 50;
         maxIterMass = 100;
-        maxIterDisplacementAndMass = 100;
+        maxIterDisplacementAndMass = 50;
         growthRateDisplacement = 0.04;
         growthRateMass = 0.04;
         trimmingPasses = 'reduced';
@@ -852,6 +852,7 @@ function [solutionSpaceBox,componentSolutionSpacePlanarTrimming,componentSolutio
             'MaxIterConsolidation',maxIter,...
             'CandidateSpaceConstructor',@CandidateSpaceCornerBoxRemoval,...
             'TrimmingMethodFunction',@component_trimming_method_corner_box_removal,...
+            'TrimmingMethodOptions',{'CornersToTest','away'},...
             'UseAdaptiveGrowthRate',true,...
             'GrowthRate',growthRate,...
             'ApplyLeanness','never',...

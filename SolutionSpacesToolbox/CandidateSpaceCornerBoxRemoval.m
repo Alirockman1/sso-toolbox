@@ -107,7 +107,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             parser.addRequired('DesignSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addRequired('DesignSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addParameter('SamplingBoxSlack',0.5,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
-            parser.addParameter('TrimmingApplicationSlack',0.01,@(x)isnumeric(x)&&isscalar(x)&&(x>0)&&(x<=1));
+            parser.addParameter('TrimmingApplicationSlack',0.5,@(x)isnumeric(x)&&isscalar(x)&&(x>0)&&(x<=1));
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
             
@@ -154,7 +154,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             obj.CornerDirection = vertcat(trimmingInformation.CornerDirection);
         end
 
-        function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
+        function obj = update_candidate_space(obj,designSample,isInside,labelViable,trimmingInformation)
             if(isempty(obj.DesignSampleDefinition) || isempty(obj.AnchorPoint))
                 obj = obj.define_candidate_space(designSample,trimmingInformation);
                 return;
@@ -194,7 +194,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             [~,iLowerBoundaryAll] = min(obj.DesignSampleDefinition,[],1);
             [~,iUpperBoundaryAll] = max(obj.DesignSampleDefinition,[],1);
 
-            isInsideDefinition = obj.IsInsideDefinition;
+            [isInsideDefinition,scoreDefinition] = obj.is_in_candidate_space(obj.DesignSampleDefinition);
             insideSample = obj.DesignSampleDefinition(isInsideDefinition,:);
             [~,iLowerBoundaryInside] = min(insideSample,[],1);
             [~,iUpperBoundaryInside] = max(insideSample,[],1);
@@ -203,7 +203,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             % determine slack
             if(obj.TrimmingApplicationSlack<1 && any(isNewAnchor))
                 % update to also include the new samples
-                insideSample = [insideSample;designSample(isInside,:)];
+                insideSample = [obj.DesignSampleDefinition(isInsideDefinition & scoreDefinition<0,:);designSample(isInside & labelViable,:)];
                 nDimension = size(insideSample,2);
                 insideToAnchorDistance = nan(size(insideSample,1),nDimension);
                 nAnchor = size(obj.AnchorPoint,1);
@@ -304,7 +304,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             end
         end
         
-        function [isInside, score] = is_in_candidate_space(obj,designSample)
+        function [isInside, score] = is_in_candidate_space(obj,designSample,includeBoundingBox)
         %IS_IN_CANDIDATE_SPACE Verification if given design samples are inside
         %   IS_IN_CANDIDATE_SPACE uses the currently defined candidate space to 
         %   determine if given design sample points are inside or outside the candidate 
@@ -347,13 +347,14 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                 score = nan(nSample,1);
             end
             
+            % check if it is in any of the corners
             nAnchor = size(obj.AnchorPoint,1);
             removalDistance = nan(nSample,nDimension);
             for i=1:nAnchor
                 distanceToAnchor = designSample-obj.AnchorPoint(i,:);
 
-                isDesignLesser = (distanceToAnchor<=0);
-                isDesignGreater = (distanceToAnchor>=0);
+                isDesignLesser = (distanceToAnchor<0);
+                isDesignGreater = (distanceToAnchor>0);
                 combinationLesser = all(isDesignLesser(:,~obj.CornerDirection(i,:)),2);
                 combinationGreater = all(isDesignGreater(:,obj.CornerDirection(i,:)),2);
                 isInside(combinationLesser & combinationGreater) = false;
@@ -363,10 +364,18 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                 anchorScore = -max(removalDistance,[],2);
                 score = max(score,anchorScore);
             end
+
+            % check if it's inside the bounding box
+            if(nargin<3 || includeBoundingBox)
+                boundingBox = design_bounding_box(obj.DesignSampleDefinition,obj.IsInsideDefinition);
+                [isInsideBounding,scoreBounding] = is_in_design_box(designSample,boundingBox);
+                isInside(~isInsideBounding) = false;
+                score = max(score,scoreBounding);
+            end
         end
 
         function isInside = get.IsInsideDefinition(obj)
-            isInside = obj.is_in_candidate_space(obj.DesignSampleDefinition);
+            isInside = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
         end
 
         function isShapeDefinition = get.IsShapeDefinition(obj)

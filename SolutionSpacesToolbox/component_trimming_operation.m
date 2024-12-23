@@ -225,6 +225,6 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
         designSampleComponent = designSample(:,componentIndex{i});
         isInsideComponent = optimalActiveComponent(:,i);
         trimmingInformation = optimalTrimmingInformation{i};
-        trimmedCandidateSpace(i) = candidateSpace(i).update_candidate_space(designSampleComponent,isInsideComponent,trimmingInformation);
+        trimmedCandidateSpace(i) = candidateSpace(i).update_candidate_space(designSampleComponent,isInsideComponent,labelViable,trimmingInformation);
     end
 end

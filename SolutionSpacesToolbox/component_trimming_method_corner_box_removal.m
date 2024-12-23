@@ -1,4 +1,4 @@
-function [removalCandidate,removalInformation] = component_trimming_method_corner_box_removal(designSampleComponent,iRemove,varargin)
+function [removalCandidate,removalInformation] = component_trimming_method_corner_box_removal(designSampleComponent,iRemove,isKeep,varargin)
 %COMPONENT_TRIMMING_METHOD_CORNER_BOX_REMOVAL Component SSO Trimming
 %   COMPONENT_TRIMMING_METHOD_CORNER_BOX_REMOVAL uses the corner box removal
 %   method to find the sample points for candidate removal during the trimming 
@@ -39,10 +39,20 @@ function [removalCandidate,removalInformation] = component_trimming_method_corne
 %   See the License for the specific language governing permissions and
 %   limitations under the License.
 
+    parser = inputParser;
+    parser.addParameter('CornersToTest','all');
+    parser.parse(varargin{:});
+    options = parser.Results;
+
     nDesignVariable = size(designSampleComponent,2);
 
     % create all combinations of (lesser than / greater than) for each design variable
-    combination = logical(round(fullfact(2*ones(nDesignVariable,1)) - 1));
+    if(strcmpi(options.CornersToTest,'all'))
+        combination = logical(round(fullfact(2*ones(nDesignVariable,1)) - 1));
+    elseif(strcmpi(options.CornersToTest,'away'))
+        center = mean(designSampleComponent(isKeep,:),1);
+        combination = ((designSampleComponent(iRemove,:) - center)>=0);
+    end
 
     designLesser = (designSampleComponent-designSampleComponent(iRemove,:)<=0);
     designGreater = (designSampleComponent-designSampleComponent(iRemove,:)>=0);
