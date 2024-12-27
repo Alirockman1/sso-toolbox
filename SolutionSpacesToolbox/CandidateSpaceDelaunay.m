@@ -131,6 +131,17 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %   
         %   See also compute_convex_hull.
         SimplexConvexHullOptions
+
+        %SAMPLINGBOXSLACK Slack allowed for for the sampling box
+        %   SAMPLINGBOXSLACK defines where the boundaries of the sampling box will be 
+        %   relative to the strictest bounding box and the most relaxed bounding box. A 
+        %   value of 0 means no slack and therefore the sampling box will be the most 
+        %   strict one possible, and 1 means the sampling box will be the most relaxed.
+        %
+        %   SAMPLINGBOXSLACK : double
+        %
+        %   See also SamplingBox, design_bounding_box.
+        SamplingBoxSlack
     end
 
     properties (SetAccess = protected, Dependent)
@@ -145,6 +156,18 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %
         %   See also DesignSampleDefinition, IsInsideDefinition, convhull, convhulln.   
         Measure
+
+        %SAMPLINGBOX Bounding box of inside region used to help with sampling
+        %   SAMPLINGBOX is a bounding box formed around the internal region of the
+        %   candidate space. It can be used to facilitate trying to sample inside said
+        %   space.
+        %
+        %   SAMPLINGBOX : (2,nDesignVariable) double
+        %       - (1) : lower boundary of the design box
+        %       - (2) : upper boundary of the design box
+        %
+        %   See also SamplingBoxSlack.
+        SamplingBox
     end
 
     methods
@@ -488,6 +511,15 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             if(nargout<1)
                 clear plotHandle;
             end
+        end
+
+        function samplingBox = get.SamplingBox(obj)
+            [boundingBoxStrict,boundingBoxRelaxed] = design_bounding_box(...
+                obj.DesignSampleDefinition,obj.IsInsideDefinition);
+            samplingBox = (1-obj.SamplingBoxSlack).*boundingBoxStrict + ...
+                obj.SamplingBoxSlack.*boundingBoxRelaxed;
+            samplingBox(1,:) = max(samplingBox(1,:),obj.DesignSpaceLowerBound);
+            samplingBox(2,:) = min(samplingBox(2,:),obj.DesignSpaceUpperBound);
         end
 
         function measure = get.Measure(obj)

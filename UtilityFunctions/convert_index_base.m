@@ -89,12 +89,14 @@ function [linearConvertedQuery,logicalConvertedQuery] = convert_index_base(baseC
         % connect the logical conversion to full-size linear indices
         iBaseConversion = [1:sizeNewBase]';
         iBaseConversion = iBaseConversion(baseConversion);
-    else%if(strcmpi(conversionType,'forward'))
+    elseif(strcmpi(conversionType,'forward'))
         % new arrays will have as many elements as there were 'true's in conversion
         sizeNewBase = sum(baseConversion);
         % new linear indices are only increased for each 'true' in the base
         iBaseConversion = cumsum(baseConversion);
         iBaseConversion(~baseConversion) = nan;
+    else
+        error('ConvertIndexBase:ModeNotFound','Conversion mode not found; check again for argument.');
     end
 
     nConversionEntry = size(indexQuery,2);

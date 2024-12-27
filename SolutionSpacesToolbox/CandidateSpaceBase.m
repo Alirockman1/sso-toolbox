@@ -96,17 +96,6 @@ classdef (Abstract) CandidateSpaceBase
         %
         %   See also DesignSampleDefinition, IsInsideDefinition.   
         Measure
-    end
-
-    properties (Dependent)
-        %ACTIVEDESIGN All sample points that are labeled as inside candidate space
-        %   ACTIVEDESIGN are all the sample points labeled as inside the candidate 
-        %   space.
-        %
-        %   ACTIVEDESIGN : (nInside,nDesignVariable) double
-        %
-        %   See also DesignSampleDefinition, IsInsideDefinition.
-        ActiveDesign
 
         %SAMPLINGBOX Bounding box of inside region used to help with sampling
         %   SAMPLINGBOX is a bounding box formed around the internal region of the
@@ -119,6 +108,17 @@ classdef (Abstract) CandidateSpaceBase
         %
         %   See also SamplingBoxSlack.
         SamplingBox
+    end
+
+    properties (Dependent)
+        %ACTIVEDESIGN All sample points that are labeled as inside candidate space
+        %   ACTIVEDESIGN are all the sample points labeled as inside the candidate 
+        %   space.
+        %
+        %   ACTIVEDESIGN : (nInside,nDesignVariable) double
+        %
+        %   See also DesignSampleDefinition, IsInsideDefinition.
+        ActiveDesign
     end
 
     properties (SetAccess = protected)
@@ -141,17 +141,6 @@ classdef (Abstract) CandidateSpaceBase
         %
         %   See also DesignSpaceLowerBound.
         DesignSpaceUpperBound
-
-        %SAMPLINGBOXSLACK Slack allowed for for the sampling box
-        %   SAMPLINGBOXSLACK defines where the boundaries of the sampling box will be 
-        %   relative to the strictest bounding box and the most relaxed bounding box. A 
-        %   value of 0 means no slack and therefore the sampling box will be the most 
-        %   strict one possible, and 1 means the sampling box will be the most relaxed.
-        %
-        %   SAMPLINGBOXSLACK : double
-        %
-        %   See also SamplingBox, design_bounding_box.
-        SamplingBoxSlack
     end
 
     methods (Abstract)
@@ -268,15 +257,6 @@ classdef (Abstract) CandidateSpaceBase
 
         function activeDesign = get.ActiveDesign(obj)
             activeDesign = obj.DesignSampleDefinition(obj.IsInsideDefinition,:);
-        end
-
-        function samplingBox = get.SamplingBox(obj)
-            [boundingBoxStrict,boundingBoxRelaxed] = design_bounding_box(...
-                obj.DesignSampleDefinition,obj.IsInsideDefinition);
-            samplingBox = (1-obj.SamplingBoxSlack).*boundingBoxStrict + ...
-                obj.SamplingBoxSlack.*boundingBoxRelaxed;
-            samplingBox(1,:) = max(samplingBox(1,:),obj.DesignSpaceLowerBound);
-            samplingBox(2,:) = min(samplingBox(2,:),obj.DesignSpaceUpperBound);
         end
     end
 end

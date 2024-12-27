@@ -67,6 +67,18 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
         %
         %   See also DesignSampleDefinition, IsInsideDefinition, convhull, convhulln.   
         Measure
+
+        %SAMPLINGBOX Bounding box of inside region used to help with sampling
+        %   SAMPLINGBOX is a bounding box formed around the internal region of the
+        %   candidate space. It can be used to facilitate trying to sample inside said
+        %   space.
+        %
+        %   SAMPLINGBOX : (2,nDesignVariable) double
+        %       - (1) : lower boundary of the design box
+        %       - (2) : upper boundary of the design box
+        %
+        %   See also SamplingBoxSlack.
+        SamplingBox
     end
     
     methods
@@ -310,6 +322,11 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                     isShapeDefinition(ismember(obj.DesignSampleDefinition,obj.AnchorPoint,'rows')) = true;
                 end
             end
+        end
+
+        function samplingBox = get.SamplingBox(obj)
+            samplingBox = design_bounding_box(...
+                obj.DesignSampleDefinition,obj.IsInsideDefinition);
         end
 
         function volume = get.Measure(obj)
