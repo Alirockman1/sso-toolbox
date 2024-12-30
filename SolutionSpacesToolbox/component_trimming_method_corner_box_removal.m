@@ -41,6 +41,8 @@ function [removalCandidate,removalInformation] = component_trimming_method_corne
 
     parser = inputParser;
     parser.addParameter('CornersToTest','all');
+    parser.addParameter('TrimmingSlack',0.0);
+    parser.addParameter('ConsiderOnlyKeepInSlack',true);
     parser.parse(varargin{:});
     options = parser.Results;
 
@@ -54,20 +56,58 @@ function [removalCandidate,removalInformation] = component_trimming_method_corne
         combination = ((designSampleComponent(iRemove,:) - center)>=0);
     end
 
-    designLesser = (designSampleComponent-designSampleComponent(iRemove,:)<=0);
-    designGreater = (designSampleComponent-designSampleComponent(iRemove,:)>=0);
+    distanceToAnchorBase = designSampleComponent-designSampleComponent(iRemove,:);
 
     nCombination = size(combination,1);
     nSample = size(designSampleComponent,1);
     removalCandidate = false(nSample,nCombination);
+    anchorPoint = repmat(designSampleComponent(iRemove,:),nCombination,1);
+    maximumSlack = nan(1,nDesignVariable);
+    anchorSlack = nan(1,nDesignVariable);
+
     for i=1:nCombination
         % See which points fullfill criteria
-        combinationCandidateLesser = all(designLesser(:,~combination(i,:)),2);
-        combinationCandidateGreater = all(designGreater(:,combination(i,:)),2);
-        removalCandidate(:,i) = combinationCandidateLesser & combinationCandidateGreater;
+        combinationCandidateLesser = all(distanceToAnchorBase(:,~combination(i,:))<=0,2);
+        combinationCandidateGreater = all(distanceToAnchorBase(:,combination(i,:))>=0,2);
+        removalCandidateCurrent = combinationCandidateLesser & combinationCandidateGreater;
 
+        if(options.TrimmingSlack<1)
+            lowerBound = min(designSampleComponent,[],1);
+            upperBound = max(designSampleComponent,[],1);
+
+            isInsideSlack = ~removalCandidateCurrent;
+            if(options.ConsiderOnlyKeepInSlack)
+                isInsideSlack = isInsideSlack & isKeep;
+            end
+            insideToAnchorDistance = nan(sum(isInsideSlack),nDesignVariable);
+            insideToAnchorDistance(:,~combination(i,:)) = distanceToAnchorBase(isInsideSlack,~combination(i,:));
+            insideToAnchorDistance(:,combination(i,:)) = -distanceToAnchorBase(isInsideSlack,combination(i,:));
+
+            [maximumSlackInside,iDimension] = max(insideToAnchorDistance,[],2);
+            for j=1:nDesignVariable
+                allowedSlack = maximumSlackInside(iDimension==j);
+                if(isempty(allowedSlack))
+                    if(~combination(i,j))
+                        maximumSlack(j) = upperBound(j) - anchorPoint(i,j);
+                    else
+                        maximumSlack(j) = anchorPoint(i,j) - lowerBound(j);
+                    end
+                else
+                    maximumSlack(j) = min(allowedSlack);
+                end
+            end
+            anchorSlack(~combination(i,:)) = maximumSlack(~combination(i,:));
+            anchorSlack(combination(i,:)) = -maximumSlack(combination(i,:));
+            anchorPoint(i,:) = anchorPoint(i,:) + (1-options.TrimmingSlack)*anchorSlack;
+
+            distanceToAnchor = designSampleComponent - anchorPoint(i,:);
+            combinationCandidateLesser = all(distanceToAnchor(:,~combination(i,:))<=0,2);
+            combinationCandidateGreater = all(distanceToAnchor(:,combination(i,:))>=0,2);
+        end
+        
+        removalCandidate(:,i) = combinationCandidateLesser & combinationCandidateGreater;
         if(nargout>1)
-            removalInformation(i).Anchor = designSampleComponent(iRemove,:);
+            removalInformation(i).Anchor = anchorPoint(i,:);
             removalInformation(i).CornerDirection = combination(i,:);
         end
     end

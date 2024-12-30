@@ -42,9 +42,6 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
 
         % 
         CornerDirection
-
-        %
-        TrimmingApplicationSlack
     end
 
     properties (SetAccess = protected, Dependent)
@@ -118,13 +115,11 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             parser = inputParser;
             parser.addRequired('DesignSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addRequired('DesignSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
-            parser.addParameter('TrimmingApplicationSlack',0.0,@(x)isnumeric(x)&&isscalar(x)&&(x>0)&&(x<=1));
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
             
-            obj.DesignSpaceLowerBound = parser.Results.DesignSpaceLowerBound;;
+            obj.DesignSpaceLowerBound = parser.Results.DesignSpaceLowerBound;
             obj.DesignSpaceUpperBound = parser.Results.DesignSpaceUpperBound;
-            obj.TrimmingApplicationSlack = parser.Results.TrimmingApplicationSlack;
 
             obj.DesignSampleDefinition = [];
             obj.IsInsideDefinition = [];
@@ -203,49 +198,10 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             [~,iLowerBoundaryAll] = min(obj.DesignSampleDefinition,[],1);
             [~,iUpperBoundaryAll] = max(obj.DesignSampleDefinition,[],1);
 
-            [isInsideDefinition,scoreDefinition] = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
-            insideSample = obj.DesignSampleDefinition(isInsideDefinition,:);
+            insideSample = obj.DesignSampleDefinition(obj.IsInsideDefinition,:);
             [~,iLowerBoundaryInside] = min(insideSample,[],1);
             [~,iUpperBoundaryInside] = max(insideSample,[],1);
-            iBoundaryInside = convert_index_base(isInsideDefinition,[iLowerBoundaryInside,iUpperBoundaryInside]','backward');
-
-            % determine slack
-            if(obj.TrimmingApplicationSlack<1 && any(isNewAnchor))
-                % update to also include the new samples
-                insideSample = [...obj.DesignSampleDefinition(isInsideDefinition & scoreDefinition<0,:);...
-                    designSample(isInside & labelViable,:)];
-                nDimension = size(insideSample,2);
-                insideToAnchorDistance = nan(size(insideSample,1),nDimension);
-                nAnchor = size(obj.AnchorPoint,1);
-                maximumSlack = nan(1,nDimension);
-                anchorSlack = nan(1,nDimension);
-
-                for i=1:nAnchor
-                    if(~isNewAnchor(i))
-                        continue;
-                    end
-
-                    distanceToAnchor = insideSample - obj.AnchorPoint(i,:);
-                    insideToAnchorDistance(:,~obj.CornerDirection(i,:)) = distanceToAnchor(:,~obj.CornerDirection(i,:));
-                    insideToAnchorDistance(:,obj.CornerDirection(i,:)) = -distanceToAnchor(:,obj.CornerDirection(i,:));
-                    [maximumSlackInside,iDimension] = max(insideToAnchorDistance,[],2);
-                    for j=1:nDimension
-                        allowedSlack = maximumSlackInside(iDimension==j);
-                        if(isempty(allowedSlack))
-                            if(~obj.CornerDirection(i,j))
-                                maximumSlack(j) = obj.DesignSpaceUpperBound(j) - obj.AnchorPoint(i,j);
-                            else
-                                maximumSlack(j) = obj.AnchorPoint(i,j) - obj.DesignSpaceLowerBound(j);
-                            end
-                        else
-                            maximumSlack(j) = min(allowedSlack);
-                        end
-                    end
-                    anchorSlack(~obj.CornerDirection(i,:)) = maximumSlack(~obj.CornerDirection(i,:));
-                    anchorSlack(obj.CornerDirection(i,:)) = -maximumSlack(obj.CornerDirection(i,:));
-                    obj.AnchorPoint(i,:) = obj.AnchorPoint(i,:) + (1-obj.TrimmingApplicationSlack)*anchorSlack;
-                end
-            end
+            iBoundaryInside = convert_index_base(obj.IsInsideDefinition,[iLowerBoundaryInside,iUpperBoundaryInside]','backward');
 
             obj.DesignSampleDefinition = unique(...
                 [obj.DesignSampleDefinition([iLowerBoundaryAll,iUpperBoundaryAll,iBoundaryInside'],:);...
