@@ -164,7 +164,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
 
                     violateAnchor = (removalCandidate(iAnchorViable,:)==true);
                     [removalCost,iMinimumCostRemoval] = trimmingCostFunction(...
-                        designSample,activeKeep,removalCandidate,violateAnchor,trimmingCostOptions{:});
+                        designSample,activeKeep,activeComponentDesign,removalCandidate,violateAnchor,trimmingCostOptions{:});
                     
                     componentCost(k) = removalCost;
                     componentRemoval(:,k) = removalCandidate(:,iMinimumCostRemoval);
@@ -173,7 +173,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
 
                 % decide between components
                 iComponentTrim = trimmingComponentChoiceFunction(...
-                    componentCost,componentIndex,activeKeep,componentRemoval,trimmingComponentChoiceOptions{:});
+                    componentCost,designSample,componentIndex,activeKeep,activeComponentPass,componentRemoval,trimmingComponentChoiceOptions{:});
                 
                 % Eliminate those designs
                 trimRemoval = componentRemoval(:,iComponentTrim);
@@ -185,7 +185,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
 
             % check total cost
             % FIX perhaps use measure here instead of total cost
-            totalCostPass = trimmingCostFunction(designSample,activeKeepInitial,trimTotalPass,[],trimmingCostOptions{:});
+            totalCostPass = trimmingCostFunction(designSample,activeKeepInitial,activeAllPass,trimTotalPass,[],trimmingCostOptions{:});
             if(totalCostPass<totalCostMinimum)
                 optimalActiveComponent = activeComponentPass;
                 optimalTrimmingInformation = trimmingInformation;

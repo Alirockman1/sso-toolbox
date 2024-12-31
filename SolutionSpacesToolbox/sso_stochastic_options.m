@@ -290,7 +290,8 @@ function options = sso_stochastic_options(solutionSpaceType,varargin)
     %% component parameters
     if(strcmpi(solutionSpaceType,'component'))
         % sampling
-        parser.addParameter('NumberPaddingSamples',1000,@(x)isnumeric(x)&&all(x>=0));
+        parser.addParameter('MinimumNumberPaddingSamples',1000,@(x)isnumeric(x)&&all(x>=0));
+        parser.addParameter('MaximumNumberPaddingSamples',[],@(x)isnumeric(x)&&all(x>=0));
         parser.addParameter('CandidateSpaceSamplingFunction',@candidate_space_sampling_individual_feasible,@(x)isa(x,'function_handle'));
         parser.addParameter('CandidateSpaceSamplingOptions',{},@(x)iscell(x));
         % trimming

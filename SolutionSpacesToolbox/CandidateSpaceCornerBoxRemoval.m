@@ -238,8 +238,9 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             distanceToCenter = obj.DesignSampleDefinition - center;
             directionGrowth = distanceToCenter./vecnorm(distanceToCenter,2,2);
 
-            maxGrowthRate = region_limit_line_search([],obj.DesignSampleDefinition,designSpaceFactor.*directionGrowth,designSpace);
-            sampleGrowthRate = min(growthRate,maxGrowthRate);
+            %maxGrowthRate = region_limit_line_search([],obj.DesignSampleDefinition,designSpaceFactor.*directionGrowth,designSpace);
+            %sampleGrowthRate = min(growthRate,maxGrowthRate);
+            sampleGrowthRate = growthRate;
             designSampleNew = obj.DesignSampleDefinition + sampleGrowthRate.*designSpaceFactor.*directionGrowth;
             designSampleNew = min(max(designSampleNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
             obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;designSampleNew],'rows');
@@ -321,21 +322,23 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             
             % check if it is in any of the corners
             nAnchor = size(obj.AnchorPoint,1);
-            removalDistance = nan(nSample,nDimension);
             for i=1:nAnchor
                 distanceToAnchor = designSample-obj.AnchorPoint(i,:);
-
-                isDesignLesser = (distanceToAnchor<0);
-                isDesignGreater = (distanceToAnchor>0);
-                combinationLesser = all(isDesignLesser(:,~obj.CornerDirection(i,:)),2);
-                combinationGreater = all(isDesignGreater(:,obj.CornerDirection(i,:)),2);
-                isInside(combinationLesser & combinationGreater) = false;
-
-                removalDistance(:,~obj.CornerDirection(i,:)) = distanceToAnchor(:,~obj.CornerDirection(i,:));
-                removalDistance(:,obj.CornerDirection(i,:)) = -distanceToAnchor(:,obj.CornerDirection(i,:));
-                anchorScore = -max(removalDistance,[],2);
+                distanceToAnchor(:,obj.CornerDirection(i,:)) = -distanceToAnchor(:,obj.CornerDirection(i,:));
+                
+                isInside(all(distanceToAnchor<0,2)) = false;
+                
+                anchorScore = -max(distanceToAnchor,[],2);
                 score = max(score,anchorScore);
             end
+
+            %for i=1:nSample
+            %    distanceToAnchor = designSample(i,:) - obj.AnchorPoint;
+            %    distanceToAnchor(obj.CornerDirection) = -distanceToAnchor(obj.CornerDirection);
+            %    
+            %    isInside(i) = ~any(all(distanceToAnchor<0,2),1);
+            %    score(i) = max(-max(distanceToAnchor,[],2),[],1);
+            %end
 
             % check if it's inside the bounding box
             if(nargin<3 || includeBoundingBox)

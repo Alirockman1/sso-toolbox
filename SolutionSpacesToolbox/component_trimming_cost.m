@@ -1,4 +1,4 @@
-function [removalCost,iChoice] = component_trimming_cost(designSample,activeKeep,removalCandidate,ineligibleCandidate,varargin)
+function [removalCost,iChoice] = component_trimming_cost(designSample,isKeep,isRemain,removalCandidate,ineligibleCandidate,varargin)
 %COMPONENT_TRIMMING_COST Cost of removing selected designs from component space
 %   COMPONENT_TRIMMING_COST computes the cost associated with performing the
 %   candidate trimming operations on the component space. 
@@ -21,7 +21,7 @@ function [removalCost,iChoice] = component_trimming_cost(designSample,activeKeep
 %           removed.
 %       Alternatively, a function handle can be used to define custom weighting.
 %       This function must have the form 
-%       'cost = f(designSample,activeKeep,removalCandidate)'. 
+%       'cost = f(designSample,isKeep,removalCandidate)'. 
 %
 %   Input:
 %       - DESIGNSAMPLE : (nSample,nDesignVariable) double
@@ -57,10 +57,10 @@ function [removalCost,iChoice] = component_trimming_cost(designSample,activeKeep
     nRemovalCandidate = size(removalCandidate,2);
     removalCost = nan(1,nRemovalCandidate);
     if(isa(options.CostType,'function_handle'))
-        removalCost = options.CostType(designSample,activeKeep,removalCandidate);
+        removalCost = options.CostType(designSample,isKeep,removalCandidate);
     elseif(strcmpi(options.CostType,'RemovedKeepVolume'))
         nSample = size(designSample,1);
-        keepFraction = sum(removalCandidate & activeKeep,1)./nSample;
+        keepFraction = sum(removalCandidate & isKeep,1)./nSample;
 
         for i=1:nRemovalCandidate
             boundingBoxRemoval = design_bounding_box(designSample,removalCandidate(:,i));
@@ -68,20 +68,31 @@ function [removalCost,iChoice] = component_trimming_cost(designSample,activeKeep
             removalCost(i) = keepFraction(i) * totalVolumeRemoved;
         end
     else%if(strcmpi(options.CostType,'NumberKeep'))
-        removalCost = sum(removalCandidate & activeKeep,1);
+        removalCost = sum(removalCandidate & isKeep,1);
     end
 
     removalCost(ineligibleCandidate) = inf;
     [sortedCost,iCost] = sort(removalCost);
     iTieBreaker = (sortedCost==sortedCost(1));
+    iTieBreaker = iTieBreaker(iCost);
 
-    if(length(iTieBreaker)>1 && any(iTieBreaker(2:end)))
+    nTieBreaker = sum(iTieBreaker);
+    if(nTieBreaker>1)
         % tie-breaker: total amount of points eliminated
-        removalCostTieBreaker = sum(removalCandidate(:,iTieBreaker),1);
-        [~,iCostTieBreaker] = sort(removalCostTieBreaker);
+        %removalCostTieBreaker = sum(removalCandidate(:,iTieBreaker),1);
+        
+        % tie-breaker: volume that remains
+        removalCostTieBreaker = nan(1,nTieBreaker);
+        for i=1:nTieBreaker
+            iCurrent = convert_index_base(iTieBreaker',i,'backward');
+            boundingBoxRemain = design_bounding_box(designSample,isRemain & ~removalCandidate(:,iCurrent));
+            pointInsideBox = is_in_design_box(designSample,boundingBoxRemain);
+            volumeFraction = sum(pointInsideBox & isRemain & ~removalCandidate(:,iCurrent))/sum(pointInsideBox);
+            removalCostTieBreaker(i) = -volumeFraction*prod(boundingBoxRemain(2,:) - boundingBoxRemain(1,:));
+        end
 
-        iChoiceTieBreaker = iCost(iTieBreaker);
-        iChoice = iChoiceTieBreaker(iCostTieBreaker(1));
+        [~,iCostTieBreaker] = sort(removalCostTieBreaker);
+        iChoice = convert_index_base(iTieBreaker',iCostTieBreaker(1),'backward');
     else
         iChoice = iCost(1);
     end

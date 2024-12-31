@@ -67,8 +67,8 @@ function [removalCandidate,removalInformation] = component_trimming_method_corne
 
     for i=1:nCombination
         % See which points fullfill criteria
-        combinationCandidateLesser = all(distanceToAnchorBase(:,~combination(i,:))<=0,2);
-        combinationCandidateGreater = all(distanceToAnchorBase(:,combination(i,:))>=0,2);
+        combinationCandidateLesser = all(distanceToAnchorBase(:,~combination(i,:))<0,2);
+        combinationCandidateGreater = all(distanceToAnchorBase(:,combination(i,:))>0,2);
         removalCandidateCurrent = combinationCandidateLesser & combinationCandidateGreater;
 
         if(options.TrimmingSlack<1)
@@ -101,8 +101,8 @@ function [removalCandidate,removalInformation] = component_trimming_method_corne
             anchorPoint(i,:) = anchorPoint(i,:) + (1-options.TrimmingSlack)*anchorSlack;
 
             distanceToAnchor = designSampleComponent - anchorPoint(i,:);
-            combinationCandidateLesser = all(distanceToAnchor(:,~combination(i,:))<=0,2);
-            combinationCandidateGreater = all(distanceToAnchor(:,combination(i,:))>=0,2);
+            combinationCandidateLesser = all(distanceToAnchor(:,~combination(i,:))<0,2);
+            combinationCandidateGreater = all(distanceToAnchor(:,combination(i,:))>0,2);
         end
         
         removalCandidate(:,i) = combinationCandidateLesser & combinationCandidateGreater;

@@ -277,10 +277,11 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         end
         % truncate padding samples if there are too many, or generate more
         nPaddingGenerated = size(paddingSample,1);
-        if(nPaddingGenerated>=options.NumberPaddingSamples)
-            paddingSample = paddingSample(1:options.NumberPaddingSamples,:);
-        else
-            nPaddingMissing = options.NumberPaddingSamples - nPaddingGenerated;
+        if(~isempty(options.MaximumNumberPaddingSamples) && nPaddingGenerated>=options.MaximumNumberPaddingSamples)
+            paddingSample = paddingSample(1:options.MaximumNumberPaddingSamples,:);
+        end
+        if(size(paddingSample,1)<options.MinimumNumberPaddingSamples)
+            nPaddingMissing = options.MinimumNumberPaddingSamples - nPaddingGenerated;
             extraPadding = options.SamplingMethodFunction(samplingBoxGrown,nPaddingMissing,options.SamplingMethodOptions{:});
             paddingSample = [paddingSample;extraPadding];
         end
@@ -507,11 +508,12 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
                 candidateSpaceSamplingOptions{:});
         % truncate padding samples if there are too many, or generate more
         nPaddingGenerated = size(paddingSample,1);
-        if(nPaddingGenerated>=options.NumberPaddingSamples)
-            paddingSample = paddingSample(1:options.NumberPaddingSamples,:);
-        else
-            nPaddingMissing = options.NumberPaddingSamples - nPaddingGenerated;
-            extraPadding = options.SamplingMethodFunction(samplingBox,nPaddingMissing,options.SamplingMethodOptions{:});
+        if(~isempty(options.MaximumNumberPaddingSamples) && nPaddingGenerated>=options.MaximumNumberPaddingSamples)
+            paddingSample = paddingSample(1:options.MaximumNumberPaddingSamples,:);
+        end
+        if(size(paddingSample,1)<options.MinimumNumberPaddingSamples)
+            nPaddingMissing = options.MinimumNumberPaddingSamples - nPaddingGenerated;
+            extraPadding = options.SamplingMethodFunction(samplingBoxGrown,nPaddingMissing,options.SamplingMethodOptions{:});
             paddingSample = [paddingSample;extraPadding];
         end
         console.info('Elapsed time is %g seconds.\n',toc);
