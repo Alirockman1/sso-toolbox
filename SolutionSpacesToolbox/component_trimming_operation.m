@@ -123,9 +123,9 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
     activeAllInitial = all(activeComponentInitial,2);
     activeKeepInitial = activeAllInitial & labelViable;
 
-    totalCostMinimum = inf;
     optimalActiveComponent = activeComponentInitial;
     optimalTrimmingInformation = cell(1,nComponent);
+    optimalTrimTotalPass = [];
     
     iAnchorViable = [];
     canBeAnchorViable = labelViable & activeAllInitial;
@@ -185,11 +185,11 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
 
             % check total cost
             % FIX perhaps use measure here instead of total cost
-            totalCostPass = trimmingCostFunction(designSample,activeKeepInitial,activeAllPass,trimTotalPass,[],trimmingCostOptions{:});
-            if(totalCostPass<totalCostMinimum)
+            [~,optimalPass] = trimmingCostFunction(designSample,activeKeepInitial,activeAllInitial,[optimalTrimTotalPass,trimTotalPass],[],trimmingCostOptions{:});
+            if(isempty(optimalTrimTotalPass) || optimalPass==2)
+                optimalTrimTotalPass = trimTotalPass;
                 optimalActiveComponent = activeComponentPass;
                 optimalTrimmingInformation = trimmingInformation;
-                totalCostMinimum = totalCostPass;
             end
         end
 

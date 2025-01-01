@@ -51,6 +51,9 @@ function [removalCost,iChoice] = component_trimming_cost(designSample,isKeep,isR
 
     parser = inputParser;
     parser.addParameter('CostType','NumberKeep');
+    parser.addParameter('TieBreakerType','NumberRemain');
+    %parser.addParameter('CostType',[]);
+    %parser.addParameter('TieBreakerType',[]);
     parser.parse(varargin{:});
     options = parser.Results;
     
@@ -67,8 +70,23 @@ function [removalCost,iChoice] = component_trimming_cost(designSample,isKeep,isR
             totalVolumeRemoved = prod(boundingBoxRemoval(2,:) - boundingBoxRemoval(1,:));
             removalCost(i) = keepFraction(i) * totalVolumeRemoved;
         end
-    else%if(strcmpi(options.CostType,'NumberKeep'))
-        removalCost = sum(removalCandidate & isKeep,1);
+    elseif(strcmpi(options.CostType,'NumberKeep'))
+        % number of designs being kept
+        removalCost = -sum(~removalCandidate & isKeep & isRemain,1);
+    else
+        % estimated volume being kept
+        removalCost = nan(1,nRemovalCandidate);
+        for i=1:nRemovalCandidate
+            isKeepMaintain = isKeep & isRemain & ~removalCandidate(:,i);
+            if(sum(isKeepMaintain)>0)
+                boundingBoxRemainKeep = design_bounding_box(designSample,isKeep & isRemain & ~removalCandidate(:,i));
+                pointInsideBox = is_in_design_box(designSample,boundingBoxRemainKeep);
+                volumeFraction = sum(pointInsideBox & isKeep & isRemain & ~removalCandidate(:,i))/sum(pointInsideBox);
+                removalCost(i) = -volumeFraction*prod(boundingBoxRemainKeep(2,:) - boundingBoxRemainKeep(1,:));
+            else
+                removalCost(i) = 0;
+            end
+        end
     end
 
     removalCost(ineligibleCandidate) = inf;
@@ -78,17 +96,19 @@ function [removalCost,iChoice] = component_trimming_cost(designSample,isKeep,isR
 
     nTieBreaker = sum(iTieBreaker);
     if(nTieBreaker>1)
-        % tie-breaker: total amount of points eliminated
-        %removalCostTieBreaker = sum(removalCandidate(:,iTieBreaker),1);
-        
-        % tie-breaker: volume that remains
-        removalCostTieBreaker = nan(1,nTieBreaker);
-        for i=1:nTieBreaker
-            iCurrent = convert_index_base(iTieBreaker',i,'backward');
-            boundingBoxRemain = design_bounding_box(designSample,isRemain & ~removalCandidate(:,iCurrent));
-            pointInsideBox = is_in_design_box(designSample,boundingBoxRemain);
-            volumeFraction = sum(pointInsideBox & isRemain & ~removalCandidate(:,iCurrent))/sum(pointInsideBox);
-            removalCostTieBreaker(i) = -volumeFraction*prod(boundingBoxRemain(2,:) - boundingBoxRemain(1,:));
+        if(strcmpi(options.TieBreakerType,'NumberRemain'))
+            % tie-breaker: total amount of points eliminated
+            removalCostTieBreaker = -sum(isRemain & ~removalCandidate(:,iTieBreaker),1);
+        else%if(strcmpi(options.TieBreakerType,'VolumeRemain'))
+            % tie-breaker: volume that remains
+            removalCostTieBreaker = nan(1,nTieBreaker);
+            for i=1:nTieBreaker
+                iCurrent = convert_index_base(iTieBreaker',i,'backward');
+                boundingBoxRemain = design_bounding_box(designSample,isRemain & ~removalCandidate(:,iCurrent));
+                pointInsideBox = is_in_design_box(designSample,boundingBoxRemain);
+                volumeFraction = sum(pointInsideBox & isRemain & ~removalCandidate(:,iCurrent))/sum(pointInsideBox);
+                removalCostTieBreaker(i) = -volumeFraction*prod(boundingBoxRemain(2,:) - boundingBoxRemain(1,:));
+            end
         end
 
         [~,iCostTieBreaker] = sort(removalCostTieBreaker);

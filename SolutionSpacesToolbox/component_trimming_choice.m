@@ -45,7 +45,10 @@ function iChoice = component_trimming_choice(cost,designSample,componentIndex,is
 %   limitations under the License.
 
 	parser = inputParser;
-	parser.addParameter('WeightedCostType','SimpleCost');
+	parser.addParameter('WeightedCostType','NumberKeep');
+	parser.addParameter('TieBreakerType','NumberRemain');
+	%parser.addParameter('WeightedCostType',[]);
+	%parser.addParameter('TieBreakerType',[]);
 	parser.parse(varargin{:});
 	options = parser.Results;
 	
@@ -56,8 +59,38 @@ function iChoice = component_trimming_choice(cost,designSample,componentIndex,is
 		for i=1:size(componentIndex,2)
 			weightedCost(i) = cost(i)*2^length(componentIndex{i});
 		end
-	else%if(strcmpi(options.WeightedCostType,'SimpleCost'))
+	elseif(strcmpi(options.WeightedCostType,'SimpleCost'))
 		weightedCost = cost;
+	elseif(strcmpi(options.WeightedCostType,'NumberKeep'))
+		weightedCost = -sum(isKeep & isRemainComponent & ~componentRemoval,1);
+	else
+		nComponent = length(componentIndex);
+        componentMeasureBase = nan(1,nComponent);
+        componentMeasureTrimmed = nan(1,nComponent);
+        for i=1:nComponent
+        	designSampleComponent = designSample(:,componentIndex{i});
+
+        	% compute base measure -> no removal
+        	boundingBox = design_bounding_box(designSampleComponent,isKeep & isRemainComponent(:,i));
+        	pointInsideBox = is_in_design_box(designSampleComponent,boundingBox);
+        	volumeFraction = sum(pointInsideBox & isKeep & isRemainComponent(:,i))/sum(pointInsideBox);
+        	componentMeasureBase(i) = volumeFraction*prod(boundingBox(2,:) - boundingBox(1,:));
+
+        	% compute trimmed measure -> with removal
+        	isKeepMaintain = isKeep & isRemainComponent(:,i) & ~componentRemoval(:,i);
+        	if(sum(isKeepMaintain)>0)
+	        	boundingBox = design_bounding_box(designSampleComponent,isKeepMaintain);
+	        	pointInsideBox = is_in_design_box(designSampleComponent,boundingBox);
+	        	volumeFraction = sum(pointInsideBox & isKeep & isRemainComponent(:,i) & ~componentRemoval(:,i))/sum(pointInsideBox);
+	        	componentMeasureTrimmed(i) = volumeFraction*prod(boundingBox(2,:) - boundingBox(1,:));
+	        else
+	        	componentMeasureTrimmed(i) = 0;
+	        end
+        end
+        weightedCost = nan(1,nComponent);
+        for i=1:nComponent
+            weightedCost(i) = -prod(componentMeasureBase)*componentMeasureTrimmed(i)/componentMeasureBase(i);
+        end
 	end
 
 	% select index with minimum weighted cost
@@ -67,33 +100,35 @@ function iChoice = component_trimming_choice(cost,designSample,componentIndex,is
 
     nTieBreaker = sum(iTieBreaker);
     if(nTieBreaker>1)
-        % tie-breaker: total amount of points eliminated
-        %removalCostTieBreaker = sum(componentRemoval(:,iTieBreaker),1);
-        
-        % tie-breaker: volume that remains
-        nComponent = length(componentIndex);
-        componentMeasureBase = nan(1,nComponent);
-        componentMeasureTrimmed = nan(1,nComponent);
-        for i=1:nComponent
-        	designSampleComponent = designSample(:,componentIndex{i});
+    	if(strcmpi(options.TieBreakerType,'NumberRemain'))
+	        % tie-breaker: total amount of points eliminated
+	        removalCostTieBreaker = -sum(isRemainComponent(:,iTieBreaker) & ~componentRemoval(:,iTieBreaker),1);
+        else%if(strcmpi(options.TieBreakerType,'VolumeRemain'))
+	        % tie-breaker: volume that remains
+	        nComponent = length(componentIndex);
+	        componentMeasureBase = nan(1,nComponent);
+	        componentMeasureTrimmed = nan(1,nComponent);
+	        for i=1:nComponent
+	        	designSampleComponent = designSample(:,componentIndex{i});
 
-        	% compute base measure -> no removal
-        	boundingBox = design_bounding_box(designSampleComponent,isRemainComponent(:,i));
-        	pointInsideBox = is_in_design_box(designSampleComponent,boundingBox);
-        	volumeFraction = sum(pointInsideBox & isRemainComponent(:,i))/sum(pointInsideBox);
-        	componentMeasureBase(i) = volumeFraction*prod(boundingBox(2,:) - boundingBox(1,:));
+	        	% compute base measure -> no removal
+	        	boundingBox = design_bounding_box(designSampleComponent,isRemainComponent(:,i));
+	        	pointInsideBox = is_in_design_box(designSampleComponent,boundingBox);
+	        	volumeFraction = sum(pointInsideBox & isRemainComponent(:,i))/sum(pointInsideBox);
+	        	componentMeasureBase(i) = volumeFraction*prod(boundingBox(2,:) - boundingBox(1,:));
 
-        	% compute trimmed measure -> with removal
-        	boundingBox = design_bounding_box(designSampleComponent,isRemainComponent(:,i) & ~componentRemoval(:,i));
-        	pointInsideBox = is_in_design_box(designSampleComponent,boundingBox);
-        	volumeFraction = sum(pointInsideBox & isRemainComponent(:,i) & ~componentRemoval(:,i))/sum(pointInsideBox);
-        	componentMeasureTrimmed(i) = volumeFraction*prod(boundingBox(2,:) - boundingBox(1,:));
-        end
-        removalCostTieBreaker = nan(1,nTieBreaker);
-        for i=1:nTieBreaker
-            iCurrent = convert_index_base(iTieBreaker',i,'backward');
-            removalCostTieBreaker(i) = -prod(componentMeasureBase)*componentMeasureTrimmed(iCurrent)/componentMeasureBase(iCurrent);
-        end
+	        	% compute trimmed measure -> with removal
+	        	boundingBox = design_bounding_box(designSampleComponent,isRemainComponent(:,i) & ~componentRemoval(:,i));
+	        	pointInsideBox = is_in_design_box(designSampleComponent,boundingBox);
+	        	volumeFraction = sum(pointInsideBox & isRemainComponent(:,i) & ~componentRemoval(:,i))/sum(pointInsideBox);
+	        	componentMeasureTrimmed(i) = volumeFraction*prod(boundingBox(2,:) - boundingBox(1,:));
+	        end
+	        removalCostTieBreaker = nan(1,nTieBreaker);
+	        for i=1:nTieBreaker
+	            iCurrent = convert_index_base(iTieBreaker',i,'backward');
+	            removalCostTieBreaker(i) = -prod(componentMeasureBase)*componentMeasureTrimmed(iCurrent)/componentMeasureBase(iCurrent);
+	        end
+	    end
 
         [~,iCostTieBreaker] = sort(removalCostTieBreaker);
         iChoice = convert_index_base(iTieBreaker',iCostTieBreaker(1),'backward');
