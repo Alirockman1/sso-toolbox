@@ -1,4 +1,4 @@
-function iChoice = component_trimming_choice(cost,designSample,componentIndex,isKeep,isRemainComponent,componentRemoval,varargin)
+function iChoice = component_trimming_choice(cost,designSample,componentIndex,isKeep,isRemove,isRemainComponent,componentRemoval,varargin)
 %COMPONENT_TRIMMING_CHOICE Choice of which component trimming to perform
 %	COMPONENT_TRIMMING_CHOICE compares the costs of the candidate trimming 
 %	operation to be performed in every component and chooses the one with the
@@ -46,9 +46,7 @@ function iChoice = component_trimming_choice(cost,designSample,componentIndex,is
 
 	parser = inputParser;
 	parser.addParameter('WeightedCostType','NumberKeep');
-	parser.addParameter('TieBreakerType','NumberRemain');
-	%parser.addParameter('WeightedCostType',[]);
-	%parser.addParameter('TieBreakerType',[]);
+	parser.addParameter('TieBreakerType','NumberRemoved');
 	parser.parse(varargin{:});
 	options = parser.Results;
 	
@@ -62,7 +60,7 @@ function iChoice = component_trimming_choice(cost,designSample,componentIndex,is
 	elseif(strcmpi(options.WeightedCostType,'SimpleCost'))
 		weightedCost = cost;
 	elseif(strcmpi(options.WeightedCostType,'NumberKeep'))
-		weightedCost = -sum(isKeep & isRemainComponent & ~componentRemoval,1);
+		weightedCost = -sum(isKeep & ~isRemove & isRemainComponent & ~componentRemoval,1);
 	else
 		nComponent = length(componentIndex);
         componentMeasureBase = nan(1,nComponent);
@@ -95,14 +93,15 @@ function iChoice = component_trimming_choice(cost,designSample,componentIndex,is
 
 	% select index with minimum weighted cost
 	[sortedCost,iCost] = sort(weightedCost);
-    iTieBreaker = (sortedCost==sortedCost(1));
-    iTieBreaker = iTieBreaker(iCost);
+    iTieBreaker = (weightedCost==sortedCost(1));
 
     nTieBreaker = sum(iTieBreaker);
     if(nTieBreaker>1)
     	if(strcmpi(options.TieBreakerType,'NumberRemain'))
 	        % tie-breaker: total amount of points eliminated
-	        removalCostTieBreaker = -sum(isRemainComponent(:,iTieBreaker) & ~componentRemoval(:,iTieBreaker),1);
+	        removalCostTieBreaker = -sum(isRemainComponent(:,iTieBreaker) & ~componentRemoval(:,iTieBreaker) & ~isRemove,1);
+	    elseif(strcmpi(options.TieBreakerType,'NumberRemoved'))
+            removalCostTieBreaker = -sum(isRemove & componentRemoval(:,iTieBreaker),1);
         else%if(strcmpi(options.TieBreakerType,'VolumeRemain'))
 	        % tie-breaker: volume that remains
 	        nComponent = length(componentIndex);

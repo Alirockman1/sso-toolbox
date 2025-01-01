@@ -118,7 +118,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             parser = inputParser;
             parser.addRequired('DesignSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addRequired('DesignSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
-            parser.addParameter('DetachTolerance',0.05);
+            parser.addParameter('DetachTolerance',0.00);
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
             
@@ -308,6 +308,9 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                         directionGrowth(i,j) = sum(iDimension==j);
                     end
                 end
+                %[~,preferentialDirection] = max(directionGrowth,[],2);
+                %directionGrowth = zeros(size(directionGrowth));
+                %directionGrowth(:,preferentialDirection) = 1;
                 directionGrowth(~obj.CornerDirection) = -directionGrowth(~obj.CornerDirection);
 
                 directionGrowth = directionGrowth./vecnorm(directionGrowth,2,2);

@@ -123,6 +123,9 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
     activeAllInitial = all(activeComponentInitial,2);
     activeKeepInitial = activeAllInitial & labelViable;
 
+    isRemove = false(nSample,1);
+    isRemove(trimmingOrder) = true;
+
     optimalActiveComponent = activeComponentInitial;
     optimalTrimmingInformation = cell(1,nComponent);
     optimalTrimTotalPass = [];
@@ -164,7 +167,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
 
                     violateAnchor = (removalCandidate(iAnchorViable,:)==true);
                     [removalCost,iMinimumCostRemoval] = trimmingCostFunction(...
-                        designSample,activeKeep,activeComponentDesign,removalCandidate,violateAnchor,trimmingCostOptions{:});
+                        designSample,activeKeep,isRemove,activeComponentDesign,removalCandidate,violateAnchor,trimmingCostOptions{:});
                     
                     componentCost(k) = removalCost;
                     componentRemoval(:,k) = removalCandidate(:,iMinimumCostRemoval);
@@ -173,7 +176,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
 
                 % decide between components
                 iComponentTrim = trimmingComponentChoiceFunction(...
-                    componentCost,designSample,componentIndex,activeKeep,activeComponentPass,componentRemoval,trimmingComponentChoiceOptions{:});
+                    componentCost,designSample,componentIndex,activeKeep,isRemove,activeComponentPass,componentRemoval,trimmingComponentChoiceOptions{:});
                 
                 % Eliminate those designs
                 trimRemoval = componentRemoval(:,iComponentTrim);
@@ -185,7 +188,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
 
             % check total cost
             % FIX perhaps use measure here instead of total cost
-            [~,optimalPass] = trimmingCostFunction(designSample,activeKeepInitial,activeAllInitial,[optimalTrimTotalPass,trimTotalPass],[],trimmingCostOptions{:});
+            [~,optimalPass] = trimmingCostFunction(designSample,activeKeepInitial,isRemove,activeAllInitial,[optimalTrimTotalPass,trimTotalPass],[],trimmingCostOptions{:});
             if(isempty(optimalTrimTotalPass) || optimalPass==2)
                 optimalTrimTotalPass = trimTotalPass;
                 optimalActiveComponent = activeComponentPass;

@@ -1,4 +1,4 @@
-function [removalCost,iChoice] = component_trimming_cost(designSample,isKeep,isRemain,removalCandidate,ineligibleCandidate,varargin)
+function [removalCost,iChoice] = component_trimming_cost(designSample,isKeep,isRemove,isRemain,removalCandidate,ineligibleCandidate,varargin)
 %COMPONENT_TRIMMING_COST Cost of removing selected designs from component space
 %   COMPONENT_TRIMMING_COST computes the cost associated with performing the
 %   candidate trimming operations on the component space. 
@@ -51,9 +51,7 @@ function [removalCost,iChoice] = component_trimming_cost(designSample,isKeep,isR
 
     parser = inputParser;
     parser.addParameter('CostType','NumberKeep');
-    parser.addParameter('TieBreakerType','NumberRemain');
-    %parser.addParameter('CostType',[]);
-    %parser.addParameter('TieBreakerType',[]);
+    parser.addParameter('TieBreakerType','NumberRemoved');
     parser.parse(varargin{:});
     options = parser.Results;
     
@@ -72,7 +70,7 @@ function [removalCost,iChoice] = component_trimming_cost(designSample,isKeep,isR
         end
     elseif(strcmpi(options.CostType,'NumberKeep'))
         % number of designs being kept
-        removalCost = -sum(~removalCandidate & isKeep & isRemain,1);
+        removalCost = -sum(~removalCandidate & isKeep & isRemain & ~isRemove,1);
     else
         % estimated volume being kept
         removalCost = nan(1,nRemovalCandidate);
@@ -91,14 +89,15 @@ function [removalCost,iChoice] = component_trimming_cost(designSample,isKeep,isR
 
     removalCost(ineligibleCandidate) = inf;
     [sortedCost,iCost] = sort(removalCost);
-    iTieBreaker = (sortedCost==sortedCost(1));
-    iTieBreaker = iTieBreaker(iCost);
+    iTieBreaker = (removalCost==sortedCost(1));
 
     nTieBreaker = sum(iTieBreaker);
     if(nTieBreaker>1)
         if(strcmpi(options.TieBreakerType,'NumberRemain'))
             % tie-breaker: total amount of points eliminated
-            removalCostTieBreaker = -sum(isRemain & ~removalCandidate(:,iTieBreaker),1);
+            removalCostTieBreaker = -sum(isRemain & ~isRemove & ~removalCandidate(:,iTieBreaker),1);
+        elseif(strcmpi(options.TieBreakerType,'NumberRemoved'))
+            removalCostTieBreaker = -sum(isRemove & removalCandidate(:,iTieBreaker),1);
         else%if(strcmpi(options.TieBreakerType,'VolumeRemain'))
             % tie-breaker: volume that remains
             removalCostTieBreaker = nan(1,nTieBreaker);
