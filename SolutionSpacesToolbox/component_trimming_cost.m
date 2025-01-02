@@ -97,7 +97,7 @@ function [removalCost,iChoice] = component_trimming_cost(designSample,isKeep,isR
             % tie-breaker: total amount of points eliminated
             removalCostTieBreaker = -sum(isRemain & ~isRemove & ~removalCandidate(:,iTieBreaker),1);
         elseif(strcmpi(options.TieBreakerType,'NumberRemoved'))
-            removalCostTieBreaker = -sum(isRemove & removalCandidate(:,iTieBreaker),1);
+            removalCostTieBreaker = -sum(isRemain & isRemove & removalCandidate(:,iTieBreaker),1);
         else%if(strcmpi(options.TieBreakerType,'VolumeRemain'))
             % tie-breaker: volume that remains
             removalCostTieBreaker = nan(1,nTieBreaker);

@@ -125,6 +125,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
 
     isRemove = false(nSample,1);
     isRemove(trimmingOrder) = true;
+    activeRemove = activeAllInitial & isRemove;
 
     optimalActiveComponent = activeComponentInitial;
     optimalTrimmingInformation = cell(1,nComponent);
@@ -140,6 +141,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
         for i=1:nTrimmingOrder
             activeComponentPass = activeComponentInitial;
             activeAllPass = activeAllInitial;
+            activeRemovePass = activeRemove;
             trimTotalPass = false(nSample,1);
             trimmingInformation = cell(1,nComponent);
 
@@ -182,6 +184,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
                 trimRemoval = componentRemoval(:,iComponentTrim);
                 activeComponentPass(trimRemoval,iComponentTrim) = false;
                 activeAllPass(trimRemoval) = false;
+                activeRemovePass(trimRemoval) = false;
                 trimTotalPass(trimRemoval) = true;
                 trimmingInformation{iComponentTrim} = [trimmingInformation{iComponentTrim};trimmingInformationComponent(iComponentTrim)];
             end
