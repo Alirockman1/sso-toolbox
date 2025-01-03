@@ -57,6 +57,8 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
 
     parser = inputParser;
     parser.addParameter('ReferenceDesigns','keep');
+    parser.addParameter('TrimmingSlack',1.0);
+    parser.addParameter('ConsiderOnlyKeepInSlack',true);
     parser.parse(varargin{:});
     options = parser.Results;
 
@@ -77,13 +79,12 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
         boundaryIndex = convert_index_base(isKeep,boundaryIndexKeep,'backward');
         designReference = designSampleComponent(boundaryIndex,:);
     end
-    %designReference = [designReference;mean(designSampleComponent(isKeep,:),1)];
+    designReference = [designReference;mean(designSampleComponent(isKeep,:),1)];
 
     % find all distances
     distanceToAnchor = designSampleComponent(iRemove,:) - designSampleComponent;
-    normalizedDistanceToAnchor = distanceToAnchor./vecnorm(distanceToAnchor,2,2);
 
-    planeOrientation = designSampleComponent(iRemove,:) - designReference;
+    planeOrientation = designReference - designSampleComponent(iRemove,:);
     normalizedPlaneOrientation = planeOrientation./vecnorm(planeOrientation,2,2);
 
     % for each plane, points being removed are all whose dot product between the 
@@ -94,12 +95,27 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
     nRemovalCandidate = size(normalizedPlaneOrientation,1);
     removalCandidate = false(nSample,nRemovalCandidate);
     for i=1:nRemovalCandidate
-        dotProduct = sum(normalizedPlaneOrientation(i,:).*normalizedDistanceToAnchor,2);
-        removalCandidate(:,i) = (dotProduct<=0);
+        anchorPoint = designSampleComponent(iRemove,:);
+        dotProduct = sum(normalizedPlaneOrientation(i,:).*distanceToAnchor,2);
+        removalCandidateCurrent = (dotProduct>0);
 
+        if(options.TrimmingSlack<1)
+            isInsideSlack = ~removalCandidateCurrent;
+            if(options.ConsiderOnlyKeepInSlack)
+                isInsideSlack = isInsideSlack & isKeep;
+            end
+            allowedSlack = min(-dotProduct(isInsideSlack));
+            anchorSlack = allowedSlack*normalizedPlaneOrientation(i,:);
+            anchorPoint = anchorPoint + (1-options.TrimmingSlack)*anchorSlack;
+
+            distanceToAnchor = anchorPoint - designSampleComponent;
+            dotProduct = sum(normalizedPlaneOrientation(i,:).*distanceToAnchor,2);
+        end
+
+        removalCandidate(:,i) = (dotProduct>0);
         if(nargout>1)
-            removalInformation(i).Anchor = designSampleComponent(iRemove,:);
-            removalInformation(i).PlaneOrientationInside = -normalizedPlaneOrientation(i,:);
+            removalInformation(i).Anchor = anchorPoint;
+            removalInformation(i).PlaneOrientationInside = normalizedPlaneOrientation(i,:);
         end
     end
 end

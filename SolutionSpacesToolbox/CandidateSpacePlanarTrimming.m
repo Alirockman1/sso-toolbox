@@ -27,14 +27,6 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
         %   See also IsInsideDefinition, IsShapeDefinition.
         DesignSampleDefinition
 
-        %
-        AnchorPoint
-
-        % 
-        PlaneOrientationAnchor
-    end
-
-    properties (SetAccess = protected, Dependent)
         %ISINSIDEDEFINITION Labels of sample points used in candidate space definition
         %   ISINSIDEDEFINITION are the labels of design samples used in the definition 
         %   of the current candidate space. A label of 'true' indicates the respective 
@@ -45,6 +37,14 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
         %   See also DesignSampleDefinition, IsShapeDefinition.
         IsInsideDefinition
 
+        %
+        AnchorPoint
+
+        % 
+        PlaneOrientationAnchor
+    end
+
+    properties (SetAccess = protected, Dependent)
         %ISSHAPEDEFINITION Labels if sample points from definition contributes to shape
         %   ISSHAPEDEFINITION is a logical array where 'true' values indicate that that
         %   design point (in the respective row) from the definition sample actively 
@@ -115,13 +115,11 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             parser = inputParser;
             parser.addRequired('designSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addRequired('designSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
-            parser.addParameter('SamplingBoxSlack',0.5,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
             
             obj.DesignSpaceLowerBound = parser.Results.designSpaceLowerBound;;
             obj.DesignSpaceUpperBound = parser.Results.designSpaceUpperBound;
-            obj.SamplingBoxSlack = parser.Results.SamplingBoxSlack;
 
             obj.DesignSampleDefinition = [];
             obj.AnchorPoint = [];
@@ -153,12 +151,11 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
         %   See also convex_hull_plane, is_in_candidate_space.
             obj.DesignSampleDefinition = designSample;
 
-            if(isempty(trimmingInformation))
-                return;
+            if(~isempty(trimmingInformation))
+                obj.AnchorPoint = vertcat(trimmingInformation.Anchor);
+                obj.PlaneOrientationAnchor = vertcat(trimmingInformation.PlaneOrientationInside);
             end
-
-            obj.AnchorPoint = vertcat(trimmingInformation.Anchor);
-            obj.PlaneOrientationAnchor = vertcat(trimmingInformation.PlaneOrientationInside);
+            obj.IsInsideDefinition = obj.is_in_candidate_space(designSample);
         end
 
         function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
@@ -170,12 +167,33 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             if(isempty(trimmingInformation))
                 return;
             end
-
             anchorPointNew = vertcat(trimmingInformation.Anchor);
             planeOrientationNew = vertcat(trimmingInformation.PlaneOrientationInside);
 
             obj.AnchorPoint = [obj.AnchorPoint;anchorPointNew];
             obj.PlaneOrientationAnchor = [obj.PlaneOrientationAnchor;planeOrientationNew];
+
+            % project points to planes - if no point is inside, plane is redundant and can be removed
+            nAnchor = size(obj.AnchorPoint,1);
+            hullPointMinMax = [];
+            isRedundantAnchor = false(nAnchor,1);
+            for i=1:nAnchor
+                dotProduct = sum((obj.AnchorPoint(i,:) - obj.DesignSampleDefinition).*obj.PlaneOrientationAnchor(i,:),2);
+                distanceToPlane = obj.PlaneOrientationAnchor(i,:).*dotProduct;
+                candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
+
+                isInside = obj.is_in_candidate_space(candidateHullPoint);
+                if(~any(isInside))
+                    isRedundantAnchor(i) = true;
+                end
+
+                hullPoint = [hullPointMinMax;candidateHullPoint(isInside,:)];
+                [~,iHullPointMin] = min(hullPoint,[],1);
+                [~,iHullPointMax] = max(hullPoint,[],1);
+                hullPointMinMax = hullPoint([iHullPointMin,iHullPointMax],:);
+            end
+            obj.AnchorPoint(isRedundantAnchor,:) = [];
+            obj.PlaneOrientationAnchor(isRedundantAnchor,:) = [];
             
             % keep samples in inside/outside
             [~,iLowerBoundaryAll] = min(obj.DesignSampleDefinition,[],1);
@@ -189,7 +207,9 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             obj.DesignSampleDefinition = unique(...
                 [obj.DesignSampleDefinition([iLowerBoundaryAll,iUpperBoundaryAll,iBoundaryInside'],:);...
                 designSample;...
+                hullPointMinMax;...
                 obj.AnchorPoint],'rows');
+            obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition);
         end
         
         function obj = grow_candidate_space(obj,growthRate)
@@ -224,10 +244,10 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             sampleGrowthRate = min(growthRate,maxGrowthRate);
             designSampleNew = obj.DesignSampleDefinition + sampleGrowthRate.*designSpaceFactor.*directionGrowth;
             designSampleNew = min(max(designSampleNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
-            obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;designSampleNew],'rows');
+            obj.DesignSampleDefinition = [obj.DesignSampleDefinition;designSampleNew];
             
+            hullPointMinMax = [];
             if(~isempty(obj.AnchorPoint))
-                % find maximum growth rate not to escape design space
                 directionGrowth = -obj.PlaneOrientationAnchor./vecnorm(obj.PlaneOrientationAnchor,2,2);
                 
                 anchorPointNew = obj.AnchorPoint + growthRate.*designSpaceFactor.*directionGrowth;
@@ -239,9 +259,30 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 obj.AnchorPoint = anchorPointNew(~isAnchorInCorner,:);
                 obj.PlaneOrientationAnchor = obj.PlaneOrientationAnchor(~isAnchorInCorner,:);
 
-                % update definition
-                obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;obj.AnchorPoint],'rows');
+                % project points to planes - if no point is inside, plane is redundant and can be removed
+                nAnchor = size(obj.AnchorPoint,1);
+                isRedundantAnchor = false(nAnchor,1);
+                hullPointMinMax = [];
+                for i=1:nAnchor
+                    dotProduct = sum((obj.AnchorPoint(i,:) - obj.DesignSampleDefinition).*obj.PlaneOrientationAnchor(i,:),2);
+                    distanceToPlane = obj.PlaneOrientationAnchor(i,:).*dotProduct;
+                    candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
+
+                    isInside = obj.is_in_candidate_space(candidateHullPoint);
+                    if(~any(isInside))
+                        isRedundantAnchor(i) = true;
+                    end
+                    
+                    hullPoint = [hullPointMinMax;candidateHullPoint(isInside,:)];
+                    [~,iHullPointMin] = min(hullPoint,[],1);
+                    [~,iHullPointMax] = max(hullPoint,[],1);
+                    hullPointMinMax = hullPoint([iHullPointMin,iHullPointMax],:);
+                end
+                obj.AnchorPoint(isRedundantAnchor,:) = [];
+                obj.PlaneOrientationAnchor(isRedundantAnchor,:) = [];
             end
+            obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;hullPointMinMax;obj.AnchorPoint],'rows');
+            obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition);
         end
         
         function [isInside, score] = is_in_candidate_space(obj,designSample)
@@ -282,20 +323,80 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 [isInside,score] = is_in_design_box(designSample,boundingBox);
                 return;
             else
-                isInside = false(nSample,1);
+                isInside = true(nSample,1);
                 score = nan(nSample,1);
             end
             
-            for i=1:nSample
-                dotProduct = dot(obj.AnchorPoint - designSample(i,:),obj.PlaneOrientationAnchor,2);
+            nAnchor = size(obj.AnchorPoint,1);
+            if(nAnchor<=nSample)
+                for i=1:nAnchor
+                    dotProduct = sum((obj.AnchorPoint(i,:) - designSample).*obj.PlaneOrientationAnchor(i,:),2);
 
-                isInside(i) = all(dotProduct<=0);
-                score(i) = max(dotProduct);
+                    isInside(dotProduct>0) = false;
+                    score = max(score,dotProduct);
+                end
+            else
+                for i=1:nSample
+                    dotProduct = dot(obj.AnchorPoint - designSample(i,:),obj.PlaneOrientationAnchor,2);
+
+                    isInside(i) = all(dotProduct<=0);
+                    score(i) = max(dotProduct);
+                end
             end
         end
 
-        function isInside = get.IsInsideDefinition(obj)
-            isInside = obj.is_in_candidate_space(obj.DesignSampleDefinition);
+        function plotHandle = plot_candidate_space(obj,figureHandle,varargin)
+        %PLOT_CANDIDATE_SPACE Visualization of the boundary of the canidate space 2D/3D
+        %   PLOT_CANDIDATE_SPACE allows for the visualization of the boundary of the
+        %   candidate space in the given figure. 
+        %
+        %   PLOTHANDLE = OBJ.PLOT_CANDIDATE_SPACE(FIGUREHANDLE) plots the boundary of
+        %   the candidate space in figure FIGUREHANDLE, returning the handle of the 
+        %   object plot PLOTHANDLE.
+        %
+        %   PLOTHANDLE = OBJ.PLOT_CANDIDATE_SPACE(...,NAME,VALUE) allows the 
+        %   specification for additional options in the process. For 2D candidate 
+        %   spaces, these options should refer to 'plot', and for 3D spaces, they
+        %   should refer to 'trisurf'.
+        %
+        %   Input:
+        %       - OBJ : CandidateSpaceConvexHull
+        %       - FIGUREHANDLE : Figure
+        %
+        %   Output:
+        %       - PLOTHANDLE : line OR trisurf-object
+        %
+        %   See also plot_convex_hull_2d, plot_convex_hull_3d.
+
+            nDimension = size(obj.DesignSampleDefinition,2);
+            if(nDimension>3)
+                if(nargout>0)
+                    plotHandle = [];
+                end
+                return;
+            end
+
+            hullPoint = [];
+            nAnchor = size(obj.AnchorPoint,1);
+            % project the points into each plane
+            for i=1:nAnchor
+                dotProduct = sum((obj.AnchorPoint(i,:) - obj.DesignSampleDefinition).*obj.PlaneOrientationAnchor(i,:),2);
+                distanceToPlane = obj.PlaneOrientationAnchor(i,:).*dotProduct;
+                candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
+
+                isInside = obj.is_in_candidate_space(candidateHullPoint);
+                hullPoint = [hullPoint;candidateHullPoint(isInside,:)];
+            end
+
+            % create a convex hull based on that
+            convexHullIndex = compute_convex_hull(hullPoint);
+
+            % plot convex hull
+            if(nDimension==2)
+                plotHandle = plot_convex_hull_2d(figureHandle,hullPoint,convexHullIndex,varargin{:});
+            elseif(nDimension==3)
+                plotHandle = plot_convex_hull_3d(figureHandle,hullPoint,convexHullIndex,varargin{:});
+            end
         end
 
         function isShapeDefinition = get.IsShapeDefinition(obj)
@@ -312,11 +413,6 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
 
                 isShapeDefinition = false(size(obj.DesignSampleDefinition,1),1);
                 isShapeDefinition([iLowerBoundaryAll,iUpperBoundaryAll,iBoundaryInside']) = true;
-
-                %if(any(isInsideDefinition(1)~=isInsideDefinition))
-                %    isInBoundary = design_find_boundary_samples(obj.DesignSampleDefinition,isInsideDefinition);
-                %    isShapeDefinition = isShapeDefinition | isInBoundary;
-                %end
                 
                 if(~isempty(obj.AnchorPoint))
                     isShapeDefinition(ismember(obj.DesignSampleDefinition,obj.AnchorPoint,'rows')) = true;
