@@ -164,7 +164,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             obj.IsInsideDefinition = obj.is_in_candidate_space(designSample,false);
         end
 
-        function obj = update_candidate_space(obj,designSample,isInside,labelViable,trimmingInformation)
+        function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
             if(isempty(obj.DesignSampleDefinition) || isempty(obj.AnchorPoint))
                 obj = obj.define_candidate_space(designSample,trimmingInformation);
                 return;
@@ -269,7 +269,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             sampleGrowthRate = growthRate;
             designSampleNew = obj.DesignSampleDefinition + sampleGrowthRate.*designSpaceFactor.*directionGrowth;
             designSampleNew = min(max(designSampleNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
-            obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;designSampleNew],'rows');
+            obj.DesignSampleDefinition = [obj.DesignSampleDefinition;designSampleNew];
 
             if(~isempty(obj.AnchorPoint))
                 % connect each anchor to its respective corner
@@ -346,10 +346,8 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                         obj.AnchorPoint(shouldCollapse & dimensionsToCollapse) = currentAnchor(dimensionsToCollapse(shouldCollapse,:));
                     end
                 end
-
-                % update definition
-                obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;obj.AnchorPoint],'rows');
             end
+            obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;obj.AnchorPoint],'rows');
             obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
         end
         

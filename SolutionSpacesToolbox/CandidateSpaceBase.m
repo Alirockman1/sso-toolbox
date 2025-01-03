@@ -218,7 +218,7 @@ classdef (Abstract) CandidateSpaceBase
     end
 
     methods
-        function obj = update_candidate_space(obj,designSample,isInside,labelViable,trimmingInformation)
+        function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
             obj = obj.define_candidate_space(designSample,isInside);
         end
 
