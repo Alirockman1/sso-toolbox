@@ -1,4 +1,4 @@
-function trimmedCandidateSpace = component_trimming_operation(designSample,labelViable,trimmingOrder,componentIndex,candidateSpace,varargin)
+function trimmedCandidateSpace = component_trimming_operation(designSample,isViable,trimmingOrder,componentIndex,candidateSpace,varargin)
 %COMPONENT_TRIMMING_OPERATION Component SSO Removal of Unnaceptable Designs
 %   COMPONENT_TRIMMING_OPERATION is the main trimming operation for component 
 %   solution space optimization. In this, all design sample points marked for 
@@ -88,7 +88,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
     % parse inputs
     parser = inputParser;
     parser.addRequired('designSample',@(x)isnumeric(x));
-    parser.addRequired('labelViable',@(x)islogical(x));
+    parser.addRequired('isViable',@(x)islogical(x));
     parser.addRequired('trimmingOrder',@(x)isnumeric(x));
     parser.addRequired('componentIndex',@(x)iscell(x)&&(size(x,1)==1));
     parser.addRequired('candidateSpace',@(x)isa(x,'CandidateSpaceBase'));
@@ -99,7 +99,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
     parser.addParameter('TrimmingComponentChoiceFunction',@component_trimming_choice,@(x)isa(x,'function_handle'));
     parser.addParameter('TrimmingComponentChoiceOptions',{},@(x)(iscell(x)));
     parser.addParameter('PassesCriterion','reduced',@(x)any(strcmpi(x,{'single','reduced','full'})));
-    parser.parse(designSample,labelViable,trimmingOrder,componentIndex,candidateSpace,varargin{:});
+    parser.parse(designSample,isViable,trimmingOrder,componentIndex,candidateSpace,varargin{:});
 
     % unwrap
     trimmingMethodFunction = parser.Results.TrimmingMethodFunction;
@@ -116,96 +116,90 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
     nComponent = size(componentIndex,2);
 
     % find which samples are already inside/outside each candidate space
-    activeComponentInitial = true(size(designSample,1),nComponent);
+    isInsideComponentInitial = true(size(designSample,1),nComponent);
     for i=1:size(componentIndex,2)
-        activeComponentInitial(:,i) = candidateSpace(i).is_in_candidate_space(designSample(:,componentIndex{i}));
+        isInsideComponentInitial(:,i) = candidateSpace(i).is_in_candidate_space(designSample(:,componentIndex{i}));
     end
-    activeAllInitial = all(activeComponentInitial,2);
-    activeKeepInitial = activeAllInitial & labelViable;
+    isInsideAllInitial = all(isInsideComponentInitial,2);
 
-    isRemove = false(nSample,1);
-    isRemove(trimmingOrder) = true;
-    activeRemove = activeAllInitial & isRemove;
+    isExclude = false(nSample,1);
+    isExclude(trimmingOrder) = true;
 
-    optimalActiveComponent = activeComponentInitial;
-    optimalTrimmingInformation = cell(1,nComponent);
     optimalTrimTotalPass = [];
+    optimalIsInsideComponent = isInsideComponentInitial;
+    optimalTrimmingInformation = cell(1,nComponent);
     
     iAnchorViable = [];
-    canBeAnchorViable = labelViable & activeAllInitial;
+    canBeAnchorViable = isViable & isInsideAllInitial;
     hasBeenAnchorViable = false(1,sum(canBeAnchorViable));
     
     iCurrentPass = 0;
     doneWithPasses = isempty(trimmingOrder);
     while(~doneWithPasses)
         for i=1:nTrimmingOrder
-            activeComponentPass = activeComponentInitial;
-            activeAllPass = activeAllInitial;
-            activeRemovePass = activeRemove;
+            isInsideComponent = isInsideComponentInitial;
+            isInsideAll = isInsideAllInitial;
             trimTotalPass = false(nSample,1);
             trimmingInformation = cell(1,nComponent);
 
             for j=1:nExclude
-                iExclude = trimmingOrder(j,i);
-                if(~activeAllPass(iExclude))
+                iRemove = trimmingOrder(j,i);
+                if(~isInsideAll(iRemove))
                     continue;
                 end
                 
-                activeKeep = activeAllPass & labelViable;
-                componentCost = nan(1,nComponent);
+                isViableInsideAll = isInsideAll & isViable;
                 componentRemoval = false(nSample,nComponent);
                 for k=1:nComponent
-                    activeComponentDesign = activeComponentPass(:,k);
+                    isInsideComponentCurrent = isInsideComponent(:,k);
 
-                    designSampleComponent = designSample(activeComponentDesign,componentIndex{k});
-                    iRemovalComponent = convert_index_base(activeComponentDesign,iExclude,'forward');
-                    activeKeepComponent = activeKeep(activeComponentDesign);
+                    designSampleComponent = designSample(isInsideComponentCurrent,componentIndex{k});
+                    iRemoveComponent = convert_index_base(isInsideComponentCurrent,iRemove,'forward');
+                    isViableInsideAllComponent = isViableInsideAll(isInsideComponentCurrent);
 
                     [removalCandidateComponent,trimmingInformationCandidateComponent] = trimmingMethodFunction(...
-                        designSampleComponent,iRemovalComponent,activeKeepComponent,trimmingMethodOptions{:});
+                        designSampleComponent,iRemoveComponent,isViableInsideAllComponent,trimmingMethodOptions{:});
 
                     removalCandidate = false(nSample,size(removalCandidateComponent,2));
-                    removalCandidate(activeComponentDesign,:) = removalCandidateComponent;
+                    removalCandidate(isInsideComponentCurrent,:) = removalCandidateComponent;
 
                     violateAnchor = (removalCandidate(iAnchorViable,:)==true);
-                    [removalCost,iMinimumCostRemoval] = trimmingCostFunction(...
-                        designSample,activeKeep,isRemove,activeComponentDesign,removalCandidate,violateAnchor,trimmingCostOptions{:});
+                    iMinimumCostRemoval = trimmingCostFunction(...
+                        designSample,isViable,isExclude,isInsideComponentCurrent,isInsideAll,removalCandidate,violateAnchor,trimmingCostOptions{:});
                     
-                    componentCost(k) = removalCost;
                     componentRemoval(:,k) = removalCandidate(:,iMinimumCostRemoval);
                     trimmingInformationComponent(k) = trimmingInformationCandidateComponent(iMinimumCostRemoval);
                 end
 
                 % decide between components
+                violateAnchor = (componentRemoval(iAnchorViable,:)==true);
                 iComponentTrim = trimmingComponentChoiceFunction(...
-                    componentCost,designSample,componentIndex,activeKeep,isRemove,activeComponentPass,componentRemoval,trimmingComponentChoiceOptions{:});
+                    designSample,componentIndex,isViable,isExclude,isInsideComponent,componentRemoval,violateAnchor,trimmingComponentChoiceOptions{:});
                 
                 % Eliminate those designs
                 trimRemoval = componentRemoval(:,iComponentTrim);
-                activeComponentPass(trimRemoval,iComponentTrim) = false;
-                activeAllPass(trimRemoval) = false;
-                activeRemovePass(trimRemoval) = false;
+                isInsideComponent(trimRemoval,iComponentTrim) = false;
+                isInsideAll(trimRemoval) = false;
                 trimTotalPass(trimRemoval) = true;
                 trimmingInformation{iComponentTrim} = [trimmingInformation{iComponentTrim};trimmingInformationComponent(iComponentTrim)];
             end
 
             % check total cost
-            % FIX perhaps use measure here instead of total cost
-            [~,optimalPass] = trimmingCostFunction(designSample,activeKeepInitial,isRemove,activeAllInitial,[optimalTrimTotalPass,trimTotalPass],[],trimmingCostOptions{:});
+            optimalPass = trimmingCostFunction(designSample,isViable,isExclude,isInsideAllInitial,isInsideAllInitial,[optimalTrimTotalPass,trimTotalPass],[],trimmingCostOptions{:});
             if(isempty(optimalTrimTotalPass) || optimalPass==2)
                 optimalTrimTotalPass = trimTotalPass;
-                optimalActiveComponent = activeComponentPass;
+                optimalIsInsideComponent = isInsideComponent;
                 optimalTrimmingInformation = trimmingInformation;
             end
         end
 
         % check for convergence / update for next pass
-        activeComponentViable = all(activeComponentPass,2) & labelViable;
+        isViableInsideAll = all(isInsideComponent,2) & isViable;
         if(strcmpi(passesCriterion,'single'))
             doneWithPasses = true;
         else
             if(strcmpi(passesCriterion,'reduced'))
-                includedInFinalResult = convert_index_base(canBeAnchorViable,activeComponentViable,'forward');
+                includedInFinalResult = convert_index_base(canBeAnchorViable,isViableInsideAll,'forward');
                 hasBeenAnchorViable(includedInFinalResult) = true;
 
                 currentAnchor = convert_index_base(canBeAnchorViable,iAnchorViable,'forward');
@@ -229,8 +223,8 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,label
     for i=1:size(componentIndex,2)
         % Eliminate from sampling designs that were taken out by other components
         designSampleComponent = designSample(:,componentIndex{i});
-        isInsideComponent = optimalActiveComponent(:,i);
+        isInsideComponent = optimalIsInsideComponent(:,i);
         trimmingInformation = optimalTrimmingInformation{i};
-        trimmedCandidateSpace(i) = candidateSpace(i).update_candidate_space(designSampleComponent,isInsideComponent,labelViable,trimmingInformation);
+        trimmedCandidateSpace(i) = candidateSpace(i).update_candidate_space(designSampleComponent,isInsideComponent,trimmingInformation);
     end
 end

@@ -1,4 +1,4 @@
-function iChoice = component_trimming_choice(cost,designSample,componentIndex,isKeep,isRemove,isRemainComponent,componentRemoval,varargin)
+function iChoice = component_trimming_choice(designSample,componentIndex,isViable,isExclude,isInsideComponent,componentRemoval,ineligibleCandidate,varargin)
 %COMPONENT_TRIMMING_CHOICE Choice of which component trimming to perform
 %	COMPONENT_TRIMMING_CHOICE compares the costs of the candidate trimming 
 %	operation to be performed in every component and chooses the one with the
@@ -45,93 +45,47 @@ function iChoice = component_trimming_choice(cost,designSample,componentIndex,is
 %   limitations under the License.
 
 	parser = inputParser;
-	parser.addParameter('WeightedCostType','NumberKeep');
-	parser.addParameter('TieBreakerType','NumberRemoved');
+	parser.addParameter('SelectionCriteria',{'NumberInsideViable','NumberInsideExclude','NumberExclude','NumberViable','NumberInsideNotExclude'});
 	parser.parse(varargin{:});
 	options = parser.Results;
-	
-	weightedCost = nan(size(cost));
-	if(isa(options.WeightedCostType,'function_handle'))
-		weightedCost = options.WeightedCostType(cost,componentIndex);
-	elseif(strcmpi(options.WeightedCostType,'ComponentDimension'))
-		for i=1:size(componentIndex,2)
-			weightedCost(i) = cost(i)*2^length(componentIndex{i});
-		end
-	elseif(strcmpi(options.WeightedCostType,'SimpleCost'))
-		weightedCost = cost;
-	elseif(strcmpi(options.WeightedCostType,'NumberKeep'))
-		weightedCost = -sum(isKeep & ~isRemove & isRemainComponent & ~componentRemoval,1);
-	else
-		nComponent = length(componentIndex);
-        componentMeasureBase = nan(1,nComponent);
-        componentMeasureTrimmed = nan(1,nComponent);
-        for i=1:nComponent
-        	designSampleComponent = designSample(:,componentIndex{i});
 
-        	% compute base measure -> no removal
-        	boundingBox = design_bounding_box(designSampleComponent,isKeep & isRemainComponent(:,i));
-        	pointInsideBox = is_in_design_box(designSampleComponent,boundingBox);
-        	volumeFraction = sum(pointInsideBox & isKeep & isRemainComponent(:,i))/sum(pointInsideBox);
-        	componentMeasureBase(i) = volumeFraction*prod(boundingBox(2,:) - boundingBox(1,:));
+	nComponent = size(componentRemoval,2);
+    removalCost = nan(1,nComponent);
+    nCriteria = length(options.SelectionCriteria);
+    isInsideAll = all(isInsideComponent,2);
 
-        	% compute trimmed measure -> with removal
-        	isKeepMaintain = isKeep & isRemainComponent(:,i) & ~componentRemoval(:,i);
-        	if(sum(isKeepMaintain)>0)
-	        	boundingBox = design_bounding_box(designSampleComponent,isKeepMaintain);
-	        	pointInsideBox = is_in_design_box(designSampleComponent,boundingBox);
-	        	volumeFraction = sum(pointInsideBox & isKeep & isRemainComponent(:,i) & ~componentRemoval(:,i))/sum(pointInsideBox);
-	        	componentMeasureTrimmed(i) = volumeFraction*prod(boundingBox(2,:) - boundingBox(1,:));
-	        else
-	        	componentMeasureTrimmed(i) = 0;
-	        end
-        end
-        weightedCost = nan(1,nComponent);
-        for i=1:nComponent
-            weightedCost(i) = -prod(componentMeasureBase)*componentMeasureTrimmed(i)/componentMeasureBase(i);
-        end
-	end
-
-	% select index with minimum weighted cost
-	[sortedCost,iCost] = sort(weightedCost);
-    iTieBreaker = (weightedCost==sortedCost(1));
-
-    nTieBreaker = sum(iTieBreaker);
-    if(nTieBreaker>1)
-    	if(strcmpi(options.TieBreakerType,'NumberRemain'))
-	        % tie-breaker: total amount of points eliminated
-	        removalCostTieBreaker = -sum(isRemainComponent(:,iTieBreaker) & ~componentRemoval(:,iTieBreaker) & ~isRemove,1);
-	    elseif(strcmpi(options.TieBreakerType,'NumberRemoved'))
-            removalCostTieBreaker = -sum(isRemainComponent(:,iTieBreaker) & isRemove & componentRemoval(:,iTieBreaker),1);
-        else%if(strcmpi(options.TieBreakerType,'VolumeRemain'))
-	        % tie-breaker: volume that remains
-	        nComponent = length(componentIndex);
-	        componentMeasureBase = nan(1,nComponent);
-	        componentMeasureTrimmed = nan(1,nComponent);
-	        for i=1:nComponent
-	        	designSampleComponent = designSample(:,componentIndex{i});
-
-	        	% compute base measure -> no removal
-	        	boundingBox = design_bounding_box(designSampleComponent,isRemainComponent(:,i));
-	        	pointInsideBox = is_in_design_box(designSampleComponent,boundingBox);
-	        	volumeFraction = sum(pointInsideBox & isRemainComponent(:,i))/sum(pointInsideBox);
-	        	componentMeasureBase(i) = volumeFraction*prod(boundingBox(2,:) - boundingBox(1,:));
-
-	        	% compute trimmed measure -> with removal
-	        	boundingBox = design_bounding_box(designSampleComponent,isRemainComponent(:,i) & ~componentRemoval(:,i));
-	        	pointInsideBox = is_in_design_box(designSampleComponent,boundingBox);
-	        	volumeFraction = sum(pointInsideBox & isRemainComponent(:,i) & ~componentRemoval(:,i))/sum(pointInsideBox);
-	        	componentMeasureTrimmed(i) = volumeFraction*prod(boundingBox(2,:) - boundingBox(1,:));
-	        end
-	        removalCostTieBreaker = nan(1,nTieBreaker);
-	        for i=1:nTieBreaker
-	            iCurrent = convert_index_base(iTieBreaker',i,'backward');
-	            removalCostTieBreaker(i) = -prod(componentMeasureBase)*componentMeasureTrimmed(iCurrent)/componentMeasureBase(iCurrent);
-	        end
-	    end
-
-        [~,iCostTieBreaker] = sort(removalCostTieBreaker);
-        iChoice = convert_index_base(iTieBreaker',iCostTieBreaker(1),'backward');
+    if(all(ineligibleCandidate))
+        isTie = true(1,nComponent);
     else
-        iChoice = iCost(1);
+        isTie = ~ineligibleCandidate;
     end
+    nTie = sum(isTie);
+
+    i = 1;
+    while(nTie>1 && i<=nCriteria)
+        criterionCurrent = options.SelectionCriteria{i};
+        removalCandidateCurrent = componentRemoval(:,isTie);
+        componentIndexCurrent = componentIndex(isTie);
+        isInsideComponentCurrent = isInsideComponent(:,isTie);
+        componentRemovalCurrent = componentRemoval(:,isTie);
+
+        if(isa(criterionCurrent,'function_handle'))
+            removalCost = options.CostType(designSample,componentIndexCurrent,isViable,isExclude,isInsideComponentCurrent,componentRemovalCurrent);
+        elseif(strcmpi(criterionCurrent,'NumberInsideViable'))
+            removalCost = -sum(isViable & isInsideAll & ~componentRemovalCurrent,1);
+        elseif(strcmpi(criterionCurrent,'NumberViable'))
+            removalCost = -sum(isViable & isInsideComponentCurrent & ~componentRemovalCurrent,1);
+        elseif(strcmpi(criterionCurrent,'NumberInsideExclude'))
+            removalCost = -sum(isExclude & isInsideAll & componentRemovalCurrent,1);
+        elseif(strcmpi(criterionCurrent,'NumberExclude'))
+            removalCost = -sum(isExclude & isInsideComponentCurrent & componentRemovalCurrent,1);
+        elseif(strcmpi(criterionCurrent,'NumberInsideNotExclude'))
+            removalCost = -sum(isInsideComponentCurrent & ~isExclude & ~componentRemovalCurrent,1);
+        end
+
+        isTie(isTie) = (removalCost==min(removalCost));
+        nTie = sum(isTie);
+        i = i+1;
+    end
+    iChoice = find(isTie,1);
 end
