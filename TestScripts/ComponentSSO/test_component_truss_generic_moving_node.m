@@ -40,11 +40,11 @@ figureSize = [goldenRatio 1]*8.5;
 
 %%
 trussAnalysisChoice = '36-DoF-3D';
-useBoxResultForComponent = true;
+useBoxResultForComponent = false;
 
 computeDisplacement = true;
 computeMass = false;
-computeDisplacementAndMass = false;
+computeDisplacementAndMass = true;
 
 computePlanarTrimmingComponent = true;
 computeCornerBoxRemovalComponent = true;
@@ -367,9 +367,9 @@ switch trussAnalysisChoice
         cameraPositionFigureSave = [];
     case '9-DoF-3D'
         nSample = 100;
-        maxIterDisplacement = 50;
+        maxIterDisplacement = 80;
         maxIterMass = 100;
-        maxIterDisplacementAndMass = 50;
+        maxIterDisplacementAndMass = 100;
         growthRateDisplacement = 0.04;
         growthRateMass = 0.04;
         trimmingPasses = 'reduced';
@@ -860,8 +860,7 @@ function [solutionSpaceBox,componentSolutionSpacePlanarTrimming,componentSolutio
             'UsePreviousEvaluatedSamplesConsolidation',true,...
             'TrimmingOperationOptions',{'PassesCriterion',trimmingPasses},...
             'TrimmingOrderOptions',{'OrderPreference','score'},...
-            'ShapeSamplesUsefulConsolidation',false,...
-            'MaximumGrowthAdaptationFactor',1.5);
+            'ShapeSamplesUsefulConsolidation',false);
         
         rng(rngState);
         [componentSolutionSpaceCornerBoxRemoval,problemDataComponentCornerBoxRemoval,iterDataComponentCornerBoxRemoval] = sso_component_stochastic(designEvaluator,...

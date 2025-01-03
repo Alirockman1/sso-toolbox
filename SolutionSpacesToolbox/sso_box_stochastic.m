@@ -155,7 +155,8 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
 
             increaseMeasure = measureGrown - measurePrevious;
             increaseMeasureAcceptable = max(measureGrown*purity - measurePrevious,0);
-            growthFlexibilityExponent = interp1([0,increaseMeasure],[nDimension,1],increaseMeasureAcceptable);
+            growthFlexibilityExponent = nDimension - (nDimension-1)*increaseMeasureAcceptable/increaseMeasure;
+            growthFlexibilityExponent = max(min(growthFlexibilityExponent,nDimension),1);
 
             % Change step size to a bigger or smaller value depending on whether
             % the achieved purity is smaller or larger than the desired one
