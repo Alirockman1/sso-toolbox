@@ -58,7 +58,7 @@ function iChoice = component_trimming_cost(designSample,isViable,isExclude,isIns
     removalCost = nan(1,nCandidate);
     nCriteria = length(options.SelectionCriteria);
 
-    if(all(ineligibleCandidate))
+    if(isempty(ineligibleCandidate) || all(ineligibleCandidate))
         isTie = true(1,nCandidate);
     else
         isTie = ~ineligibleCandidate;

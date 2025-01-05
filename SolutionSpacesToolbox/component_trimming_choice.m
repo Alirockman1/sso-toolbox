@@ -54,7 +54,7 @@ function iChoice = component_trimming_choice(designSample,componentIndex,isViabl
     nCriteria = length(options.SelectionCriteria);
     isInsideAll = all(isInsideComponent,2);
 
-    if(all(ineligibleCandidate))
+    if(isempty(ineligibleCandidate) || all(ineligibleCandidate))
         isTie = true(1,nComponent);
     else
         isTie = ~ineligibleCandidate;

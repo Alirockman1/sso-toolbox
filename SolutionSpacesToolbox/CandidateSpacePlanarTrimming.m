@@ -155,7 +155,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 obj.AnchorPoint = vertcat(trimmingInformation.Anchor);
                 obj.PlaneOrientationAnchor = vertcat(trimmingInformation.PlaneOrientationInside);
             end
-            obj.IsInsideDefinition = obj.is_in_candidate_space(designSample);
+            obj.IsInsideDefinition = obj.is_in_candidate_space(designSample,false);
         end
 
         function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
@@ -182,7 +182,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 distanceToPlane = obj.PlaneOrientationAnchor(i,:).*dotProduct;
                 candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
 
-                isInside = obj.is_in_candidate_space(candidateHullPoint);
+                isInside = obj.is_in_candidate_space(candidateHullPoint,false);
                 if(~any(isInside))
                     isRedundantAnchor(i) = true;
                 end
@@ -209,7 +209,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 designSample;...
                 hullPointMinMax;...
                 obj.AnchorPoint],'rows');
-            obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition);
+            obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
         end
         
         function obj = grow_candidate_space(obj,growthRate)
@@ -248,8 +248,10 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             
             hullPointMinMax = [];
             if(~isempty(obj.AnchorPoint))
-                directionGrowth = -obj.PlaneOrientationAnchor./vecnorm(obj.PlaneOrientationAnchor,2,2);
+                %directionGrowth = obj.AnchorPoint - center;
+                directionGrowth = -obj.PlaneOrientationAnchor;
                 
+                directionGrowth = directionGrowth./vecnorm(directionGrowth,2,2);
                 anchorPointNew = obj.AnchorPoint + growthRate.*designSpaceFactor.*directionGrowth;
                 anchorPointNew = min(max(anchorPointNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
 
@@ -268,7 +270,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                     distanceToPlane = obj.PlaneOrientationAnchor(i,:).*dotProduct;
                     candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
 
-                    isInside = obj.is_in_candidate_space(candidateHullPoint);
+                    isInside = obj.is_in_candidate_space(candidateHullPoint,false);
                     if(~any(isInside))
                         isRedundantAnchor(i) = true;
                     end
@@ -282,10 +284,10 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 obj.PlaneOrientationAnchor(isRedundantAnchor,:) = [];
             end
             obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;hullPointMinMax;obj.AnchorPoint],'rows');
-            obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition);
+            obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
         end
         
-        function [isInside, score] = is_in_candidate_space(obj,designSample)
+        function [isInside, score] = is_in_candidate_space(obj,designSample,includeBoundingBox)
         %IS_IN_CANDIDATE_SPACE Verification if given design samples are inside
         %   IS_IN_CANDIDATE_SPACE uses the currently defined candidate space to 
         %   determine if given design sample points are inside or outside the candidate 
@@ -342,6 +344,14 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                     isInside(i) = all(dotProduct<=0);
                     score(i) = max(dotProduct);
                 end
+            end
+
+            % check if it's inside the bounding box
+            if(nargin<3 || includeBoundingBox)
+                boundingBox = design_bounding_box(obj.DesignSampleDefinition,obj.IsInsideDefinition);
+                [isInsideBounding,scoreBounding] = is_in_design_box(designSample,boundingBox);
+                isInside(~isInsideBounding) = false;
+                score = max(score,scoreBounding);
             end
         end
 
@@ -426,7 +436,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
         end
 
         function volume = get.Measure(obj)
-            nSample = size(obj.DesignSampleDefinition,1);
+            nSample = 10*size(obj.DesignSampleDefinition,1);
             samplingBox = obj.SamplingBox;
             
             volumeSample = sampling_random(samplingBox,nSample);

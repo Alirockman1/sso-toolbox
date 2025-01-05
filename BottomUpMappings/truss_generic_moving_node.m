@@ -1,6 +1,6 @@
-function performanceMeasure = truss_generic_moving_node(designSample,systemParameter)
-%TRUSS_GENERIC_MOVING_NODE Bottom-up Mapping (Node Positioning Problem)
-%	TRUSS_GENERIC_MOVING_NODE calculates the relevant responses of a truss
+function performanceMeasure = truss_generic_movable_node(designSample,systemParameter)
+%TRUSS_GENERIC_MOVABLE_NODE Bottom-up Mapping (Node Positioning Problem)
+%	TRUSS_GENERIC_MOVABLE_NODE calculates the relevant responses of a truss
 %	with a force applied at its tip, where the positions of the nodes are the
 %	design variables of the problem. 
 %	o---0---0---0---0
@@ -9,7 +9,7 @@ function performanceMeasure = truss_generic_moving_node(designSample,systemParam
 %	 /  |/  |/  |/  | /  V F
 %	o---0---0---0---0
 %	For the definition of the truss, the following information is necessary:
-%		- The base position of the nodes (using 'nan' for moving nodes).
+%		- The base position of the nodes (using 'nan' for movable nodes).
 %		- The external force applied on each node.
 %		- The connections of nodes which make up each element of the truss.
 %		- The degrees of freedom which are fixed (either as logical, or with
@@ -27,8 +27,8 @@ function performanceMeasure = truss_generic_moving_node(designSample,systemParam
 %		- Buckling ratio (current compression force / buckling factor limit) in
 %		each element.
 %
-%	PERFORMANCEMEASURE = TRUSS_GENERIC_MOVING_NODE(DESIGNSAMPLE,
-%	SYSTEMPARAMETER) receives the positions of the moving nodes in DESIGNSAMPLE
+%	PERFORMANCEMEASURE = TRUSS_GENERIC_MOVABLE_NODE(DESIGNSAMPLE,
+%	SYSTEMPARAMETER) receives the positions of the movable nodes in DESIGNSAMPLE
 %	and the truss information in SYSTEMPARAMETER, returning the tip 
 %	displacement, total mass of the structure, absolute stress on each element,
 %	and buckling ratio for each element in PERFORMANCEMEASURE.

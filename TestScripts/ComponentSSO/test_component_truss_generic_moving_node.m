@@ -39,7 +39,7 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %%
-trussAnalysisChoice = '36-DoF-3D';
+trussAnalysisChoice = '18-DoF-3D';
 useBoxResultForComponent = false;
 
 computeDisplacement = true;
@@ -47,12 +47,12 @@ computeMass = false;
 computeDisplacementAndMass = true;
 
 computePlanarTrimmingComponent = true;
-computeCornerBoxRemovalComponent = true;
+computeCornerBoxRemovalComponent = false;
 computeHolePunchingComponent = false;
 
 
 %% function call
-systemFunction = @truss_generic_moving_node;
+systemFunction = @truss_generic_movable_node;
 
 switch trussAnalysisChoice
     case '2-DoF-2D'
@@ -423,6 +423,88 @@ switch trussAnalysisChoice
         designSpaceLowerBoundMass = [0 -0.5 -0.5 0 -0.5 -0.5 0 -0.5 -0.5];
         designSpaceUpperBoundMass = [2  1.5  1.5 2  1.5  1.5 2  1.5  1.5];
         cameraPositionFigureSave = [4.7185  -11.2817    7.6322];
+    case '18-DoF-3D'
+        nSample = 100;
+        maxIterDisplacement = 250;
+        maxIterMass = 250;
+        maxIterDisplacementAndMass = 250;
+        growthRateDisplacement = 0.004;
+        growthRateMass = 0.007;
+        trimmingPasses = 'reduced';
+        nRandomTruss = 1;
+        systemParameter.ElementCrossSectionArea = 10; % [mm^2]
+        systemParameter.ElementYoungsModulus = 210e3; % [MPa]
+        systemParameter.ElementDensity = 7850e-9; % [kg/mm^3]
+        systemParameter.BaseNodePosition = [...
+              0   0   0; % (1)
+              0 0.5   1; % (2)
+              0   1   0; % (3)
+            nan nan nan; % (4)
+            nan nan nan; % (5) 
+            nan nan nan; % (6)
+            nan nan nan; % (7)
+            nan nan nan; % (8) 
+            nan nan nan; % (9)
+              3 0.5 0.5]; % (10)
+        systemParameter.FixedDegreesOfFreedom = [...
+            true true true; % (1) 
+            true true true; % (2)
+            true true true; % (3)
+            false false false; % (4)
+            false false false; % (5)
+            false false false; % (6)
+            false false false; % (7)
+            false false false; % (8)
+            false false false; % (9)
+            false false false]; % (10)
+        systemParameter.NodeForce = [...
+            0 0     0; % (1)
+            0 0     0; % (2)
+            0 0     0; % (3)
+            0 0     0; % (4)
+            0 0     0; % (5)
+            0 0     0; % (6)
+            0 0     0; % (7)
+            0 0     0; % (8)
+            0 0     0; % (9)
+            0 0 -1000]; % (10)
+        systemParameter.NodeElement = [...
+            ... % 
+            1 4; % (1) -
+            2 5; % (2) -
+            3 6; % (3) -
+            1 5; % (4) /
+            3 4; % (5) \
+            3 5; % (6) /
+            4 5; % (7) |
+            5 6; % (8) \
+            4 6; % (9) /
+            ... %
+            4 7;  % (10) -
+            5 8;  % (11) -
+            6 9;  % (12) -
+            4 8;  % (13) /
+            6 7;  % (14) \
+            6 8;  % (15) /
+            7 8;  % (16) |
+            8 9;  % (17) \
+            7 9;  % (18) /
+            ... %
+            7 10; % (19)
+            8 10; % (20)
+            9 10]; % (21)
+        initialDesign = [...
+            1    0  0 ... % (1)
+            1  0.5  1 ... % (2)
+            1    1  0 ... % (3)
+            2    0  0 ... % (4)
+            2  0.5  1 ... % (5)
+            2    1  0];   % (6)
+        designSpaceLowerBoundDisplacement = initialDesign - repmat([0.9 0.5 0.5],1,6);
+        designSpaceUpperBoundDisplacement = initialDesign + repmat([0.9 0.5 0.5],1,6);
+        designSpaceLowerBoundMass = repmat([0 -0.5 -0.5],1,6);
+        designSpaceUpperBoundMass = repmat([5  1.5  1.5],1,6);
+        cameraPositionFigureSave = [];
     case '36-DoF-3D'
         nSample = 100;
         maxIterDisplacement = 300;
@@ -810,7 +892,7 @@ function [solutionSpaceBox,componentSolutionSpacePlanarTrimming,componentSolutio
             'FixIterNumberConsolidation',true,...
             'MaxIterExploration',maxIter,...
             'MaxIterConsolidation',maxIter,...
-            'CandidateSpaceConstructor',@CandidateSpaceConvexHull,...
+            'CandidateSpaceConstructor',@CandidateSpacePlanarTrimming,...
             'TrimmingMethodFunction',@component_trimming_method_planar_trimming,...
             ... 'TrimmingMethodOptions',{'ReferenceDesigns','boundary'},...
             'UseAdaptiveGrowthRate',true,...
