@@ -258,6 +258,8 @@ function options = sso_stochastic_options(solutionSpaceType,varargin)
     parser.addParameter('MaximumGrowthRate',0.2,@(x)isnumeric(x)&&isscalar(x)&&(x>0));
     parser.addParameter('MinimumGrowthPurity',0.001,@(x)isnumeric(x)&&isscalar(x)&&(x>0));
     parser.addParameter('MaximumGrowthPurity',0.999,@(x)isnumeric(x)&&isscalar(x)&&(x>0));
+    parser.addParameter('GrowthAdaptationFactorFunction',@growth_rate_adaptation_volume,@(x)isa(x,'function_handle'));
+    parser.addParameter('GrowthAdaptationFactorOptions',{},@(x)iscell(x));
     parser.addParameter('MinimumGrowthAdaptationFactor',0.2,@(x)isnumeric(x)&&isscalar(x)&&(x>0));
     parser.addParameter('MaximumGrowthAdaptationFactor',1.5,@(x)isnumeric(x)&&isscalar(x)&&(x>0));
     parser.addParameter('TargetAcceptedRatioExploration',0.7,@(x)isnumeric(x)&&isscalar(x)&&(x>0));

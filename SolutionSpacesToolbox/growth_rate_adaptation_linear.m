@@ -1,0 +1,3 @@
+function growthAdaptationFactor = growth_rate_adaptation_linear(purity,targetPurity,nDimension,fractionAcceptableIncreaseMeasure,varargin)
+	growthAdaptationFactor = purity/targetPurity;
+end
