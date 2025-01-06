@@ -34,9 +34,9 @@ classdef CandidateSpaceDecisionTree < CandidateSpaceBase
 %       - Boundary
 %
 %   CANDIDATESPACEDECISIONTREE methods:
-%       - define_candidate_space : create a candidate space based on design 
+%       - generate_candidate_space : create a candidate space based on design 
 %       samples that are labeled as inside/outside.
-%       - grow_candidate_space : expand the candidate space by a given factor.
+%       - expand_candidate_space : expand the candidate space by a given factor.
 %       - is_in_candidate_space : verify if given design samples are inside 
 %       the candidate space.
 %
@@ -166,7 +166,7 @@ classdef CandidateSpaceDecisionTree < CandidateSpaceBase
         %
         %   GROWTHDISTANCEOPTIONS : (1,nOption) cell
         %
-        %   See also grow_candidate_space, knnsearch.
+        %   See also expand_candidate_space, knnsearch.
         GrowthDistanceOptions
 
         %SAMPLINGBOXSLACK Slack allowed for for the sampling box
@@ -243,18 +243,18 @@ classdef CandidateSpaceDecisionTree < CandidateSpaceBase
                 parser.Results.GrowthDistanceOptions);
         end
         
-        function obj = define_candidate_space(obj,designSample,isInside)
-        %DEFINE_CANDIDATE_SPACE Initial definition of the candidate space
-        %   DEFINE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
+        function obj = generate_candidate_space(obj,designSample,isInside)
+        %GENERATE_CANDIDATE_SPACE Initial definition of the candidate space
+        %   GENERATE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
         %   outside regions of the candidate space.
         %   For CandidateSpaceDecisionTree, this means the labeled design samples are 
         %   used to train a Decision Tree.
         %
-        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
+        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
         %   points in DESIGNSAMPLE and returns a candidate space object OBJ with the new
         %   definition, assuming all designs are inside the candidate space.
         %
-        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
+        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
         %   receives the inside/outside (true/false) labels of each design point in 
         %   ISINSIDE.
         %
@@ -362,13 +362,13 @@ classdef CandidateSpaceDecisionTree < CandidateSpaceBase
             score(outsideTrainingData) = abs(score(outsideTrainingData));
         end
 
-        function obj = grow_candidate_space(obj,growthRate)
-        %GROW_CANDIDATE_SPACE Expansion of candidate space by given factor
-        %   GROW_CANDIDATE_SPACE will grow the region considered inside the current 
+        function obj = expand_candidate_space(obj,growthRate)
+        %EXPAND_CANDIDATE_SPACE Expansion of candidate space by given factor
+        %   EXPAND_CANDIDATE_SPACE will grow the region considered inside the current 
         %   candidate space by the factor given. Said growth is done in a fixed rate 
         %   defined by the input relative to the design space.
         %
-        %   OBJ = OBJ.GROW_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
+        %   OBJ = OBJ.EXPAND_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
         %   defined in OBJ by a factor of GROWTHRATE. This is an isotropic expansion of 
         %   the candidate space by a factor of the growth rate times the size of the 
         %   design space.
@@ -391,7 +391,7 @@ classdef CandidateSpaceDecisionTree < CandidateSpaceBase
                 obj.GrowthDistanceOptions{:});
             
             % train new candidate space
-            obj = obj.define_candidate_space(designSampleExpanded,labelExpanded);
+            obj = obj.generate_candidate_space(designSampleExpanded,labelExpanded);
         end
 
         function designSample = get.DesignSampleDefinition(obj)

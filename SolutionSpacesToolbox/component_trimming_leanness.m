@@ -116,6 +116,6 @@ function trimmedCandidateSpace = component_trimming_leanness(designSample,labelK
         % Eliminate from sampling designs that were taken out by other components
         designSampleComponent = designSample(:,componentIndex{i});
         isInsideComponent = activeComponent(:,i);
-        trimmedCandidateSpace(i) = candidateSpace(i).define_candidate_space(designSampleComponent,isInsideComponent);
+        trimmedCandidateSpace(i) = candidateSpace(i).generate_candidate_space(designSampleComponent,isInsideComponent);
     end
 end

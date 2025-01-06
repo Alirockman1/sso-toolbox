@@ -213,7 +213,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
 
             increaseMeasure = measureGrown - measurePrevious;
             increaseMeasureAcceptable = max(measureGrown*purity - measurePrevious,0);
-            gfractionAcceptableIncreaseMeasure = increaseMeasureAcceptable/increaseMeasure;
+            fractionAcceptableIncreaseMeasure = increaseMeasureAcceptable/increaseMeasure;
 
             % Change step size to a bigger or smaller value depending on whether
             % the achieved purity is smaller or larger than the desired one
@@ -243,7 +243,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         else
             componentMeasureGrown = nan(1,nComponent);
             for i=1:nComponent
-                candidateSpaceGrown(i) = candidateSpace(i).grow_candidate_space(growthRate);
+                candidateSpaceGrown(i) = candidateSpace(i).expand_candidate_space(growthRate);
                 samplingBoxGrown(:,componentIndex{i}) = candidateSpaceGrown(i).SamplingBox;
                 componentMeasureGrown(i) = candidateSpaceGrown(i).Measure;
             end
@@ -774,7 +774,7 @@ function [candidateSpaces,samplingBox,isShapeDefinition] = component_sso_update_
         Xtrain = dvTrim(:,componentIndex{i});
         Ytrain = activeComponent(:,i);
 
-        candidateSpaces(i) = candidateSpaces(i).define_candidate_space(Xtrain,Ytrain);
+        candidateSpaces(i) = candidateSpaces(i).generate_candidate_space(Xtrain,Ytrain);
         samplingBox(:,componentIndex{i}) = candidateSpaces(i).SamplingBox;
 
         isShapeDefinition(:,i) = candidateSpaces(i).IsShapeDefinition;

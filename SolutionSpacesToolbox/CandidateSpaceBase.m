@@ -18,22 +18,15 @@ classdef (Abstract) CandidateSpaceBase
 %       directly related to the shape of the candidate space (or in other words,
 %       the design sample points that define the boundary itself and are used
 %       to identify if a design is inside/outside this space).
-%       - ActiveDesign : sample points that are labeled as inside.
+%       - ActiveDesign : sample points that are inside the space.
 %       - Measure : measure of the candidate space (usually area/volume/etc).
 %       - SamplingBox : bounding box around the internal region of the candidate
 %       space that can be used to better attempt to sample inside said region.
-%       - SamplingBoxSlack : a value used to give the defined amount of slack
-%       for the SamplingBox, varying between the strict bounding box around the 
-%       internal region and a larger bounding box which may contain negative
-%       designs in its edges. 
-%       - GrowthDistanceOptions : options to be used when computing the distance 
-%       that the candidate space will grow to. In its default base 
-%       implementation, these are options to 'knnsearch'.
 %
 %   CANDIDATESPACEBASE methods:
-%       - define_candidate_space : create a candidate space based on design 
+%       - generate_candidate_space : create a candidate space based on design 
 %       samples that are labeled as inside/outside.
-%       - grow_candidate_space : expand the candidate space by a given factor.
+%       - expand_candidate_space : expand the candidate space by a given factor.
 %       - is_in_candidate_space : verify if given design samples are inside 
 %       the candidate space.
 %       - plot_candidate_space : visualize 1D/2D/3D candidate spaces in given
@@ -144,15 +137,15 @@ classdef (Abstract) CandidateSpaceBase
     end
 
     methods (Abstract)
-        %DEFINE_CANDIDATE_SPACE Initial definition of the candidate space
-        %   DEFINE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
+        %GENERATE_CANDIDATE_SPACE Initial definition of the candidate space
+        %   GENERATE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
         %   outside regions of the candidate space.
         %
-        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
+        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
         %   points in DESIGNSAMPLE and returns a candidate space object OBJ with the new
         %   definition, assuming all designs are inside the candidate space.
         %
-        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
+        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
         %   receives the inside/outside (true/false) labels of each design point in 
         %   ISINSIDE.
         %
@@ -164,8 +157,8 @@ classdef (Abstract) CandidateSpaceBase
         %   Outputs:
         %       - OBJ : CandidateSpaceBase
         %   
-        %   See also is_in_candidate_space.
-        obj = define_candidate_space(obj,designSample,isInside)
+        %   See also is_in_candidate_space, update_candidate_space.
+        obj = generate_candidate_space(obj,designSample,isInside)
 
         %IS_IN_CANDIDATE_SPACE Verification if given design samples are inside
         %   IS_IN_CANDIDATE_SPACE uses the currently defined candidate space to 
@@ -196,12 +189,12 @@ classdef (Abstract) CandidateSpaceBase
         [isInside,score] = is_in_candidate_space(obj,designSample)
 
 
-        %GROW_CANDIDATE_SPACE Expansion of candidate space by given factor
-        %   GROW_CANDIDATE_SPACE will grow the region considered inside the current 
+        %EXPAND_CANDIDATE_SPACE Expansion of candidate space by given factor
+        %   EXPAND_CANDIDATE_SPACE will grow the region considered inside the current 
         %   candidate space by the factor given. Said growth is done in a fixed rate 
         %   defined by the input relative to the design space.
         %
-        %   OBJ = OBJ.GROW_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
+        %   OBJ = OBJ.EXPAND_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
         %   defined in OBJ by a factor of GROWTHRATE. This is an isotropic expansion of 
         %   the candidate space by a factor of the growth rate times the size of the 
         %   design space.
@@ -214,12 +207,32 @@ classdef (Abstract) CandidateSpaceBase
         %       - OBJ : CandidateSpaceBase
         %   
         %   See also is_in_candidate_space.
-        obj = grow_candidate_space(obj,growthRate)
+        obj = expand_candidate_space(obj,growthRate)
     end
 
     methods
         function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
-            obj = obj.define_candidate_space(designSample,isInside);
+        %UPDATE_CANDIDATE_SPACE Update candidate space definition with new information
+        %   UPDATE_CANDIDATE_SPACE updates the current candidate space with the new
+        %   information given. By default, it overrides the previous definition 
+        %   and creates it anew.
+        %
+        %   OBJ = OBJ.UPDATE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE,TRIMMINGINFORMATION)
+        %   updates the candidate space OBJ using the new sample points DESIGNSAMPLE and
+        %   their respective labels ISINSIDE. TRIMMINGINFORMATION may also be used 
+        %   depending on the candidate space. 
+        %
+        %   Inputs:
+        %       - OBJ : CandidateSpaceBase
+        %       - DESIGNSAMPLE : (nSample,nDesignVariable) double
+        %       - ISINSIDE : (nSample,1) logical
+        %       - TRIMMINGINFORMATION : (1,nTrim) structure
+        %   
+        %   Outputs:
+        %       - OBJ : CandidateSpaceBase
+        %   
+        %   See also generate_candidate_space, is_in_candidate_space.
+            obj = obj.generate_candidate_space(designSample,isInside);
         end
 
         function plotHandle = plot_candidate_space(obj,figureHandle,varargin)

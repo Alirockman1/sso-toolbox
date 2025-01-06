@@ -132,17 +132,17 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             obj.CornerDirection = [];
         end
         
-        function obj = define_candidate_space(obj,designSample,trimmingInformation)
-        %DEFINE_CANDIDATE_SPACE Initial definition of the candidate space
-        %   DEFINE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
+        function obj = generate_candidate_space(obj,designSample,trimmingInformation)
+        %GENERATE_CANDIDATE_SPACE Initial definition of the candidate space
+        %   GENERATE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
         %   outside regions of the candidate space. For CandidateSpaceConvexHull, this
         %   means a convex hull is created around the inside designs.
         %
-        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
+        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
         %   points in DESIGNSAMPLE and returns a candidate space object OBJ with the new
         %   definition, assuming all designs are inside the candidate space.
         %
-        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
+        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
         %   receives the inside/outside (true/false) labels of each design point in 
         %   ISINSIDE.
         %
@@ -166,7 +166,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
 
         function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
             if(isempty(obj.DesignSampleDefinition) || isempty(obj.AnchorPoint))
-                obj = obj.define_candidate_space(designSample,trimmingInformation);
+                obj = obj.generate_candidate_space(designSample,trimmingInformation);
                 return;
             end
 
@@ -236,15 +236,15 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
         end
         
-        function obj = grow_candidate_space(obj,growthRate)
-        %GROW_CANDIDATE_SPACE Expansion of candidate space by given factor
-        %   GROW_CANDIDATE_SPACE will grow the region considered inside the current 
+        function obj = expand_candidate_space(obj,growthRate)
+        %EXPAND_CANDIDATE_SPACE Expansion of candidate space by given factor
+        %   EXPAND_CANDIDATE_SPACE will grow the region considered inside the current 
         %   candidate space by the factor given. Said growth is done in a fixed rate 
         %   defined by the input relative to the design space.
         %   This is done by finding the center of the convex hull and then making all 
         %   inside designs move opposite to that direction. 
         %
-        %   OBJ = OBJ.GROW_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
+        %   OBJ = OBJ.EXPAND_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
         %   defined in OBJ by a factor of GROWTHRATE. This is an isotropic expansion of 
         %   the candidate space by a factor of the growth rate times the size of the 
         %   design space.
@@ -256,7 +256,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
         %   Outputs:
         %       - OBJ : CandidateSpaceConvexHull
         %   
-        %   See also define_candidate_space, is_in_candidate_space.
+        %   See also generate_candidate_space, is_in_candidate_space.
             designSpaceFactor = obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound;
             designSpace = [obj.DesignSpaceLowerBound;obj.DesignSpaceUpperBound];
 

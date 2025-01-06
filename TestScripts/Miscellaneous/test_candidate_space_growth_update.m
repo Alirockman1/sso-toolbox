@@ -79,7 +79,7 @@ candidateSpaceInitial = component_trimming_operation(designSampleInitial,isAccep
 
 % growth
 for i=1:nComponent
-    candidateSpaceGrown(i) = candidateSpaceInitial(i).grow_candidate_space(0.01);
+    candidateSpaceGrown(i) = candidateSpaceInitial(i).expand_candidate_space(0.01);
 end
 
 

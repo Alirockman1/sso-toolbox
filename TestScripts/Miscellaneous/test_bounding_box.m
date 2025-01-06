@@ -42,7 +42,7 @@ label = [true(size(designSampleGood,1),1);false(size(designSampleBad,1),1)];
 [boundingBoxStrict,boundingBoxRelaxed] = design_bounding_box(designSample,label);
 
 candidateSpace = CandidateSpaceBoundingBox(designSpaceLowerBound,designSpaceUpperBound);
-candidateSpace = candidateSpace.define_candidate_space(designSample,label);
+candidateSpace = candidateSpace.generate_candidate_space(designSample,label);
 shapeDefinition = candidateSpace.DesignSampleDefinition(candidateSpace.IsShapeDefinition,:);
 
 labelBoundary = design_find_boundary_samples(designSample,label);

@@ -44,7 +44,7 @@ grid minor;
 
 %% train candidate space
 candidateSpace = CandidateSpaceDelaunay(designSpaceLowerBound,designSpaceUpperBound);
-candidateSpace = candidateSpace.define_candidate_space(designSample,labelSample);
+candidateSpace = candidateSpace.generate_candidate_space(designSample,labelSample);
 isShapeDefinition = candidateSpace.IsShapeDefinition;
 
 figure;

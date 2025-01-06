@@ -44,9 +44,9 @@ designSample = sampling_random([designSpaceLowerBoundSample; designSpaceUpperBou
 
 nSampleInside = 8;
 candidateSpace = CandidateSpaceConvexHull(designSpaceLowerBoundSpace,designSpaceUpperBoundSpace);
-candidateSpace = candidateSpace.define_candidate_space(designSample(1:nSampleInside,:));
+candidateSpace = candidateSpace.generate_candidate_space(designSample(1:nSampleInside,:));
 inCandidateSpace = candidateSpace.is_in_candidate_space(designSample);
-candidateSpace = candidateSpace.define_candidate_space(designSample(inCandidateSpace,:));
+candidateSpace = candidateSpace.generate_candidate_space(designSample(inCandidateSpace,:));
 
 figure;
 hold all;
@@ -72,7 +72,7 @@ designSpaceFactor = designSpaceUpperBoundSpace - designSpaceLowerBoundSpace;
 growthVector = growthRate.*designSpaceFactor.*directionGrowth;
 
 insideSampleGrown = insideSample + growthVector;
-candidateSpaceGrown = candidateSpace.grow_candidate_space(growthRate);
+candidateSpaceGrown = candidateSpace.expand_candidate_space(growthRate);
 figure;
 hold all;
 plot(convexHullCenter(1),convexHullCenter(2),'b.','MarkerSize',20);
@@ -91,7 +91,7 @@ save_print_figure(gcf,[saveFolder,'CandidateSpaceConvexHullGrowth'],'Size',figur
 % boundaryGrowth = growthVector(isShapeDefinition,:);
 % newBoundarySample = boundarySample + boundaryGrowth;
 % candidateSpaceGrown = CandidateSpaceConvexHull(designSpaceLowerBoundSpace,designSpaceUpperBoundSpace);
-% candidateSpaceGrown = candidateSpaceGrown.define_candidate_space(newBoundarySample);
+% candidateSpaceGrown = candidateSpaceGrown.generate_candidate_space(newBoundarySample);
 % figure;
 % hold all;
 % plot(convexHullCenter(1),convexHullCenter(2),'b.','MarkerSize',20);
@@ -114,7 +114,7 @@ nSampleInside = 6;
 
 isInside = [true(nSampleInside,1);false(nTest-nSampleInside,1)];
 candidateSpace = CandidateSpaceDelaunay(designSpaceLowerBoundSpace,designSpaceUpperBoundSpace);
-candidateSpace = candidateSpace.define_candidate_space(designSample,isInside);
+candidateSpace = candidateSpace.generate_candidate_space(designSample,isInside);
 
 % find the simplices that were removed to plot those too for visualization
 insideSample = designSample(1:nSampleInside,:);
@@ -164,7 +164,7 @@ for i=1:size(candidateSpace.DelaunaySimplex,2)
     newVertices = [newVertices;insideSampleGrown];
 end
 
-candidateSpaceGrown = candidateSpace.grow_candidate_space(growthRate);
+candidateSpaceGrown = candidateSpace.expand_candidate_space(growthRate);
 
 
 figure;
@@ -197,7 +197,7 @@ labelSample = design_deficit_to_label_score(designEvaluator.evaluate(designSampl
 
 % train candidate space
 candidateSpace = CandidateSpaceSvm(designSpaceLowerBoundSpace,designSpaceUpperBoundSpace);
-candidateSpace = candidateSpace.define_candidate_space(designSample,labelSample);
+candidateSpace = candidateSpace.generate_candidate_space(designSample,labelSample);
 isShapeDefinition = candidateSpace.IsShapeDefinition;
 
 figure;

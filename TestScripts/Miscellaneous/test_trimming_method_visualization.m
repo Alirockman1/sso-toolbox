@@ -99,10 +99,10 @@ for i=1:size(trimmingNormalsInside,1)
     pointOutside = [anchorPosition2d;designSpaceIntersection;cornerCoordinate(dotProduct>0,:)];
 
     convexHullInside = CandidateSpaceConvexHull(designSpaceLowerBound2d,designSpaceUpperBound2d);
-    convexHullInside = convexHullInside.define_candidate_space(pointInside);
+    convexHullInside = convexHullInside.generate_candidate_space(pointInside);
 
     convexHullOutside = CandidateSpaceConvexHull(designSpaceLowerBound2d,designSpaceUpperBound2d);
-    convexHullOutside = convexHullOutside.define_candidate_space(pointOutside);
+    convexHullOutside = convexHullOutside.generate_candidate_space(pointOutside);
 
     convexHullOutside.plot_candidate_space(gcf,optionsCandidateSpaceOutside2d3d{:});
     convexHullInside.plot_candidate_space(gcf,optionsCandidateSpaceInside2d3d{:});
@@ -156,10 +156,10 @@ for i=1:size(trimmingNormalsInside,1)
     tolerance = 1e-5;
 
     convexHullInside = CandidateSpaceConvexHull(designSpaceLowerBound3d-tolerance,designSpaceUpperBound3d+tolerance);
-    convexHullInside = convexHullInside.define_candidate_space(pointInside+tolerance*trimmingNormalsInside(i,:));
+    convexHullInside = convexHullInside.generate_candidate_space(pointInside+tolerance*trimmingNormalsInside(i,:));
 
     convexHullOutside = CandidateSpaceConvexHull(designSpaceLowerBound3d-tolerance,designSpaceUpperBound3d+tolerance);
-    convexHullOutside = convexHullOutside.define_candidate_space(pointOutside-tolerance*trimmingNormalsInside(i,:));
+    convexHullOutside = convexHullOutside.generate_candidate_space(pointOutside-tolerance*trimmingNormalsInside(i,:));
 
     convexHullOutside.plot_candidate_space(gcf,optionsCandidateSpaceOutside2d3d{:},'linestyle','none');
     convexHullInside.plot_candidate_space(gcf,optionsCandidateSpaceInside2d3d{:});

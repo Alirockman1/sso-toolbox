@@ -44,7 +44,7 @@ grid minor;
 
 %% train candidate space
 candidateSpace = CandidateSpaceDelaunay(designSpaceLowerBound,designSpaceUpperBound);
-candidateSpace = candidateSpace.define_candidate_space(designSample,labelSample);
+candidateSpace = candidateSpace.generate_candidate_space(designSample,labelSample);
 isShapeDefinition = candidateSpace.IsShapeDefinition;
 
 figure;
@@ -58,7 +58,7 @@ legend({'Inside Points','Outside Points','Candidate Space Inside Region','Shape 
 
 
 %% grow candidate space
-grownCandidateSpace = candidateSpace.grow_candidate_space(0.1);
+grownCandidateSpace = candidateSpace.expand_candidate_space(0.1);
 
 figure;
 plot(designSample(labelSample,1),designSample(labelSample,2),'g.');

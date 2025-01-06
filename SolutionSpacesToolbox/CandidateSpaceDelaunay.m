@@ -37,9 +37,9 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
 %       'compute_convex_hull' to compute the properties of individual simpleces.
 %
 %   CANDIDATESPACEDELAUNAY methods:
-%       - define_candidate_space : create a candidate space based on design 
+%       - generate_candidate_space : create a candidate space based on design 
 %       samples that are labeled as inside/outside.
-%       - grow_candidate_space : expand the candidate space by a given factor.
+%       - expand_candidate_space : expand the candidate space by a given factor.
 %       - is_in_candidate_space : verify if given design samples are inside 
 %       the candidate space.
 %       - plot_candidate_space : visualize 1D/2D/3D candidate spaces in given
@@ -227,18 +227,18 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             	'Measure',[]);
         end
 
-        function obj = define_candidate_space(obj,designSample,isInside)
-        %DEFINE_CANDIDATE_SPACE Initial definition of the candidate space
-        %   DEFINE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
+        function obj = generate_candidate_space(obj,designSample,isInside)
+        %GENERATE_CANDIDATE_SPACE Initial definition of the candidate space
+        %   GENERATE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
         %   outside regions of the candidate space. For CandidateSpaceDelaunay, this
         %   creates a tesselation with all designs labeled as 'inside', and removes any
         %   simplices which contain designs labeled 'outside'.
         %
-        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
+        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
         %   points in DESIGNSAMPLE and returns a candidate space object OBJ with the new
         %   definition, assuming all designs are inside the candidate space.
         %
-        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
+        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
         %   receives the inside/outside (true/false) labels of each design point in 
         %   ISINSIDE.
         %
@@ -305,7 +305,7 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
 
         %function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
         %    if(isempty(obj.DesignSampleDefinition) || isempty(obj.DelaunayIndex))
-        %        obj = obj.define_candidate_space(designSample,isInside);
+        %        obj = obj.generate_candidate_space(designSample,isInside);
         %        return;
         %    end
         %
@@ -315,7 +315,7 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %    else
         %        % if any designs should be inside and aren't, retrain
         %        if(~all(isInsideCurrent(isInside)))
-        %            obj = obj.define_candidate_space(designSample,isInside);
+        %            obj = obj.generate_candidate_space(designSample,isInside);
         %            isInsideCurrent = obj.is_in_candidate_space(designSample);
         %        end
         %        
@@ -335,16 +335,16 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %    end
         %end
 
-        function obj = grow_candidate_space(obj,growthRate)
-        %GROW_CANDIDATE_SPACE Expansion of candidate space by given factor
-        %   GROW_CANDIDATE_SPACE will grow the region considered inside the current 
+        function obj = expand_candidate_space(obj,growthRate)
+        %EXPAND_CANDIDATE_SPACE Expansion of candidate space by given factor
+        %   EXPAND_CANDIDATE_SPACE will grow the region considered inside the current 
         %   candidate space by the factor given. Said growth is done in a fixed rate 
         %   defined by the input relative to the design space.
         %   This is done by finding the center of each simplex that forms the 
         %   tesselation and expanding its vertices opposite to that; this is similar to  
         %   same process with the convex hull, but each simplex is treated separately.
         %
-        %   OBJ = OBJ.GROW_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
+        %   OBJ = OBJ.EXPAND_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
         %   defined in OBJ by a factor of GROWTHRATE. This is an isotropic expansion of 
         %   the candidate space by a factor of the growth rate times the size of the 
         %   design space.
@@ -356,7 +356,7 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %   Outputs:
         %       - OBJ : CandidateSpaceDelaunay
         %   
-        %   See also define_candidate_space, is_in_candidate_space.
+        %   See also generate_candidate_space, is_in_candidate_space.
 
             nSimplex = size(obj.DelaunayIndex,1);
             nDimension = size(obj.DesignSampleDefinition,2);
@@ -396,7 +396,7 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             % create new delaunay object
             designSampleNew = [designSampleGrown;outsideSample];
             isInsideNew = [true(size(designSampleGrown,1),1);~isnan(insideSimplex)];
-            obj = obj.define_candidate_space(designSampleNew,isInsideNew);
+            obj = obj.generate_candidate_space(designSampleNew,isInsideNew);
         end
 
         function [isInside, score] = is_in_candidate_space(obj,designSample)
