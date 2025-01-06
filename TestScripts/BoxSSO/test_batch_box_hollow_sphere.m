@@ -1,4 +1,22 @@
+%TEST_BATCH_BOX_HOLLOW_SPHERE testing box SSO with different parameters
+%   TEST_BATCH_BOX_HOLLOW_SPHERE allows for testing and visualization of 
+%   performance of the box SSO algorithm with multiple parameters. The 
+%   parameters are taken from the Excel file 'BatchTestHollowSphere.xlsx'. 
+%
+%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   SPDX-License-Identifier: Apache-2.0
 
+%   Licensed under the Apache License, Version 2.0 (the "License");
+%   you may not use this file except in compliance with the License.
+%   You may obtain a copy of the License at
+%   
+%       http://www.apache.org/licenses/LICENSE-2.0
+%   
+%   Unless required by applicable law or agreed to in writing, software
+%   distributed under the License is distributed on an "AS IS" BASIS,
+%   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+%   See the License for the specific language governing permissions and
+%   limitations under the License.
 
 %% cleanup
 close all;

@@ -57,7 +57,7 @@ function measure = box_measure_volume(designBox,varargin)
     volumeFactor = conditional_default_value_assignment(parser.Results.FractionUseful,1);
     weight = conditional_default_value_assignment(parser.Results.Weight,ones(1,size(designBox,2)));
 
-    if(isempty(designBox))
+    if(isempty(designBox) || size(designBox,1)==1)
         measure = 0;
         return;
     end

@@ -1,4 +1,4 @@
-function candidateBoxLean = box_trimming_leanness(designSample,labelKeep,trimmingOrder,varargin)
+function candidateBoxLean = box_trimming_leanness(designSample,isKeep,trimmingOrder,varargin)
 %BOX_TRIMMING_LEANNESS Application of leanness condition for design boxes
 %   BOX_TRIMMING_LEANNESS applies the leanness condition of requirement spaces 
 %   to a given design box, ensuring that there are useful designs in all edges.
@@ -6,16 +6,16 @@ function candidateBoxLean = box_trimming_leanness(designSample,labelKeep,trimmin
 %   marked to be removed are only removed if no designs with the "keep" label
 %   would be removed by said operation; otherwise, the trimming is not done.
 %
-%   CANDIDATEBOXLEAN = BOX_TRIMMING_LEANNESS(DESIGNSAMPLE,LABELKEEP,
+%   CANDIDATEBOXLEAN = BOX_TRIMMING_LEANNESS(DESIGNSAMPLE,ISKEEP,
 %   TRIMMINGORDER) receives the design sample points DESIGNSAMPLE, their label
-%   in terms of whether it should be kept or not LABELKEEP, and the order of
+%   in terms of whether it should be kept or not ISKEEP, and the order of
 %   designs that may be removed TRIMMINGORDER, and returns the design box
-%   after the leanness condition is applied in CANDIDATEBOXLEAN. For LABELKEEP,
+%   after the leanness condition is applied in CANDIDATEBOXLEAN. For ISKEEP,
 %   values of 'true' indicate that the respective sample must be kept, and 
 %   'false' indicates the opposite. The assumed candidate box is a bounding box
 %   around the designs that should be kept.
 %
-%   CANDIDATEBOXLEAN = BOX_TRIMMING_LEANNESS(DESIGNSAMPLE,LABELKEEP,
+%   CANDIDATEBOXLEAN = BOX_TRIMMING_LEANNESS(DESIGNSAMPLE,ISKEEP,
 %   TRIMMINGORDER,CANDIDATEBOX) allows direct specification of the initial 
 %   candidate box CANDIDATEBOX.
 %
@@ -29,7 +29,7 @@ function candidateBoxLean = box_trimming_leanness(designSample,labelKeep,trimmin
 %
 %   Inputs:
 %       - DESIGNSAMPLE : (nSample,nDesignVariable) double
-%       - LABELKEEP : (nSample,1) logical
+%       - ISKEEP : (nSample,1) logical
 %       - TRIMMINGORDER : (nRemove,1) integer
 %       - CANDIDATEBOX : (2,nDesignVariable) double
 %           -- (1) : lower boundary of the design box
@@ -61,25 +61,25 @@ function candidateBoxLean = box_trimming_leanness(designSample,labelKeep,trimmin
     % parse inputs
     parser = inputParser;
     parser.addRequired('designSample',@(x)isnumeric(x));
-    parser.addRequired('labelKeep',@(x)islogical(x));
+    parser.addRequired('isKeep',@(x)islogical(x));
     parser.addRequired('trimmingOrder',@(x)(isnumeric(x)&&(size(x,2)==1))||isempty(x));
     parser.addOptional('CandidateBox',[],@(x)isnumeric(x)&&(size(x,1)==2 || isempty(x)));
     parser.addParameter('Slack',0.5,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
-    parser.parse(designSample,labelKeep,trimmingOrder,varargin{:});
+    parser.parse(designSample,isKeep,trimmingOrder,varargin{:});
     options = parser.Results;
 
     % assign conditional default values
     candidateBoxLean = options.CandidateBox;
     if(isempty(candidateBoxLean))
-        [~,candidateBoxLean] = design_bounding_box(designSample,labelKeep)
+        [~,candidateBoxLean] = design_bounding_box(designSample,isKeep)
     end
     isInsideBox = is_in_design_box(designSample,candidateBoxLean);
 
     % if all designs inside box are useful, no need to apply leanness
-    if(all(labelKeep(isInsideBox)))
+    if(all(isKeep(isInsideBox)))
         return;
     else
-        isInsideBoxKeep = isInsideBox & labelKeep;
+        isInsideBoxKeep = isInsideBox & isKeep;
     end
 
     % get sizes
@@ -100,7 +100,7 @@ function candidateBoxLean = box_trimming_leanness(designSample,labelKeep,trimmin
                 % move lower/upper bound
                 candidateBoxCurrent(k,j) = designSample(iExclude,j);
                 isInsideBoxCurrent = is_in_design_box(designSample,candidateBoxCurrent);
-                isInsideBoxKeepCurrent = isInsideBoxCurrent & labelKeep;
+                isInsideBoxKeepCurrent = isInsideBoxCurrent & isKeep;
 
                 % only trim if no useful design that should be kept is trimmed
                 if(any(isInsideBoxKeepCurrent~=isInsideBoxKeep))
@@ -114,6 +114,6 @@ function candidateBoxLean = box_trimming_leanness(designSample,labelKeep,trimmin
     end
 
     % use slack
-    strictBox = design_bounding_box(designSample,isInsideBox & labelKeep);
+    strictBox = design_bounding_box(designSample,isInsideBox & isKeep);
     candidateBoxLean = candidateBoxLean*options.Slack + strictBox*(1-options.Slack);
 end

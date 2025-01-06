@@ -1,3 +1,8 @@
+%TEST_BOX_CAR_CRASH_PYTHON Python Bottom-up Mapping test for SSO
+%   TEST_BOX_CAR_CRASH_PYTHON allows for testing of the use of Python function
+%   as a bottom-up mapping with a known problem, namely the simplified 2D car
+%   crash design problem. With the same settings, the output of this should
+%   be the same as 'test_box_car_crash'.
 %
 % Copyright 2024 Eduardo Rodrigues Della Noce
 % SPDX-License-Identifier: Apache-2.0

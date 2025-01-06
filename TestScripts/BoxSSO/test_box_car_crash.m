@@ -1,6 +1,7 @@
-%test_box_car_crash 2D Car Crash example for box-shaped solution spaces
-%   test_box_car_crash allows the visualization of the difference between the
-%   variants of the bounding box, namely its strict and relaxed versions.
+%TEST_BOX_CAR_CRASH 2D Car Crash example for box-shaped solution spaces
+%   TEST_BOX_CAR_CRASH allows to test the box SSO algorithm with a problem with
+%   a known analytical solution, namely the simplifed 2D car crash problem.
+%   Both solution and algorithm performance metrics are plotted at the end.
 %
 %   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0

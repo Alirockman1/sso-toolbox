@@ -1,6 +1,8 @@
-%test_component_hollow_sphere Component solution spaces for a sphere problem 
-%   test_component_hollow_sphere computes a component solution spaces with 
-%   for a sphere problem.
+%TEST_COMPONENT_HOLLOW_SPHERE Component solution spaces for a sphere problem 
+%   TEST_COMPONENT_HOLLOW_SPHERE computes a component solution space for a 
+%   design problem where the good designs are enclosed in a sphere.
+%   The analytical solution for this problem is known and is plotted together
+%   with the computed component solution spaces for comparison.
 %
 %   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
@@ -41,10 +43,10 @@ figure_size = [goldenratio 1]*8.5;
 %
 systemFunction = @distance_to_center;
 systemParameter = [0,0,0];
-%        x1  x2  x3
+%                        x1 x2 x3
 designSpaceLowerBound = [-6 -6 -6];
 designSpaceUpperBound = [ 6  6  6];
-Components = {[1,3],[2]};
+componentIndex = {[1,3],[2]};
 %
 performanceLowerLimit = -inf;
 performanceUpperLimit = 5;
@@ -82,26 +84,26 @@ designEvaluator = DesignEvaluatorBottomUpMapping(...
     performanceLowerLimit,...
     performanceUpperLimit);
 [componentSolutionSpace,problemData,iterData] = sso_component_stochastic(designEvaluator,...
-    initialDesign,designSpaceLowerBound,designSpaceUpperBound,Components,options);
+    initialDesign,designSpaceLowerBound,designSpaceUpperBound,componentIndex,options);
 toc(timeElapsedAlgorithm)
 
 
 %% Plot Comparison
 % analytical solution
-r_maxtheory = performanceUpperLimit*sqrt(2/3);
-h_maxtheory = performanceUpperLimit*sqrt(1/3);
+radiusOptimalAnalytical = performanceUpperLimit*sqrt(2/3);
+heightOptimalAnalytical = performanceUpperLimit*sqrt(1/3);
 circleAngle = linspace(0,2*pi,100);
-anasol_1_x = r_maxtheory*cos(circleAngle);
-anasol_1_y = r_maxtheory*sin(circleAngle);
+analyticalSolutionCircleX = radiusOptimalAnalytical*cos(circleAngle);
+analyticalSolutionCircleY = radiusOptimalAnalytical*sin(circleAngle);
 
 % component 1
-x_css = componentSolutionSpace(1).DesignSampleDefinition;
-y_css = componentSolutionSpace(1).IsInsideDefinition;
+designSampleComponent = componentSolutionSpace(1).DesignSampleDefinition;
+isInsideComponent = componentSolutionSpace(1).IsInsideDefinition;
 figure;
-plot(x_css(y_css,1),x_css(y_css,2),'g.');
+plot(designSampleComponent(isInsideComponent,1),designSampleComponent(isInsideComponent,2),'g.');
 hold on;
-plot(x_css(~y_css,1),x_css(~y_css,2),'.','color',[227 114 34]/255);
-plot(anasol_1_x,anasol_1_y,'m-','linewidth',2.0);
+plot(designSampleComponent(~isInsideComponent,1),designSampleComponent(~isInsideComponent,2),'.','color',[227 114 34]/255);
+plot(analyticalSolutionCircleX,analyticalSolutionCircleY,'m-','linewidth',2.0);
 componentSolutionSpace(1).plot_candidate_space(gcf,'FaceColor','k','EdgeColor','k','FaceAlpha',0.1);
 xlabel('x_1');
 ylabel('x_3');
@@ -111,13 +113,13 @@ legend({'Inside Component Space','Outside Component Space','Analytical Solution'
 save_print_figure(gcf,[savefolder,'Component1TrimmingPlot']);
 
 % component 2
-x_css = componentSolutionSpace(2).DesignSampleDefinition;
-y_css = componentSolutionSpace(2).IsInsideDefinition;
+designSampleComponent = componentSolutionSpace(2).DesignSampleDefinition;
+isInsideComponent = componentSolutionSpace(2).IsInsideDefinition;
 figure;
-plot(x_css(y_css,1),zeros(size(x_css(y_css,1))),'g.');
+plot(designSampleComponent(isInsideComponent,1),zeros(size(designSampleComponent(isInsideComponent,1))),'g.');
 hold on;
-plot(x_css(~y_css,1),zeros(size(x_css(~y_css,1))),'.','color',[227 114 34]/255);
-plot([-h_maxtheory h_maxtheory],[0 0],'mx','linewidth',2.0);
+plot(designSampleComponent(~isInsideComponent,1),zeros(size(designSampleComponent(~isInsideComponent,1))),'.','color',[227 114 34]/255);
+plot([-heightOptimalAnalytical heightOptimalAnalytical],[0 0],'mx','linewidth',2.0);
 xlabel('x_2');
 axis([-5 +5 -1 +1]);
 grid minor;

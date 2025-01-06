@@ -3,7 +3,7 @@ function [solutionSpace,problemData,iterData,algoData,batchOptions] = batch_sso_
 %   BATCH_SSO_STOCHASTIC_ANALYSIS can be used to procedurally find optimal
 %   solution spaces for a given problem with different options. The results
 %   can then be used to better understand either how different algorithm 
-%   parameters affect the convergence / final solution.
+%   parameters affect the convergence / final result.
 %   
 %   SOLUTIONSPACE = BATCH_SSO_STOCHASTIC_ANALYSIS(BATCHOPTIONS,DESIGNEVALUATOR,
 %   INITIALPOINT,DESIGNSPACELOWERBOUND,DESIGNSPACEUPPERBOUND) takes the options

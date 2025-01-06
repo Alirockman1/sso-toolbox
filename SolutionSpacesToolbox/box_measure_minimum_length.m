@@ -8,7 +8,7 @@ function measure = box_measure_minimum_length(designBox, varargin)
 %   MEASURE = BOX_MEASURE_MINIMUM_LENGTH(DESIGNBOX) receives the candidate 
 %   design box in DESIGNBOX and returns its smallest length in MEASURE.
 %
-%   MEASURE = BOX_MEASURE_MINIMUM_LENGTH(DESIGNBOX,FRACTIONUSEFUL) additionally 
+%   MEASURE = BOX_MEASURE_MINIMUM_LENGTH(DESIGNBOX,) additionally 
 %   receives how many designs inside the current box are useful. For this 
 %   measure, this does not affect the result.
 %
@@ -53,7 +53,7 @@ function measure = box_measure_minimum_length(designBox, varargin)
 
     weight = conditional_default_value_assignment(parser.Results.Weight,ones(1,size(designBox,2)));
 
-    if(isempty(designBox))
+    if(isempty(designBox) || size(designBox,1)==1)
         measure = 0;
         return;
     end

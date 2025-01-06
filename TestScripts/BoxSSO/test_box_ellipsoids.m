@@ -1,5 +1,5 @@
-%test_box_ellipsoids Test requirement spaces computation with two ellipsoids
-%   test_box_ellipsoids uses a bottom-up mapping with two defined ellipsoids, 
+%TEST_BOX_ELLIPSOIDS Test requirement spaces computation with two ellipsoids
+%   TEST_BOX_ELLIPSOIDS uses a bottom-up mapping with two defined ellipsoids, 
 %   one which describes a region where performance is satisfied and another 
 %   which describes where designs are physically feasible, to test the 
 %   computation of requirement spaces with the stochastic algorithm.

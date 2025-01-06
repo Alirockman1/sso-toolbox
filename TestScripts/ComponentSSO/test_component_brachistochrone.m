@@ -1,6 +1,10 @@
-%test_box_toy_problem_sse Brachistochrone / Bead Descent problem 
-%   test_box_toy_problem_sse uses a discretized version of the bead descent
-%   problem to test the computation of solution spaces.
+%TEST_COMPONENT_BRACHISTOCHRONE Brachistochrone / Bead Descent problem 
+%   TEST_COMPONENT_BRACHISTOCHRONE uses a discretized version of the bead 
+%   descent problem to test the computation of component solution spaces.
+%   First, the analytical curve of least time (brachistochrone) is computed, 
+%   followed by the box-shaped solution space (with a requirement around the 
+%   time it takes for the slide from A to B happen) and the component solution 
+%   spaces. The results are compared after all computations are done. 
 %
 %   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0

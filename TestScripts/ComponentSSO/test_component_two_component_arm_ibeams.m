@@ -1,5 +1,5 @@
-%test_component_two_component_arm_ibeams 2-link Robot Arm with I-beams 
-%   test_component_two_component_arm_ibeams computes component solution spaces for the 
+%TEST_COMPONENT_TWO_COMPONENT_ARM_IBEAMS 2-link Robot Arm with I-beams 
+%   TEST_COMPONENT_TWO_COMPONENT_ARM_IBEAMS computes component solution spaces for the 
 %   two-component arm problem where each component is an I-beam. The solution
 %   regions refer to the stifnesses of each component.
 %

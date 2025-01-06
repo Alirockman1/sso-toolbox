@@ -425,11 +425,11 @@ switch trussAnalysisChoice
         cameraPositionFigureSave = [4.7185  -11.2817    7.6322];
     case '18-DoF-3D'
         nSample = 100;
-        maxIterDisplacement = 250;
+        maxIterDisplacement = 300;
         maxIterMass = 250;
-        maxIterDisplacementAndMass = 250;
-        growthRateDisplacement = 0.004;
-        growthRateMass = 0.007;
+        maxIterDisplacementAndMass = 300;
+        growthRateDisplacement = 0.005;
+        growthRateMass = 0.005;
         trimmingPasses = 'reduced';
         nRandomTruss = 1;
         systemParameter.ElementCrossSectionArea = 10; % [mm^2]

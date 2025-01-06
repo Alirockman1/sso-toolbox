@@ -1,5 +1,5 @@
-%test_performance_batch_hollow_sphere Batch performance test for hollow sphere
-%   test_performance_batch_hollow_sphere performs component solution space 
+%TEST_BATCH_COMPONENT_HOLLOW_SPHERE Batch performance test for hollow sphere
+%   TEST_BATCH_COMPONENT_HOLLOW_SPHERE performs component solution space 
 %   optimizations in batch, saving the performance data. Factors can be
 %	attributed according to the corresponding XLSX file.
 %
