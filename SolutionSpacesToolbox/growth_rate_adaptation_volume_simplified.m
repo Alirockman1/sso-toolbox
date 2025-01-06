@@ -1,6 +1,6 @@
 function growthAdaptationFactor = growth_rate_adaptation_volume_simplified(purity,targetPurity,nDimension,fractionAcceptableIncreaseMeasure,varargin)
 	parser = inputParser;
-	parser.addParaemeter('MinimumGrowthExponent',1);
+	parser.addParameter('MinimumGrowthExponent',1);
 	parser.parse(varargin{:});
 	options = parser.Results;
 
