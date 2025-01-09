@@ -64,7 +64,7 @@ function candidateBoxLean = box_trimming_leanness(designSample,isKeep,trimmingOr
     parser.addRequired('isKeep',@(x)islogical(x));
     parser.addRequired('trimmingOrder',@(x)(isnumeric(x)&&(size(x,2)==1))||isempty(x));
     parser.addOptional('CandidateBox',[],@(x)isnumeric(x)&&(size(x,1)==2 || isempty(x)));
-    parser.addParameter('Slack',0.5,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
+    parser.addParameter('Slack',0.0,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
     parser.parse(designSample,isKeep,trimmingOrder,varargin{:});
     options = parser.Results;
 
@@ -97,8 +97,24 @@ function candidateBoxLean = box_trimming_leanness(designSample,isKeep,trimmingOr
             for k=[1,2]
                 candidateBoxCurrent = candidateBoxLean;
 
+                closestKeep = [];
+                if(options.Slack<1)
+                    isInsideBoxCurrent = is_in_design_box(designSample,candidateBoxCurrent);
+                    if(l==1) % lower boundary
+                        remainRegion = (designSample(:,j)>=designSample(iExclude,j));
+                        closestKeep = min(designSample(isInsideBoxCurrent&remainRegion&isKeep,j));
+                    else % upper boundary
+                        remainRegion = (designSample(:,j)<=designSample(iExclude,j));
+                        closestKeep = max(designSample(isInsideBoxCurrent&remainRegion&isKeep,j));
+                    end
+                end
+
+                if(isempty(closestKeep))
+                    closestKeep = designSample(iExclude,k);
+                end
+
                 % move lower/upper bound
-                candidateBoxCurrent(k,j) = designSample(iExclude,j);
+                candidateBoxCurrent(k,j) = designSample(iExclude,j)*options.Slack + closestKeep*(1-options.Slack);
                 isInsideBoxCurrent = is_in_design_box(designSample,candidateBoxCurrent);
                 isInsideBoxKeepCurrent = isInsideBoxCurrent & isKeep;
 
@@ -112,8 +128,4 @@ function candidateBoxLean = box_trimming_leanness(designSample,isKeep,trimmingOr
             end
         end
     end
-
-    % use slack
-    strictBox = design_bounding_box(designSample,isInsideBox & isKeep);
-    candidateBoxLean = candidateBoxLean*options.Slack + strictBox*(1-options.Slack);
 end

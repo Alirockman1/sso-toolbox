@@ -130,8 +130,24 @@ function [candidateBoxTrimmed,measureTrimmed] = box_trimming_operation(designSam
                     for l=[1,2]
                         candidateBox = candidateBoxCurrent;
 
+                        closestViable = [];
+                        if(options.Slack<1)
+                            isInsideBox = is_in_design_box(designSample,candidateBox);
+                            if(l==1) % lower boundary
+                                remainRegion = (designSample(:,k)>=designSample(iExclude,k));
+                                closestViable = min(designSample(isInsideBox&remainRegion&isViable,k));
+                            else % upper boundary
+                                remainRegion = (designSample(:,k)<=designSample(iExclude,k));
+                                closestViable = max(designSample(isInsideBox&remainRegion&isViable,k));
+                            end
+                        end
+
+                        if(isempty(closestViable))
+                            closestViable = designSample(iExclude,k);
+                        end
+
                         % move lower/upper bound
-                        candidateBox(l,k) = designSample(iExclude,k);
+                        candidateBox(l,k) = designSample(iExclude,k)*options.Slack + closestViable*(1-options.Slack);
                         isInsideBox = is_in_design_box(designSample,candidateBox);
 
                         % if anchor is not included, do not use; otherwise, compute measure
@@ -156,17 +172,15 @@ function [candidateBoxTrimmed,measureTrimmed] = box_trimming_operation(designSam
                 isInsideBoxCurrent = isInsideBoxBest;
             end
 
-            % use slack
-            strictBox = design_bounding_box(designSample,isInsideBoxCurrent & isViable);
-            candidateBox = candidateBoxCurrent*options.Slack + strictBox*(1-options.Slack);
-            isInsideBox = is_in_design_box(designSample,candidateBox);
+            % check final measure
+            isInsideBox = is_in_design_box(designSample,candidateBoxCurrent);
             isInsideBoxViable = isInsideBox & isViable;
             fractionViable = sum(isInsideBoxViable)/sum(isInsideBox);
-            measureBox = options.MeasureFunction(candidateBox,fractionViable,options.MeasureOptions{:});
+            measureBox = options.MeasureFunction(candidateBoxCurrent,fractionViable,options.MeasureOptions{:});
 
             % check final measure
             if(measureBox>measureTrimmed)
-                candidateBoxTrimmed = candidateBox;
+                candidateBoxTrimmed = candidateBoxCurrent;
                 measureTrimmed = measureBox;
             end
         end
