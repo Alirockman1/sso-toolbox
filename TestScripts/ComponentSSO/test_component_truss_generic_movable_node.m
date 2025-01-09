@@ -1,6 +1,5 @@
-%test_component_hollow_sphere Component solution spaces for a sphere problem 
-%   test_component_hollow_sphere computes a component solution spaces with 
-%   for a sphere problem.
+%TEST_COMPONENT_TRUSS_GENERIC_MOVABLE_NODE Truss design problem w/ component SSO 
+%   TEST_COMPONENT_TRUSS_GENERIC_MOVABLE_NODE
 %
 %   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
@@ -39,7 +38,7 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %%
-trussAnalysisChoice = '18-DoF-3D';
+trussAnalysisChoice = '36-DoF-3D';
 useBoxResultForComponent = false;
 
 computeDisplacement = true;

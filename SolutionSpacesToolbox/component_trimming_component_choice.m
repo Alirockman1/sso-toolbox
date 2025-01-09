@@ -45,7 +45,7 @@ function iChoice = component_trimming_choice(designSample,componentIndex,isViabl
 %   limitations under the License.
 
 	parser = inputParser;
-	parser.addParameter('SelectionCriteria',{'NumberInsideViable','NumberInsideExclude','NumberExclude','NumberViable','NumberInsideNotExclude'});
+	parser.addParameter('SelectionCriteria',{'VolumeInsideViable','NumberInsideExclude','NumberExclude','NumberViable','NumberInsideNotExclude'});
 	parser.parse(varargin{:});
 	options = parser.Results;
 
@@ -68,7 +68,9 @@ function iChoice = component_trimming_choice(designSample,componentIndex,isViabl
         componentIndexCurrent = componentIndex(isTie);
         isInsideComponentCurrent = isInsideComponent(:,isTie);
         componentRemovalCurrent = componentRemoval(:,isTie);
+        nCandidateCurrent = size(removalCandidateCurrent,2);
 
+        removalCost = nan(1,nCandidateCurrent);
         if(isa(criterionCurrent,'function_handle'))
             removalCost = options.CostType(designSample,componentIndexCurrent,isViable,isExclude,isInsideComponentCurrent,componentRemovalCurrent);
         elseif(strcmpi(criterionCurrent,'NumberInsideViable'))
@@ -81,6 +83,34 @@ function iChoice = component_trimming_choice(designSample,componentIndex,isViabl
             removalCost = -sum(isExclude & isInsideComponentCurrent & componentRemovalCurrent,1);
         elseif(strcmpi(criterionCurrent,'NumberInsideNotExclude'))
             removalCost = -sum(isInsideComponentCurrent & ~isExclude & ~componentRemovalCurrent,1);
+        elseif(strcmpi(criterionCurrent,'VolumeInsideViable'))
+            volumeComponentBase = nan(1,nComponent);
+            isViableInside = isViable & isInsideAll;
+            for j=1:nComponent
+                designSampleComponent = designSample(:,componentIndex{j});
+                boundingBox = design_bounding_box(designSampleComponent,isViableInside);
+                isInBoundingBox = is_in_design_box(designSampleComponent,boundingBox);
+                volumeFraction = sum(isViableInside)/sum(isInBoundingBox);
+                volumeComponentBase(j) = volumeFraction*prod(boundingBox(2,:)-boundingBox(1,:));
+            end
+            volumeTotalBase = prod(volumeComponentBase);
+
+            for j=1:nCandidateCurrent
+                jComponent = convert_index_base(isTie',j,'backward');
+
+                isInsideRemainViable = isViable & isInsideAll & ~removalCandidateCurrent(:,j);
+                if(~any(isViable & isInsideAll & ~removalCandidateCurrent(:,j)))
+                    removalCost(j) = 0;
+                    continue;
+                end
+
+                designSampleComponent = designSample(:,componentIndex{jComponent});
+                boundingBox = design_bounding_box(designSampleComponent,isInsideRemainViable);
+                isInBoundingBox = is_in_design_box(designSampleComponent,boundingBox);
+                volumeFraction = sum(isInsideRemainViable)/sum(isInBoundingBox);
+                volumeComponentRemain = volumeFraction*prod(boundingBox(2,:)-boundingBox(1,:));
+                removalCost(j) = -volumeTotalBase*volumeComponentRemain/volumeComponentBase(jComponent);
+            end
         end
 
         isTie(isTie) = (removalCost==min(removalCost));
