@@ -57,7 +57,7 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
 
     parser = inputParser;
     parser.addParameter('ReferenceDesigns','keep');
-    parser.addParameter('TrimmingSlack',1.0);
+    parser.addParameter('TrimmingSlack',0.5);
     parser.addParameter('ConsiderOnlyKeepInSlack',true);
     parser.parse(varargin{:});
     options = parser.Results;
@@ -105,6 +105,9 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
                 isInsideSlack = isInsideSlack & isKeep;
             end
             allowedSlack = min(-dotProduct(isInsideSlack));
+            if(isempty(allowedSlack))
+                allowedSlack = 0;
+            end
             anchorSlack = allowedSlack*normalizedPlaneOrientation(i,:);
             anchorPoint = anchorPoint + (1-options.TrimmingSlack)*anchorSlack;
 

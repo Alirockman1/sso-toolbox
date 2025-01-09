@@ -47,6 +47,8 @@ function [isInside,score] = is_in_design_box(designSample,designBox)
     % the defined lower and upper boundaries of the box
     isInside = all(designSample>=designBox(1,:),2) & all(designSample<=designBox(2,:),2);
 
-    intervalFactor = designBox(2,:) - designBox(1,:);
-    score = max([designBox(1,:)-designSample,designSample-designBox(2,:)]./[intervalFactor,intervalFactor],[],2);
+    if(nargout>1)
+        intervalFactor = designBox(2,:) - designBox(1,:);
+        score = max([designBox(1,:)-designSample,designSample-designBox(2,:)]./[intervalFactor,intervalFactor],[],2);
+    end
 end
