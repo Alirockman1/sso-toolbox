@@ -52,7 +52,7 @@ initialDesign = [1710.8 60426e3 42987e3 478.2648 23175e3 7253100];
 %                        k1_11   k1_22   k1_44    k2_11    k2_22   k2_44
 designSpaceLowerBound = [ 600.0   0.5e7     1e7      200   0.5e7   0.2e7];
 designSpaceUpperBound = [3000.0     9e7     8e7     1600     7e7     8e7];
-Components = {[1,2,3],[4,5,6]};
+componentIndex = {[1,2,3],[4,5,6]};
 %                         displ   m 
 performanceLowerLimit = [ -inf -inf];
 performanceUpperLimit = [    2  120];
@@ -108,7 +108,7 @@ options = sso_stochastic_options('component',...
     'TrimmingOrderOptions',{'OrderPreference','score'});
 
 [componentSolutionSpace,problemDataComponent,iterDataComponent] = sso_component_stochastic(designEvaluator,...
-    solutionSpaceBox,designSpaceLowerBound,designSpaceUpperBound,Components,options);
+    solutionSpaceBox,designSpaceLowerBound,designSpaceUpperBound,componentIndex,options);
 toc
 
 %% Selective Design Space Projection

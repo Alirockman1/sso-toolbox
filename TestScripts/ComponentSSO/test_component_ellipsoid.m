@@ -45,7 +45,7 @@ systemFunction = @two_ellipses_requirement_space;
 designSpaceLowerBound = [-2 -2];
 designSpaceUpperBound = [14 12];
 initialPoint = [10 6];
-component = {1,2};
+componentIndex = {1,2};
 
 performanceLowerLimit = -inf;
 performanceUpperLimit = 1;
@@ -82,7 +82,7 @@ designEvaluator = DesignEvaluatorBottomUpMapping(bottomUpMapping,...
     'PhysicalFeasibilityUpperLimit',physicalFeasibilityUpperLimit);
 
 [componentSolutionSpace,problemData,iterData] = sso_component_stochastic(designEvaluator,...
-    initialPoint,designSpaceLowerBound,designSpaceUpperBound,component,options);
+    initialPoint,designSpaceLowerBound,designSpaceUpperBound,componentIndex,options);
 
 
 %% Plot Solution

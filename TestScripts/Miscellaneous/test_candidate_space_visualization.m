@@ -53,7 +53,7 @@ hold all;
 plot(designSample(inCandidateSpace,1),designSample(inCandidateSpace,2),optionsPointInside{:});
 plot(designSample(~inCandidateSpace,1),designSample(~inCandidateSpace,2),optionsPointOutside{:});
 candidateSpace.plot_candidate_space(gcf,'EdgeColor',colorCandidateSpaceInside,'linewidth',4);
-legend({'Inside Candidate Space','Outside Candidate Space','Convex Hull Boundary'},'location','south');
+legend({'Remaining Design Points','Removed Design Points','Convex Hull Boundary'},'location','south');
 grid minor;
 set(gca,'XColor', 'none','YColor','none');
 h = get(gca,'Children');
@@ -76,12 +76,11 @@ candidateSpaceGrown = candidateSpace.expand_candidate_space(growthRate);
 figure;
 hold all;
 plot(convexHullCenter(1),convexHullCenter(2),'b.','MarkerSize',20);
-candidateSpace.plot_candidate_space(gcf,'EdgeColor',colorCandidateSpaceInside,'LineStyle','--','linewidth',4);
+candidateSpace.plot_candidate_space(gcf,'EdgeColor',colorCandidateSpaceInside,'LineStyle','--','linewidth',2);
 plot(insideSample(:,1),insideSample(:,2),optionsPointInside{:});
 quiver(insideSample(:,1),insideSample(:,2),growthVector(:,1),growthVector(:,2),optionsVector{:});
 candidateSpaceGrown.plot_candidate_space(gcf,'EdgeColor',colorCandidateSpaceInside,'linewidth',4);
-plot(insideSampleGrown(:,1),insideSampleGrown(:,2),optionsPointInside{:},'color',colorGrowthPoint);
-legend({'Convex Hull Center','Original Convex Hull','Inside Points','Growth Vector','Grown Convex Hull','New Inside Points'},'location','northwest')
+legend({'Convex Hull Center','Original Convex Hull','Design Points Inside','Expansion Vector','Expanded Convex Hull'},'location','northwest')
 grid minor;
 set(gca,'XColor', 'none','YColor','none');
 save_print_figure(gcf,[saveFolder,'CandidateSpaceConvexHullGrowth'],'Size',figureSize*1.25,'PrintFormat',{'png','pdf'});
@@ -213,3 +212,9 @@ set(gca,'Children',[h(3) h(2) h(1)]);
 save_print_figure(gcf,[saveFolder,'CandidateSpaceSvmExample'],'Size',figureSize*1.25,'PrintFormat',{'png','pdf'});
 
 % growth
+
+
+%% Save and Stop Transcripting
+save([saveFolder,'Data.mat']);
+diary off;
+

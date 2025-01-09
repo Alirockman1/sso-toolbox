@@ -38,7 +38,7 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %%
-trussAnalysisChoice = '36-DoF-3D';
+trussAnalysisChoice = '16-DoF-2D';
 useBoxResultForComponent = false;
 
 computeDisplacement = true;
@@ -56,9 +56,9 @@ systemFunction = @truss_generic_movable_node;
 switch trussAnalysisChoice
     case '2-DoF-2D'
         nSample = 100;
-        maxIterDisplacement = 50;
+        maxIterDisplacement = 30;
         maxIterMass = 20;
-        maxIterDisplacementAndMass = 50;
+        maxIterDisplacementAndMass = 30;
         growthRateDisplacement = 0.07;
         growthRateMass = 0.07;
         trimmingPasses = 'full';
@@ -99,8 +99,8 @@ switch trussAnalysisChoice
         cameraPositionFigureSave = [];
     case '4-DoF-2D'
         nSample = 100;
-        maxIterDisplacement = 30;
-        maxIterMass = 30;
+        maxIterDisplacement = 35;
+        maxIterMass = 35;
         maxIterDisplacementAndMass = 35;
         growthRateDisplacement = 0.06;
         growthRateMass = 0.06;
@@ -148,7 +148,7 @@ switch trussAnalysisChoice
         growthRateDisplacement = 0.01;
         growthRateMass = 0.01;
         trimmingPasses = 'reduced';
-        nRandomTruss = 0;
+        nRandomTruss = 3;
         systemParameter.ElementCrossSectionArea = 10; % [mm^2]
         systemParameter.ElementYoungsModulus = 210e3; % [MPa]
         systemParameter.ElementDensity = 7850e-9; % [kg/mm^3]
@@ -366,13 +366,13 @@ switch trussAnalysisChoice
         cameraPositionFigureSave = [];
     case '9-DoF-3D'
         nSample = 100;
-        maxIterDisplacement = 80;
+        maxIterDisplacement = 100;
         maxIterMass = 100;
         maxIterDisplacementAndMass = 100;
         growthRateDisplacement = 0.04;
         growthRateMass = 0.04;
         trimmingPasses = 'reduced';
-        nRandomTruss = 1;
+        nRandomTruss = 0;
         systemParameter.ElementCrossSectionArea = 10; % [mm^2]
         systemParameter.ElementYoungsModulus = 210e3; % [MPa]
         systemParameter.ElementDensity = 7850e-9; % [kg/mm^3]
@@ -430,7 +430,7 @@ switch trussAnalysisChoice
         growthRateDisplacement = 0.005;
         growthRateMass = 0.005;
         trimmingPasses = 'reduced';
-        nRandomTruss = 1;
+        nRandomTruss = 0;
         systemParameter.ElementCrossSectionArea = 10; % [mm^2]
         systemParameter.ElementYoungsModulus = 210e3; % [MPa]
         systemParameter.ElementDensity = 7850e-9; % [kg/mm^3]
@@ -512,7 +512,7 @@ switch trussAnalysisChoice
         growthRateDisplacement = 0.004;
         growthRateMass = 0.007;
         trimmingPasses = 'single';
-        nRandomTruss = 1;
+        nRandomTruss = 0;
         systemParameter.ElementCrossSectionArea = 10; % [mm^2]
         systemParameter.ElementYoungsModulus = 210e3; % [MPa]
         systemParameter.ElementDensity = 7850e-9; % [kg/mm^3]
@@ -891,7 +891,7 @@ function [solutionSpaceBox,componentSolutionSpacePlanarTrimming,componentSolutio
             'FixIterNumberConsolidation',true,...
             'MaxIterExploration',maxIter,...
             'MaxIterConsolidation',maxIter,...
-            'CandidateSpaceConstructor',@CandidateSpacePlanarTrimming,...
+            'CandidateSpaceConstructor',@CandidateSpaceConvexHull,...
             'TrimmingMethodFunction',@component_trimming_method_planar_trimming,...
             ... 'TrimmingMethodOptions',{'ReferenceDesigns','boundary'},...
             'UseAdaptiveGrowthRate',true,...

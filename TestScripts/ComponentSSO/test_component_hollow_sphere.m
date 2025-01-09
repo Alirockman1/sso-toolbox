@@ -33,10 +33,10 @@ rng(4);
 
 
 %% Documentation / Archive
-RNGstate = rng;
-savefolder = save_diary_files(mfilename);
-goldenratio = (1+sqrt(5))/2;
-figure_size = [goldenratio 1]*8.5;
+rngState = rng;
+saveFolder = save_diary_files(mfilename);
+goldenRatio = (1+sqrt(5))/2;
+figureSize = [goldenRatio 1]*8.5;
 
 
 %% function call
@@ -110,7 +110,7 @@ ylabel('x_3');
 axis([-5 +5 -5 +5]);
 grid minor;
 legend({'Inside Component Space','Outside Component Space','Analytical Solution','Decision Boundary'});
-save_print_figure(gcf,[savefolder,'Component1TrimmingPlot']);
+save_print_figure(gcf,[saveFolder,'Component1TrimmingPlot']);
 
 % component 2
 designSampleComponent = componentSolutionSpace(2).DesignSampleDefinition;
@@ -124,15 +124,15 @@ xlabel('x_2');
 axis([-5 +5 -1 +1]);
 grid minor;
 legend({'Inside Component Space','Outside Component Space','Analytical Solution'});
-save_print_figure(gcf,[savefolder,'Component2TrimmingPlot']);
+save_print_figure(gcf,[saveFolder,'Component2TrimmingPlot']);
 
 
 %% 
 algoData = postprocess_sso_component_stochastic(problemData,iterData);
-plot_sso_component_stochastic_metrics(algoData,'SaveFolder',savefolder);
+plot_sso_component_stochastic_metrics(algoData,'SaveFolder',saveFolder);
 
 
 %% Save and Stop Transcripting
-save([savefolder,'Data.mat']);
+save([saveFolder,'Data.mat']);
 diary off;
 

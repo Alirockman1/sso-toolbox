@@ -142,15 +142,15 @@ options = sso_stochastic_options('component',...
     'TrimmingOperationOptions',{'PassesCriterion','reduced'},...
     'TrimmingOrderOptions',{'OrderPreference','score'});
 
-component = {1:3,4:6,7:9,10:12,13:15};
+componentIndex = {1:3,4:6,7:9,10:12,13:15};
         
 [componentSolutionSpace,problemDataComponent,iterDataComponent] = sso_component_stochastic(designEvaluator,...
-    designBoxOptimal,designSpaceLowerBound,designSpaceUpperBound,component,options);
+    designBoxOptimal,designSpaceLowerBound,designSpaceUpperBound,componentIndex,options);
 
 
 %% visualization
-for i=1:size(component,2)
-    currentBox = designBoxOptimal(:,component{i});
+for i=1:size(componentIndex,2)
+    currentBox = designBoxOptimal(:,componentIndex{i});
     currentComponentSpace = componentSolutionSpace(i);
     
     figure;
