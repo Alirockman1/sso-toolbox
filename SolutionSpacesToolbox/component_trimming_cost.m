@@ -55,7 +55,6 @@ function iChoice = component_trimming_cost(designSample,isViable,isExclude,isIns
     options = parser.Results;
     
     nCandidate = size(removalCandidate,2);
-    removalCost = nan(1,nCandidate);
     nCriteria = length(options.SelectionCriteria);
 
     if(isempty(ineligibleCandidate) || all(ineligibleCandidate))
@@ -69,7 +68,9 @@ function iChoice = component_trimming_cost(designSample,isViable,isExclude,isIns
     while(nTie>1 && i<=nCriteria)
         criterionCurrent = options.SelectionCriteria{i};
         removalCandidateCurrent = removalCandidate(:,isTie);
+        nCandidateCurrent = size(removalCandidateCurrent,2);
 
+        removalCost = nan(1,nCandidateCurrent);
         if(isa(criterionCurrent,'function_handle'))
             removalCost = options.CostType(designSample,isViable,isExclude,isInsideComponent,isInsideAll,removalCandidateCurrent);
         elseif(strcmpi(criterionCurrent,'NumberInsideViable'))
@@ -82,6 +83,19 @@ function iChoice = component_trimming_cost(designSample,isViable,isExclude,isIns
             removalCost = -sum(isExclude & isInsideComponent & removalCandidateCurrent,1);
         elseif(strcmpi(criterionCurrent,'NumberInsideNotExclude'))
             removalCost = -sum(isInsideComponent & ~isExclude & ~removalCandidateCurrent,1);
+        elseif(strcmpi(criterionCurrent,'VolumeInsideViable'))
+            for j=1:nCandidateCurrent
+                isInsideRemainViable = isViable & isInsideAll & ~removalCandidateCurrent(:,j);
+                if(~any(isInsideRemainViable))
+                    removalCost(j)=0;
+                    continue;
+                end
+                
+                boundingBox = design_bounding_box(designSample,isInsideRemainViable);
+                isInBoundingBox = is_in_design_box(designSample,boundingBox);
+                volumeFraction = sum(isInsideRemainViable)/sum(isInBoundingBox);
+                removalCost(j) = -volumeFraction*prod(boundingBox(2,:)-boundingBox(1,:));
+            end
         end
 
         isTie(isTie) = (removalCost==min(removalCost));

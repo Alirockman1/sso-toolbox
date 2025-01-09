@@ -302,8 +302,10 @@ function options = sso_stochastic_options(solutionSpaceType,varargin)
         parser.addParameter('TrimmingMethodOptions',{},@(x)iscell(x));
         parser.addParameter('TrimmingCostFunction',@component_trimming_cost,@(x)isa(x,'function_handle'));
         parser.addParameter('TrimmingCostOptions',{},@(x)iscell(x));
-        parser.addParameter('TrimmingComponentChoiceFunction',@component_trimming_choice,@(x)isa(x,'function_handle'));
+        parser.addParameter('TrimmingComponentChoiceFunction',@component_trimming_component_choice,@(x)isa(x,'function_handle'));
         parser.addParameter('TrimmingComponentChoiceOptions',{},@(x)iscell(x));
+        parser.addParameter('TrimmingOptimalChoiceFunction',@component_trimming_optimal_choice,@(x)isa(x,'function_handle'));
+        parser.addParameter('TrimmingOptimalChoiceOptions',{},@(x)iscell(x));
         parser.addParameter('UsePaddingSamplesInTrimming',true,@(x)islogical(x)&&isscalar(x));
         parser.addParameter('UseShapeSamplesExploration',true,@(x)islogical(x)&&isscalar(x));
         parser.addParameter('ShapeSamplesUsefulExploration',false,@(x)islogical(x)&&isscalar(x));

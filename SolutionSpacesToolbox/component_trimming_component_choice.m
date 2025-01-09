@@ -1,4 +1,4 @@
-function iChoice = component_trimming_choice(designSample,componentIndex,isViable,isExclude,isInsideComponent,componentRemoval,ineligibleCandidate,varargin)
+function iChoice = component_trimming_component_choice(designSample,componentIndex,isViable,isExclude,isInsideComponent,componentRemoval,ineligibleCandidate,varargin)
 %COMPONENT_TRIMMING_CHOICE Choice of which component trimming to perform
 %	COMPONENT_TRIMMING_CHOICE compares the costs of the candidate trimming 
 %	operation to be performed in every component and chooses the one with the
@@ -45,12 +45,11 @@ function iChoice = component_trimming_choice(designSample,componentIndex,isViabl
 %   limitations under the License.
 
 	parser = inputParser;
-	parser.addParameter('SelectionCriteria',{'VolumeInsideViable','NumberInsideExclude','NumberExclude','NumberViable','NumberInsideNotExclude'});
+	parser.addParameter('SelectionCriteria',{'NumberInsideViable','NumberInsideExclude','NumberExclude','NumberViable','NumberInsideNotExclude'});
 	parser.parse(varargin{:});
 	options = parser.Results;
 
 	nComponent = size(componentRemoval,2);
-    removalCost = nan(1,nComponent);
     nCriteria = length(options.SelectionCriteria);
     isInsideAll = all(isInsideComponent,2);
 
@@ -64,11 +63,10 @@ function iChoice = component_trimming_choice(designSample,componentIndex,isViabl
     i = 1;
     while(nTie>1 && i<=nCriteria)
         criterionCurrent = options.SelectionCriteria{i};
-        removalCandidateCurrent = componentRemoval(:,isTie);
         componentIndexCurrent = componentIndex(isTie);
         isInsideComponentCurrent = isInsideComponent(:,isTie);
         componentRemovalCurrent = componentRemoval(:,isTie);
-        nCandidateCurrent = size(removalCandidateCurrent,2);
+        nCandidateCurrent = size(componentRemovalCurrent,2);
 
         removalCost = nan(1,nCandidateCurrent);
         if(isa(criterionCurrent,'function_handle'))
@@ -98,8 +96,8 @@ function iChoice = component_trimming_choice(designSample,componentIndex,isViabl
             for j=1:nCandidateCurrent
                 jComponent = convert_index_base(isTie',j,'backward');
 
-                isInsideRemainViable = isViable & isInsideAll & ~removalCandidateCurrent(:,j);
-                if(~any(isViable & isInsideAll & ~removalCandidateCurrent(:,j)))
+                isInsideRemainViable = isViable & isInsideAll & ~componentRemovalCurrent(:,j);
+                if(~any(isInsideRemainViable))
                     removalCost(j) = 0;
                     continue;
                 end

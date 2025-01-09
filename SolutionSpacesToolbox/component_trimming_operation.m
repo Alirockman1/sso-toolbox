@@ -96,8 +96,10 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,isVia
     parser.addParameter('TrimmingMethodOptions',{},@(x)(iscell(x)));
     parser.addParameter('TrimmingCostFunction',@component_trimming_cost,@(x)isa(x,'function_handle'));
     parser.addParameter('TrimmingCostOptions',{},@(x)(iscell(x)));
-    parser.addParameter('TrimmingComponentChoiceFunction',@component_trimming_choice,@(x)isa(x,'function_handle'));
+    parser.addParameter('TrimmingComponentChoiceFunction',@component_trimming_component_choice,@(x)isa(x,'function_handle'));
     parser.addParameter('TrimmingComponentChoiceOptions',{},@(x)(iscell(x)));
+    parser.addParameter('TrimmingOptimalChoiceFunction',@component_trimming_optimal_choice,@(x)isa(x,'function_handle'));
+    parser.addParameter('TrimmingOptimalChoiceOptions',{},@(x)(iscell(x)));
     parser.addParameter('PassesCriterion','reduced',@(x)any(strcmpi(x,{'single','reduced','full'})));
     parser.parse(designSample,isViable,trimmingOrder,componentIndex,candidateSpace,varargin{:});
 
@@ -108,6 +110,8 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,isVia
     trimmingCostOptions = parser.Results.TrimmingCostOptions;
     trimmingComponentChoiceFunction = parser.Results.TrimmingComponentChoiceFunction;
     trimmingComponentChoiceOptions = parser.Results.TrimmingComponentChoiceOptions;
+    trimmingOptimalChoiceFunction = parser.Results.TrimmingOptimalChoiceFunction;
+    trimmingOptimalChoiceOptions = parser.Results.TrimmingOptimalChoiceOptions;
     passesCriterion = parser.Results.PassesCriterion;
 
     nSample = size(designSample,1);
@@ -126,7 +130,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,isVia
     isExclude(trimmingOrder) = true;
 
     optimalTrimTotalPass = [];
-    optimalIsInsideComponent = isInsideComponentInitial;
+    optimalIsInsideComponent = [];
     optimalTrimmingInformation = cell(1,nComponent);
     
     iAnchorViable = [];
@@ -185,7 +189,7 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,isVia
             end
 
             % check total cost
-            optimalPass = trimmingCostFunction(designSample,isViable,isExclude,isInsideAllInitial,isInsideAllInitial,[optimalTrimTotalPass,trimTotalPass],[],trimmingCostOptions{:});
+            optimalPass = trimmingOptimalChoiceFunction(designSample,componentIndex,isViable,isExclude,{optimalIsInsideComponent,isInsideComponent},trimmingOptimalChoiceOptions{:});
             if(isempty(optimalTrimTotalPass) || optimalPass==2)
                 optimalTrimTotalPass = trimTotalPass;
                 optimalIsInsideComponent = isInsideComponent;
@@ -218,6 +222,10 @@ function trimmedCandidateSpace = component_trimming_operation(designSample,isVia
             end
         end
         iCurrentPass = iCurrentPass + 1;
+    end
+
+    if(isempty(optimalIsInsideComponent))
+        optimalIsInsideComponent = isInsideComponentInitial;
     end
 
     for i=1:size(componentIndex,2)
