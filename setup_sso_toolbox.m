@@ -1,5 +1,5 @@
-%setup_sso_toolbox Initial setup for the use of the SSO toolbox
-%   setup_sso_toolbox adds to the MATLAB path all the folders of the SSO 
+%SETUP_SSO_TOOLBOX Initial setup for the use of the SSO toolbox
+%   SETUP_SSO_TOOLBOX adds to the MATLAB path all the folders of the SSO 
 %   Toolbox, allowing the use of the functions in them without any extra steps.
 %   It also adds the Python folder for bottom-up mappings to the Py-specific
 %   path if a compatible Python environment is found.

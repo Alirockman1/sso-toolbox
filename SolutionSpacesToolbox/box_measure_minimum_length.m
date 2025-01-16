@@ -59,6 +59,6 @@ function measure = box_measure_minimum_length(designBox, varargin)
     end
     
     % edges length
-    norm_lengths = (designBox(2,:) - designBox(1,:))./weight;
-    measure = min(abs(norm_lengths));
+    normalizedLength = (designBox(2,:) - designBox(1,:))./weight;
+    measure = min(abs(normalizedLength));
 end

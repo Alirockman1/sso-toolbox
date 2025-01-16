@@ -28,7 +28,7 @@ diary off;
 
 
 %% debugging
-rng(13);
+rng(4);
 
 
 %% Documentation / Archive

@@ -1,4 +1,38 @@
 classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
+%CANDIDATESPACEPLANARTRIMMING Candidate Space defined by planar trimming
+%   CANDIDATESPACEPLANARTRIMMING can be used to define candidate spaces for  
+%   component solution space computation. In this case, the candidate space is 
+%   defined by a set of planes that successively trim the design space, labeling
+%   regions as inside or outside. 
+%
+%   This class is derived from CandidateSpaceBase.
+%
+%   CANDIDATESPACEPLANARTRIMMING properties:
+%       - DesignSampleDefinition : design sample points used in the candidate 
+%       space definition.
+%       - IsInsideDefinition : logical labels of the design sample points used 
+%       in the candidate space definition regarding whether they are inside or 
+%       outside the candidate space (true = inside, false = outside).
+%       - AnchorPoint : reference anchor points (one per plane) used for 
+%       trimming.
+%       - PlaneOrientationAnchor : orientation vectors of each plane that define
+%       the direction pointing "inside".
+%       - IsShapeDefinition : logical labels of the design sample points that 
+%       actively define the space boundary (e.g., extreme samples, anchors).
+%       - Measure : measure of the candidate space (e.g., approximate area or 
+%       volume).
+%       - SamplingBox : bounding box around the internal region of the candidate
+%       space that can be used to help with sampling.
+%
+%   CANDIDATESPACEPLANARTRIMMING methods:
+%       - generate_candidate_space : create a candidate space based on design 
+%       samples and plane definitions (via trimmingInformation).
+%       - update_candidate_space : re-generate or refine it with new data.
+%       - expand_candidate_space : expand the candidate space by a given factor.
+%       - is_in_candidate_space : verify if given design sample points are  
+%       inside the candidate space.
+%       - plot_candidate_space : visualize 1D/2D/3D candidate spaces in the 
+%       specified figure.
 %
 %   See also CandidateSpaceBase.
 %
@@ -37,10 +71,24 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
         %   See also DesignSampleDefinition, IsShapeDefinition.
         IsInsideDefinition
 
+        %ANCHORPOINT Reference anchor points used for trimming planes
+        %   ANCHORPOINT collects reference anchor points that define each plane.
+        %   One plane is defined per anchor point, and the plane orientation 
+        %   in PlaneOrientationAnchor indicates the region considered "inside."
         %
+        %   ANCHORPOINT : (nPlane, nDesignVariable) double
+        %
+        %   See also PlaneOrientationAnchor, is_in_candidate_space.
         AnchorPoint
 
-        % 
+        %PLANEORIENTATIONANCHOR Orientation vectors of each trimming plane
+        %   PLANEORIENTATIONANCHOR contains orientation vectors for each plane 
+        %   that define which side of the plane is considered inside. Each row
+        %   corresponds to the orientation vector of a plane. 
+        %
+        %   PLANEORIENTATIONANCHOR : (nPlane, nDesignVariable) double
+        %
+        %   See also AnchorPoint, is_in_candidate_space.
         PlaneOrientationAnchor
     end
 
@@ -136,14 +184,15 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
         %   points in DESIGNSAMPLE and returns a candidate space object OBJ with the new
         %   definition, assuming all designs are inside the candidate space.
         %
-        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
-        %   receives the inside/outside (true/false) labels of each design point in 
-        %   ISINSIDE.
+        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE,TRIMMINGINFORMATION) uses
+        %   information from the trimming operation TRIMMINGINFORMATION to gather the 
+        %   considered anchor points and plane orientations, using that to determine 
+        %   the inside region.
         %
         %   Inputs:
         %       - OBJ : CandidateSpaceConvexHull
         %       - DESIGNSAMPLE : (nSample,nDesignVariable) double
-        %       - ISINSIDE : (nSample,1) logical
+        %       - TRIMMINGINFORMATION : struct
         %   
         %   Outputs:
         %       - OBJ : CandidateSpaceConvexHull
@@ -159,6 +208,25 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
         end
 
         function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
+        %UPDATE_CANDIDATE_SPACE Re-generate or refine candidate space with new data
+        %   UPDATE_CANDIDATE_SPACE can receive new samples and new trimming
+        %   planes, then adjust the candidate space definition accordingly.
+        %
+        %   OBJ = OBJ.UPDATE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE,TRIMMINGINFORMATION)
+        %   merges previous definitions with the new data. If no anchor info or
+        %   plane orientation is given, the trimming is not changed. 
+        %
+        %   Inputs:
+        %       - OBJ : CandidateSpacePlanarTrimming
+        %       - DESIGNSAMPLE : (nSample,nDesignVariable) double
+        %       - ISINSIDE : (nSample,1) logical
+        %       - TRIMMINGINFORMATION : struct
+        %
+        %   Outputs:
+        %       - OBJ : CandidateSpacePlanarTrimming
+        %
+        %   See also generate_candidate_space, AnchorPoint, PlaneOrientationAnchor.
+
             if(isempty(obj.DesignSampleDefinition) || isempty(obj.AnchorPoint))
                 obj = obj.generate_candidate_space(designSample,trimmingInformation);
                 return;

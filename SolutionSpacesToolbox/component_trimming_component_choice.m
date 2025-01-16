@@ -1,31 +1,44 @@
 function iChoice = component_trimming_component_choice(designSample,componentIndex,isViable,isExclude,isInsideComponent,componentRemoval,ineligibleCandidate,varargin)
-%COMPONENT_TRIMMING_CHOICE Choice of which component trimming to perform
-%	COMPONENT_TRIMMING_CHOICE compares the costs of the candidate trimming 
-%	operation to be performed in every component and chooses the one with the
-%	minimum weighted cost. 
+%COMPONENT_TRIMMING_COMPONENT_CHOICE Select best component-trimming operation
+%   COMPONENT_TRIMMING_COMPONENT_CHOICE evaluates multiple candidate trimming
+%   operations across different components, using a set of selection criteria to 
+%   break ties. The function returns an index identifying which candidate yields 
+%   the best outcome according to the listed criteria.
 %
-%	ICHOICE = COMPONENT_TRIMMING_CHOICE(COST,COMPONENT) receives the cost of
-%	trimming for each component in COST and the component definition itself in
-%	COMPONENT, and return the index ICHOICE that has the minimum cost without
-%	any specific weighting.
+%   ICHOICE = COMPONENT_TRIMMING_COMPONENT_CHOICE(DESIGNSAMPLE,COMPONENTINDEX,
+%   ISVIABLE,ISEXCLUDE,ISINSIDECOMPONENT,COMPONENTREMOVAL,INELIGIBLECANDIDATE)
+%   processes the design-space samples DESIGNSAMPLE and the logical arrays:
+%       - ISVIABLE : which points are viable.
+%       - ISEXCLUDE : which points are excluded.
+%       - ISINSIDECOMPONENT : which points lie inside each component.
+%   COMPONENTREMOVAL is an logical matrix, whose columns correspond to different 
+%   trimming operations. INELIGIBLECANDIDATE indicates which operations are 
+%   invalid. The function identifies a single best candidate among all columns 
+%   using tie-breaking logic.
 %
-%	ICHOICE = COMPONENT_TRIMMING_CHOICE(...NAME,VALUE,...) allows the 
-%	specification of name-value pair arguments. These can be:
-%		- 'WeightedCostType' : how to weight the cost for each component. This 
-%		can be one of the following:
-%			-- 'SimpleCost' : no special weighting, costs are used as-is.
-%			-- 'ComponentDimension' : costs are multiplied by a factor of 
-%			2^(component dimension).
-%		Alternatively, a function handle can be used to define custom weighting.
-%		This function must have the form 'weightedCost = f(cost,component)'.
+%   ICHOICE = COMPONENT_TRIMMING_COMPONENT_CHOICE(...,'SelectionCriteria',
+%   CRITERIA) allows the user to specify CRITERIA, a cell array listing how to 
+%   compare and break ties among candidates. Each criterion is one of the 
+%   recognized strings (e.g., 'NumberInsideViable', 'NumberExclude', etc.) or a 
+%   function handle with the form:
+%       cost = f(designSample,componentIndex,isViable,isExclude,
+%       isInsideComponent,componentRemoval)
+%   By default, CRITERIA is:
+%       {'NumberInsideViable','NumberInsideExclude','NumberExclude', ...
+%        'NumberViable','NumberInsideNotExclude'}.
 %
-%   Input:
-%		- COST : (1,nComponent) double
-%		- COMPONENT : (1,nComponent) cell
-%		- 'WeightedCostType' : char OR string OR function_handle
+%   Inputs:
+%       - DESIGNSAMPLE : (nSample,nDesignVariable) double
+%       - COMPONENTINDEX : (1,nComponent) or (nSample,1) identifying components
+%       - ISVIABLE : (nSample,1) logical
+%       - ISEXCLUDE : (nSample,1) logical
+%       - ISINSIDECOMPONENT : (nSample,nComponent) logical
+%       - COMPONENTREMOVAL : (nSample,nCandidate) logical
+%       - INELIGIBLECANDIDATE : (1,nCandidate) logical
+%       - 'SelectionCriteria' : cell array of strings/function handles
 %
 %   Output:
-%		- ICHOICE : integer
+%       - ICHOICE : integer
 %
 %   See also component_trimming_cost, component_trimming_operation.
 %   
@@ -82,32 +95,17 @@ function iChoice = component_trimming_component_choice(designSample,componentInd
         elseif(strcmpi(criterionCurrent,'NumberInsideNotExclude'))
             removalCost = -sum(isInsideComponentCurrent & ~isExclude & ~componentRemovalCurrent,1);
         elseif(strcmpi(criterionCurrent,'VolumeInsideViable'))
-            volumeComponentBase = nan(1,nComponent);
-            isViableInside = isViable & isInsideAll;
-            for j=1:nComponent
-                designSampleComponent = designSample(:,componentIndex{j});
-                boundingBox = design_bounding_box(designSampleComponent,isViableInside);
-                isInBoundingBox = is_in_design_box(designSampleComponent,boundingBox);
-                volumeFraction = sum(isViableInside)/sum(isInBoundingBox);
-                volumeComponentBase(j) = volumeFraction*prod(boundingBox(2,:)-boundingBox(1,:));
-            end
-            volumeTotalBase = prod(volumeComponentBase);
-
             for j=1:nCandidateCurrent
-                jComponent = convert_index_base(isTie',j,'backward');
-
-                isInsideRemainViable = isViable & isInsideAll & ~componentRemovalCurrent(:,j);
-                if(~any(isInsideRemainViable))
+                isViableRemain = isViable & isInsideAll & ~componentRemovalCurrent(:,j);
+                if(~any(isViableRemain))
                     removalCost(j) = 0;
                     continue;
                 end
-
-                designSampleComponent = designSample(:,componentIndex{jComponent});
-                boundingBox = design_bounding_box(designSampleComponent,isInsideRemainViable);
-                isInBoundingBox = is_in_design_box(designSampleComponent,boundingBox);
-                volumeFraction = sum(isInsideRemainViable)/sum(isInBoundingBox);
-                volumeComponentRemain = volumeFraction*prod(boundingBox(2,:)-boundingBox(1,:));
-                removalCost(j) = -volumeTotalBase*volumeComponentRemain/volumeComponentBase(jComponent);
+                
+                boundingBox = design_bounding_box(designSample,isViableRemain);
+                isInBoundingBox = is_in_design_box(designSample,boundingBox);
+                volumeFraction = sum(isViableRemain)/sum(isInBoundingBox);
+                removalCost(j) = -volumeFraction*prod(boundingBox(2,:)-boundingBox(1,:));
             end
         end
 

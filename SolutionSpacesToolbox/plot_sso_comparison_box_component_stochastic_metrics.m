@@ -1,4 +1,80 @@
 function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDataComponent,varargin)
+%PLOT_SSO_COMPARISON_BOX_COMPONENT_STOCHASTIC_METRICS Compare stochastic results
+%   PLOT_SSO_COMPARISON_BOX_COMPONENT_STOCHASTIC_METRICS automatically generates
+%   a series of plots to analyze the performance of a stochastic algorithm that  
+%   finds (1) box-based solutions and (2) component-based solutions. The 
+%   function creates seven figures that compare both solution approaches along 
+%   iteration steps.
+%
+%   These plots are:
+%       (1) Iteration Step vs. Measure
+%       (2) Iteration Step vs. Normalized Measure (V/V_{ds})
+%       (3) Iteration Step vs. Growth Rate
+%       (4) Iteration Step vs. Number of Sampled Points
+%       (5) Iteration Step vs. Measure Ratio (V_i/V_{i-1}) and Sample Purity
+%       (6) Sample Purity vs. Normalized Measure (V/V_{ds})
+%       (7) Total Function Evaluations vs. Sample Purity vs. Normalized Measure
+%
+%   PLOT_SSO_COMPARISON_BOX_COMPONENT_STOCHASTIC_METRICS(ALGODATABOX,
+%   ALGODATACOMPONENT) expects two structures:
+%       - ALGODATABOX : (1,nBox) cell array of structs, each struct holding 
+%       iterative metrics for a particular box-based approach.
+%       - ALGODATACOMPONENT: (1,nComponent) cell array of structs, each struct 
+%       holding iterative metrics for a particular component-based approach.
+%
+%   PLOT_SSO_COMPARISON_BOX_COMPONENT_STOCHASTIC_METRICS(...,'NAME',VALUE,...) 
+%   allows additional name-value pairs to customize the output. Key options are:
+%       - 'SaveFolder' : if specified, all figures are automatically saved in 
+%       this folder using 'save_print_figure'. Default is [] (no saving).
+%       - 'CloseFigureAfterSaving' : if true each figure is closed after saving. 
+%       Default is false.
+%       - 'SaveFigureOptions' : Cell array of options passed to 
+%       'save_print_figure'.
+%       - 'BoxLabel','ComponentLabel' : cell arrays of labels for each 
+%       box/component.
+%       - 'BoxColor','ComponentColor' : arrays of colors for plotting each 
+%       box/component.
+%       - 'GeneralPlotOptions','BoxPlotOptions','ComponentPlotOptions' : cell  
+%       arrays of additional name-value pairs for customizing plot appearance.
+%
+%   FIGUREHANDLE = PLOT_SSO_COMPARISON_BOX_COMPONENT_STOCHASTIC_METRICS(...)
+%   returns a (1,7) array of figure handles in FIGUREHANDLE. If no output 
+%   variable is specified, no figure handles are returned.
+%
+%   Inputs:
+%       - ALGODATABOX : (1,nBox) cell array of structs
+%       - ALGODATACOMPONENT : (1,nComponent) cell array of structs
+%       - 'SaveFolder' : char or string
+%       - 'CloseFigureAfterSaving' : logical 
+%       - 'SaveFigureOptions' : cell
+%       - 'BoxLabel','ComponentLabel' : cell of char/string
+%       - 'BoxColor','ComponentColor' : (nBox,3) and (nComponent,3) double 
+%       (RGB color arrays)
+%       - 'GeneralPlotOptions','BoxPlotOptions','ComponentPlotOptions' : cell 
+%       arrays of plot options
+%
+%   Outputs:
+%       - FIGUREHANDLE : (1,7) Figure
+%
+%   See also: sso_box_stochastic, postprocess_sso_box_stochastic, 
+%   sso_component_stochastic, postprocess_component_stochastic, 
+%   save_print_figure.
+%
+%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   SPDX-License-Identifier: Apache-2.0
+
+%   Licensed under the Apache License, Version 2.0 (the "License");
+%   you may not use this file except in compliance with the License.
+%   You may obtain a copy of the License at
+% 
+%       http://www.apache.org/licenses/LICENSE-2.0
+% 
+%   Unless required by applicable law or agreed to in writing, software
+%   distributed under the License is distributed on an "AS IS" BASIS,
+%   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+%   See the License for the specific language governing permissions and
+%   limitations under the License.
+
 	parser = inputParser;
     parser.addParameter('SaveFolder',[]);
     parser.addParameter('CloseFigureAfterSaving',false);

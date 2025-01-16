@@ -1,36 +1,48 @@
 function iChoice = component_trimming_cost(designSample,isViable,isExclude,isInsideComponent,isInsideAll,removalCandidate,ineligibleCandidate,varargin)
-%COMPONENT_TRIMMING_COST Cost of removing selected designs from component space
-%   COMPONENT_TRIMMING_COST computes the cost associated with performing the
-%   candidate trimming operations on the component space. 
+%COMPONENT_TRIMMING_COST Choose removal operation based on multiple criteria
+%   COMPONENT_TRIMMING_COST determines which one of multiple candidate removal
+%   operations yields the best outcome for a component, according to a 
+%   prioritized list of selection criteria. Each criterion helps break ties 
+%   among equally good candidates, in sequence.
 %
-%   REMOVALCOST = COMPONENT_TRIMMING_COST(DESIGNSAMPLE,ACTIVEKEEP,
-%   REMOVALCANDIDATE) receives the component design sample points in 
-%   DESIGNSAMPLE, the label for which points should be kept on ACTIVEKEEP, and
-%   all the trimming operation candidates for this component in 
-%   REMOVALCANDIDATE, and returns the cost for each of those removal candidates
-%   in REMOVALCOST. This cost is defined by the amount of points that are 
-%   supposed to be kept that are being removed.
+%   ICHOICE = COMPONENT_TRIMMING_COST(DESIGNSAMPLE,ISVIABLE,ISEXCLUDE,
+%   ISINSIDECOMPONENT,ISINSIDEALL,REMOVALCANDIDATE,INELIGIBLECANDIDATE) returns
+%   the index ICHOICE corresponding to the best candidate removal operation,
+%   considering the set of design points in DESIGNSAMPLE and various logical
+%   masks:
+%       - ISVIABLE : indicates viable points for the component.
+%       - ISEXCLUDE : indicates points that are excluded.
+%       - ISINSIDECOMPONENT : indicates points inside the component region.
+%       - ISINSIDEALL : indicates points currently inside all components.
+%   REMOVALCANDIDATE is an logical matrix whose columns represent different 
+%   candidate operations. INELIGIBLECANDIDATE indicates which of these 
+%   candidates are invalid or already excluded.
 %
-%   REMOVALCOST = COMPONENT_TRIMMING_COST(...NAME,VALUE,...) allows the 
-%   specification of name-value pair arguments. These can be:
-%       - 'CostType' : how to compute the cost of each removal candidate option. 
-%       This can be one of the following:
-%           -- 'NumberKeep' : number of design points labeled as 'keep' which 
-%           are being removed.
-%           -- 'VolumeKeep' : estimated volume of the desired region being 
-%           removed.
-%       Alternatively, a function handle can be used to define custom weighting.
-%       This function must have the form 
-%       'cost = f(designSample,isKeep,removalCandidate)'. 
+%   The function attempts to pick a single best candidate index by evaluating
+%   the criteria listed in the 'SelectionCriteria' name-value pair (in order).
+%   By default, 'SelectionCriteria' = 
+%       {'NumberInsideViable','NumberInsideExclude','NumberExclude', ...
+%        'NumberViable','NumberInsideNotExclude'}
 %
-%   Input:
+%   ICHOICE = COMPONENT_TRIMMING_COST(...,'SelectionCriteria',CRITERIA) allows
+%   specifying a custom sequence of criteria (CRITERIA can be a cell array of 
+%   strings or function handles). For each criterion, the cost is computed for 
+%   each candidate, and the function narrows down to whichever candidates 
+%   minimize that cost. The process continues until only one candidate remains
+%   or all criteria are exhausted.
+%
+%   Inputs:
 %       - DESIGNSAMPLE : (nSample,nDesignVariable) double
-%       - ACTIVEKEEP : (nSample,1) logical
+%       - ISVIABLE : (nSample,1) logical
+%       - ISEXCLUDE : (nSample,1) logical
+%       - ISINSIDECOMPONENT : (nSample,1) logical
+%       - ISINSIDEALL : (nSample,1) logical
 %       - REMOVALCANDIDATE : (nSample,nRemovalCandidate) logical
-%       - 'CostType' : char OR string OR function_handle
+%       - INELIGIBLECANDIDATE : (1,nRemovalCandidate) logical
+%       - 'SelectionCriteria' : cell array of strings/function handles
 %
 %   Output:
-%       - REMOVALCOST : (1,nRemovalCandidate) double
+%       - ICHOICE : integer
 %
 %   See also component_trimming_choice, component_trimming_operation.
 %   

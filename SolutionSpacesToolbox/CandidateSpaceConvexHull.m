@@ -29,10 +29,14 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
 %       internal region and a larger bounding box which may contain negative
 %       designs in its edges. 
 %       - ConvexHullIndex : indexing for the definition of the convex hull.
+%       - ConvexHullFacePoint : points on each facet of the convex hull
+%       - ConvexHullFaceNormal : plane orientation of each facet (pointing 
+%       inwards)
 %
 %   CANDIDATESPACECONVEXHULL methods:
 %       - generate_candidate_space : create a candidate space based on design 
 %       samples that are labeled as inside/outside.
+%       - update_candidate_space : re-generate it with new data.
 %       - expand_candidate_space : expand the candidate space by a given factor.
 %       - is_in_candidate_space : verify if given design samples are inside 
 %       the candidate space.

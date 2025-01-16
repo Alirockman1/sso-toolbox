@@ -60,7 +60,8 @@ function [linearConvertedQuery,logicalConvertedQuery] = convert_index_base(baseC
 %       - CONVERSIONTYPE : char OR string
 %   Output:
 %       - LINEARCONVERTEDQUERY : (m,p) integer
-%       - LOGICALCONVERTEDQUERY : (n,p) ('backward') OR (nT,p) ('forward') logical
+%       - LOGICALCONVERTEDQUERY : (n,p) ('backward') OR (nT,p) ('forward') 
+%       logical
 %
 %   See also convert_logical_index_base_or.
 %

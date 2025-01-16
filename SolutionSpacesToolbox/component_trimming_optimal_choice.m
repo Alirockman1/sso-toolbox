@@ -1,31 +1,39 @@
 function iChoice = component_trimming_optimal_choice(designSample,componentIndex,isViable,isExclude,isInsideComponent,varargin)
-%COMPONENT_TRIMMING_CHOICE Choice of which component trimming to perform
-%	COMPONENT_TRIMMING_CHOICE compares the costs of the candidate trimming 
-%	operation to be performed in every component and chooses the one with the
-%	minimum weighted cost. 
+%COMPONENT_TRIMMING_OPTIMAL_CHOICE Select a single best trimming option
+%   COMPONENT_TRIMMING_OPTIMAL_CHOICE analyzes multiple full trimming passes 
+%   along with the design space samples and logical masks to choose which 
+%   single trimming pass is optimal based on user-provided selection criteria.
 %
-%	ICHOICE = COMPONENT_TRIMMING_CHOICE(COST,COMPONENT) receives the cost of
-%	trimming for each component in COST and the component definition itself in
-%	COMPONENT, and return the index ICHOICE that has the minimum cost without
-%	any specific weighting.
+%   ICHOICE = COMPONENT_TRIMMING_OPTIMAL_CHOICE(DESIGNSAMPLE,COMPONENTINDEX,
+%   ISVIABLE,ISEXCLUDE,ISINSIDECOMPONENT) uses the design points in 
+%   DESIGNSAMPLE, the logical arrays ISVIABLE and ISEXCLUDE indicating which 
+%   points are viable or excluded, and ISINSIDECOMPONENT, a cell array whose 
+%   elements each represent which design points are inside the components
+%   for each pass. This function computes the best component trimming 
+%   option by iterating through specified criteria to break ties. 
+%   The chosen index is returned as ICHOICE.
 %
-%	ICHOICE = COMPONENT_TRIMMING_CHOICE(...NAME,VALUE,...) allows the 
-%	specification of name-value pair arguments. These can be:
-%		- 'WeightedCostType' : how to weight the cost for each component. This 
-%		can be one of the following:
-%			-- 'SimpleCost' : no special weighting, costs are used as-is.
-%			-- 'ComponentDimension' : costs are multiplied by a factor of 
-%			2^(component dimension).
-%		Alternatively, a function handle can be used to define custom weighting.
-%		This function must have the form 'weightedCost = f(cost,component)'.
+%   ICHOICE = COMPONENT_TRIMMING_OPTIMAL_CHOICE(...,'SelectionCriteria',
+%   CRITERIA) 
+%   allows specifying CRITERIA, a cell array of strings or function handles 
+%   that define how to evaluate and break ties. Each criterion is computed 
+%   across all potential component definitions. By default, CRITERIA is:
+%       {'NumberInsideViable','NumberInsideNotExclude'}
+%   Additional recognized strings might include 'VolumeInsideViable'. 
+%   A custom function handle can also be supplied, having the signature:
+%       cost = f(designSample,componentIndex,isViable,isExclude,
+%       isInsideComponentSubset)
 %
-%   Input:
-%		- COST : (1,nComponent) double
-%		- COMPONENT : (1,nComponent) cell
-%		- 'WeightedCostType' : char OR string OR function_handle
+%   Inputs:
+%       - DESIGNSAMPLE : (nSample,nDesignVariable) double
+%       - COMPONENTINDEX : Identifies the component to which points belong
+%       - ISVIABLE : (nSample,1) logical
+%       - ISEXCLUDE : (nSample,1) logical
+%       - ISINSIDECOMPONENT : (1,nCandidate) cell
+%       - 'SelectionCriteria' : cell array of strings or function handles
 %
 %   Output:
-%		- ICHOICE : integer
+%       - ICHOICE : integer
 %
 %   See also component_trimming_cost, component_trimming_operation.
 %   

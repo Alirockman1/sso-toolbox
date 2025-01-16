@@ -263,13 +263,12 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         console.info('Generating new sample points in candidate space... ');
         tic
         if(~candidateSpaceDefined)
-            designSample = component_sso_generate_new_sample_points_sampling_box(...
-                samplingBoxGrown,...
-                nSample,...
-                options.SamplingMethodFunction,...
-                options.SamplingMethodOptions,...
-                console);
+            console.info('Generating new sample points in candidate box... ');
+            tic
+            designSample = options.SamplingMethodFunction(samplingBoxGrown,nSample,options.SamplingMethodOptions{:});
             paddingSample = [];
+            toc
+            console.debug('- Number of samples generated: %g\n',nSample);
         else
             [designSample,paddingSample] = options.CandidateSpaceSamplingFunction(...
                 candidateSpaceGrown,...
@@ -292,22 +291,16 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         console.debug('- Number of padding samples: %g\n',size(paddingSample,1));
             
         % Evaluate the samples
-        console.info('Evaluating new points... ');
-        tic
         [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation] = ...
-            component_sso_evaluate_sample_points(designEvaluator,designSample,console);
-        console.info('Elapsed time is %g seconds.\n',toc);
+            sso_component_sub_evaluate_sample_points(designEvaluator,designSample,console);
         
         % Label samples according to desired requirement spaces problem type
-        console.info('Labeling new points... ');
-        tic
-        [isAcceptable,isUseful] = component_sso_label_requirement_spaces(...
+        [isAcceptable,isUseful] = sso_component_sub_label_requirement_spaces(...
             options.RequirementSpacesType,...
             isGoodPerformance,...
             isPhysicallyFeasible,...
             console);
-        [nAcceptable,nUseful,nAccetableUseful] = component_sso_count_acceptable_useful(isAcceptable,isUseful,console);
-        console.info('Elapsed time is %g seconds.\n',toc);
+        [nAcceptable,nUseful,nAccetableUseful] = sso_component_sub_count_acceptable_useful(isAcceptable,isUseful,console);
             
         % Box may have grown too much + "unlucky sampling" w/ no good
         % points, go back in this case
@@ -376,7 +369,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         console.info('Preparing sample points used in trimming... ');
         tic
         isPadding = false(size(designSample,1),1);
-        [trimmingSample,trimmingIsAcceptable,trimmingIsUseful,trimmingScore,isPadding] = component_sso_prepare_trimming_samples(...
+        [trimmingSample,trimmingIsAcceptable,trimmingIsUseful,trimmingScore,isPadding] = sso_component_sub_prepare_trimming_samples(...
             designSample,...
             isAcceptable,...
             isUseful,...
@@ -404,10 +397,10 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
 
         if(applyLeannessEachTrim)
             console.info('Applying the leanness condition... ');
-            labelRemoveLeanness = ~trimmingIsUseful & ~isPadding;
-            labelKeep = trimmingIsAcceptable & trimmingIsUseful;
-            trimmingOrder = trimming_order(labelRemoveLeanness,trimmingScore,'OrderPreference','score-low-to-high');
-            candidateSpaceTrimmed = component_trimming_leanness(trimmingSample,labelKeep,trimmingOrder,componentIndex,candidateSpaceTrimmed,trimmingOperationOptions{:});
+            isRemoveLeanness = ~trimmingIsUseful & ~isPadding;
+            isKeepLeanness = trimmingIsAcceptable & trimmingIsUseful;
+            trimmingOrder = trimming_order(isRemoveLeanness,trimmingScore,'OrderPreference','score-low-to-high');
+            candidateSpaceTrimmed = component_trimming_leanness(trimmingSample,isKeepLeanness,trimmingOrder,componentIndex,candidateSpaceTrimmed,trimmingOperationOptions{:});
             console.info('Elapsed time is %g seconds.\n',toc);
         end
         
@@ -523,19 +516,13 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         console.debug('- Number of padding samples: %g\n',size(paddingSample,1));
         
         % Evaluate the samples
-        console.info('Evaluating new points... ');
-        tic
         [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation] = ...
-            component_sso_evaluate_sample_points(designEvaluator,designSample,console);
-        console.info('Elapsed time is %g seconds.\n',toc);
+            sso_component_sub_evaluate_sample_points(designEvaluator,designSample,console);
         
         % Label samples according to desired requirement spaces problem type
-        console.info('Labeling new points... ');
-        tic
-        [isAcceptable,isUseful] = component_sso_label_requirement_spaces(...
+        [isAcceptable,isUseful] = sso_component_sub_label_requirement_spaces(...
             options.RequirementSpacesType,isGoodPerformance,isPhysicallyFeasible,console);
-        [nAcceptable,nUseful,nAcceptableUseful] = component_sso_count_acceptable_useful(isAcceptable,isUseful,console);
-        console.info('Elapsed time is %g seconds.\n',toc);
+        [nAcceptable,nUseful,nAcceptableUseful] = sso_component_sub_count_acceptable_useful(isAcceptable,isUseful,console);
 
         
         %% Convergence Criteria - Purity
@@ -549,7 +536,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         console.info('Elapsed time is %g seconds.\n',toc);
         
 
-        %% Modification Step A - Trimming: Remove Bad Points
+        %% Trimming: Remove Bad Points
         performTrim = (~convergedConsolidation && nAcceptable<nSample && ~puritySatisfied);
         if(performTrim)
             % get shape definition for each candidate space
@@ -581,7 +568,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             consideredScore = [previousTrimmingScore;score];
             consideredIsPadding = [previousIsPadding;false(size(designSample,1),1)];
             [trimmingSample,trimmingIsAcceptable,trimmingIsUseful,trimmingScore,trimmingIsPadding] = ...
-                component_sso_prepare_trimming_samples(...
+                sso_component_sub_prepare_trimming_samples(...
                     consideredSample,...
                     consideredisAcceptable,...
                     consideredisUseful,...
@@ -609,10 +596,10 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             if(applyLeannessEachTrim)
                 console.info('Applying the leanness condition... ');
 
-                labelRemoveLeanness = ~trimmingIsUseful & ~trimmingIsPadding;
-                labelKeep = trimmingIsAcceptable & trimmingIsUseful;
-                trimmingOrder = trimming_order(labelRemoveLeanness,trimmingScore,'OrderPreference','score-low-to-high');
-                candidateSpaceTrimmed = component_trimming_leanness(trimmingSample,labelKeep,trimmingOrder,componentIndex,candidateSpaceTrimmed,trimmingOperationOptions{:});
+                isRemoveLeanness = ~trimmingIsUseful & ~trimmingIsPadding;
+                isKeepLeanness = trimmingIsAcceptable & trimmingIsUseful;
+                trimmingOrder = trimming_order(isRemoveLeanness,trimmingScore,'OrderPreference','score-low-to-high');
+                candidateSpaceTrimmed = component_trimming_leanness(trimmingSample,isKeepLeanness,trimmingOrder,componentIndex,candidateSpaceTrimmed,trimmingOperationOptions{:});
 
                 console.info('Elapsed time is %g seconds.\n',toc);
             end
@@ -696,49 +683,34 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
     %% leanness condition
     if(applyLeannessFinalTrim)
         console.info('Applying the leanness condition... ');
-        labelRemoveLeanness = ~trimmingIsUseful & ~trimmingIsPadding;
-        labelKeep = trimmingIsAcceptable & trimmingIsUseful;
-        trimmingOrder = trimming_order(labelRemoveLeanness,trimmingScore,'OrderPreference','score-low-to-high');
-        activeComponent = component_trimming_leanness(trimmingSample,labelKeep,trimmingOrder,componentIndex,activeComponent,trimmingOperationOptions{:});
+        isRemoveLeanness = ~trimmingIsUseful & ~trimmingIsPadding;
+        isKeepLeanness = trimmingIsAcceptable & trimmingIsUseful;
+        trimmingOrder = trimming_order(isRemoveLeanness,trimmingScore,'OrderPreference','score-low-to-high');
+        candidateSpace = component_trimming_leanness(trimmingSample,isKeepLeanness,trimmingOrder,componentIndex,candidateSpace,trimmingOperationOptions{:});
         console.info('Elapsed time is %g seconds.\n',toc);
-
-        console.info('Updating candidate spaces... ');
-        candidateSpace = component_sso_update_candidate_spaces(trimmingSample,activeComponent,componentIndex,candidateSpace);
-        console.info('Elapsed time is %g seconds.\n\n',toc);
     end
     
     %% 
     componentSolutionSpace = candidateSpace;
 end
 
-%% Generate New Samples
-function dv = component_sso_generate_new_sample_points_sampling_box(candidateBox,nSample,samplingMethodFunction,samplingMethodOptions,console)
-    console.info('Generating new sample points in candidate box... ');
-    tic
-    
-    dv = samplingMethodFunction(candidateBox,nSample,samplingMethodOptions{:});
-    
-    toc
-    console.debug('- Number of samples generated: %g\n',nSample);
-end
-
 
 %% Evaluate Samples
-function [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation] = component_sso_evaluate_sample_points(designEvaluator,dv,console)
+function [isGoodPerformance,isPhysicallyFeasible,performanceScore,outputEvaluation] = sso_component_sub_evaluate_sample_points(designEvaluator,designSample,console)
     console.info('Evaluating sample points... ');
     tic
     
-    [performanceDeficit,physicalFeasibilityDeficit,outputEvaluation] = designEvaluator.evaluate(dv);
+    [performanceDeficit,physicalFeasibilityDeficit,outputEvaluation] = designEvaluator.evaluate(designSample);
 
-    [isGoodPerformance,score] = design_deficit_to_label_score(performanceDeficit);
+    [isGoodPerformance,performanceScore] = design_deficit_to_label_score(performanceDeficit);
 
     if(~isempty(physicalFeasibilityDeficit))
         isPhysicallyFeasible = design_deficit_to_label_score(physicalFeasibilityDeficit);
     else
-        isPhysicallyFeasible = true(size(dv,1),1);
+        isPhysicallyFeasible = true(size(designSample,1),1);
     end
     
-    toc
+    console.info('Elapsed time is %g seconds.\n',toc);
     console.debug('- Number of good samples: %g (%g%%)\n',sum(isGoodPerformance),100*sum(isGoodPerformance)/size(isGoodPerformance,1));
     console.debug('- Number of bad samples: %g (%g%%)\n',sum(~isGoodPerformance),100*sum(~isGoodPerformance)/size(isGoodPerformance,1));
     console.debug('- Number of physically feasible samples: %g (%g%%)\n',sum(isPhysicallyFeasible),100*sum(isPhysicallyFeasible)/size(isPhysicallyFeasible,1));
@@ -747,60 +719,43 @@ end
 
 
 %% Label Samples
-function [labelAcc_sample,labelUse_sample] = component_sso_label_requirement_spaces(RequirementSpacesType,isGoodPerformance_sample,labelPF_sample,console)
+function [isAcceptable,isUseful] = sso_component_sub_label_requirement_spaces(requirementSpacesType,isGoodPerformance,isPhysicallyFeasible,console)
     console.info('Creating labels for each design... ');
     tic
-    [labelAcc_sample,labelUse_sample] = design_requirement_spaces_label(RequirementSpacesType,isGoodPerformance_sample,labelPF_sample);
-    toc
+    [isAcceptable,isUseful] = design_requirement_spaces_label(requirementSpacesType,isGoodPerformance,isPhysicallyFeasible);
+    console.info('Elapsed time is %g seconds.\n',toc);
 end
 
 
 %% Count Labels
-function [mAcc,mUse,mAccUse] = component_sso_count_acceptable_useful(labelAcc_sample,labelUse_sample,console)
-    mAcc = sum(labelAcc_sample);
-    mUse = sum(labelUse_sample);
-    mAccUse = sum(labelAcc_sample&labelUse_sample);
+function [nAcceptable,nUseful,nAcceptableUseful] = sso_component_sub_count_acceptable_useful(isAcceptable,isUseful,console)
+    nAcceptable = sum(isAcceptable);
+    nUseful = sum(isUseful);
+    nAcceptableUseful = sum(isAcceptable&isUseful);
     
-    console.debug('- Number of accepted samples: %g (%g%%)\n',mAcc,100*mAcc/size(labelAcc_sample,1));
-    console.debug('- Number of useful samples: %g (%g%%)\n',mUse,100*mUse/size(labelUse_sample,1));
-    console.debug('- Number of accepted and useful samples: %g (%g%%)\n',mAccUse,100*mAccUse/size(labelAcc_sample,1));
-end
-
-
-%%
-function [candidateSpaces,samplingBox,isShapeDefinition] = component_sso_update_candidate_spaces(dvTrim,activeComponent,componentIndex,candidateSpaces)
-    samplingBox = nan(2,size(dvTrim,2));
-    isShapeDefinition = false(size(activeComponent));
-    for i=1:size(componentIndex,2)
-        % Eliminate from sampling designs that were taken out by other components
-        Xtrain = dvTrim(:,componentIndex{i});
-        Ytrain = activeComponent(:,i);
-
-        candidateSpaces(i) = candidateSpaces(i).generate_candidate_space(Xtrain,Ytrain);
-        samplingBox(:,componentIndex{i}) = candidateSpaces(i).SamplingBox;
-
-        isShapeDefinition(:,i) = candidateSpaces(i).IsShapeDefinition;
-    end
+    console.debug('- Number of accepted samples: %g (%g%%)\n',nAcceptable,100*nAcceptable/size(isAcceptable,1));
+    console.debug('- Number of useful samples: %g (%g%%)\n',nUseful,100*nUseful/size(isUseful,1));
+    console.debug('- Number of accepted and useful samples: %g (%g%%)\n',nAcceptableUseful,100*nAcceptableUseful/size(isAcceptable,1));
 end
 
 
 %% 
-function [dvTrim,labelAccTrim,labelUseTrim,scoreTrim,isPadding] = component_sso_prepare_trimming_samples(dv,labelAcc,labelUse,score,isPadding,dvPad,shapeSample,usePadInTrimming,isUsefulShape)
+function [designSampleTrim,isAcceptableTrim,isUsefulTrim,performanceScoreTrim,isPadding] = sso_component_sub_prepare_trimming_samples(designSample,isAcceptable,isUseful,performanceScore,isPadding,paddingSample,shapeSample,usePadInTrimming,isUsefulShape)
     nShape = size(shapeSample,1);
-    nPad = size(dvPad,1);
+    nPad = size(paddingSample,1);
 
-    dvTrim = [dv;shapeSample];
-    labelAccTrim = [labelAcc;true(nShape,1)];
-    labelUseTrim = [labelUse;repmat(isUsefulShape,nShape,1)];
-    scoreTrim = [score;zeros(nShape,1)];
+    designSampleTrim = [designSample;shapeSample];
+    isAcceptableTrim = [isAcceptable;true(nShape,1)];
+    isUsefulTrim = [isUseful;repmat(isUsefulShape,nShape,1)];
+    performanceScoreTrim = [performanceScore;zeros(nShape,1)];
     isPadding = [isPadding;true(nShape,1)];
     
     if(usePadInTrimming)
         % for trimming purposes, may consider the designs for padding unnaceptable and useless
-        dvTrim = [dvTrim;dvPad];
-        labelAccTrim = [labelAccTrim;true(nPad,1)];
-        labelUseTrim = [labelUseTrim;false(nPad,1)];
-        scoreTrim = [scoreTrim;-ones(nPad,1)];
+        designSampleTrim = [designSampleTrim;paddingSample];
+        isAcceptableTrim = [isAcceptableTrim;true(nPad,1)];
+        isUsefulTrim = [isUsefulTrim;false(nPad,1)];
+        performanceScoreTrim = [performanceScoreTrim;-ones(nPad,1)];
         isPadding = [isPadding;true(nPad,1)];
     end
 end

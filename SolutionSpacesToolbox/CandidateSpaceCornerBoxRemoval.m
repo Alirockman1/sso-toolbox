@@ -1,6 +1,38 @@
 classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
+%CANDIDATESPACECORNERBOXREMOVAL Candidate Space using corner-box removal
+%   CANDIDATESPACECORNERBOXREMOVAL defines a candidate space by removing
+%   certain "corner boxes" from the feasible region. These corner boxes are
+%   identified via anchor points and a corner-direction logic, and designs
+%   that lie inside these boxes are excluded from the candidate space. 
 %
-%   See also CandidateSpaceBase.
+%   CANDIDATESPACECORNERBOXREMOVAL is derived from CandidateSpaceBase.
+%
+%   CANDIDATESPACECORNERBOXREMOVAL properties:
+%       - DesignSampleDefinition : sample points used to define the candidate 
+%       space.
+%       - IsInsideDefinition : logical flags specifying whether each sample 
+%       point is inside or outside the space (true = inside).
+%       - AnchorPoint : anchor points that determine the corners to remove.
+%       - CornerDirection : directions specifying how each anchor trims the 
+%       space.
+%       - DetachTolerance : tolerance for merging or discarding anchors.
+%       - IsShapeDefinition : logical flags indicating which points directly 
+%       shape the boundary of the candidate space.
+%       - Measure : approximate measure (area/volume) of the candidate space.
+%       - SamplingBox : bounding box around the current inside region for 
+%       sampling.
+%
+%   CANDIDATESPACECORNERBOXREMOVAL methods:
+%       - generate_candidate_space : initialize the candidate space using sample 
+%       points and trimming information (anchors/corners).
+%       - update_candidate_space : update the definition with new samples, 
+%       possibly adding or removing corner anchors.
+%       - expand_candidate_space : grow the space by a factor within the design
+%       space.
+%       - is_in_candidate_space : determine whether new points are inside the 
+%       space.
+%
+%   See also: CandidateSpaceBase.
 %
 %   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
@@ -37,13 +69,36 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
         %   See also DesignSampleDefinition, IsShapeDefinition.
         IsInsideDefinition
         
+        %ANCHORPOINT Anchor points used to define corner regions to remove
+        %   ANCHORPOINT represents specific reference points that, combined with 
+        %   CornerDirection, identify which corner boxes (i.e., rectangular subregions)
+        %   in the design space should be removed.
         %
+        %   ANCHORPOINT : (nAnchor, nDesignVariable) double
+        %
+        %   See also CornerDirection, generate_candidate_space.
         AnchorPoint
 
-        % 
+        %CORNERDIRECTION Corner-direction flags specifying the removal region
+        %   CORNERDIRECTION is an array of booleans indicating for each dimension 
+        %   whether the corner is "upper" or "lower." If true in dimension j, the 
+        %   removal corner extends toward the upper boundary in that dimension, else 
+        %   it extends toward the lower boundary.
+        %
+        %   CORNERDIRECTION : (nAnchor, nDesignVariable) logical
+        %
+        %   See also AnchorPoint.
         CornerDirection
 
+        %DETACHTOLERANCE Tolerance for merging or discarding nearby anchors
+        %   DETACHTOLERANCE defines a threshold for how close anchors must be 
+        %   before they are treated as the same anchor point. A value of zero 
+        %   means no merging. Larger values cause anchors that lie within a 
+        %   fraction of the bounding box range to be collapsed or removed.
         %
+        %   DETACHTOLERANCE : double
+        %
+        %   See also update_candidate_space.
         DetachTolerance
     end
 
@@ -133,28 +188,28 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
         end
         
         function obj = generate_candidate_space(obj,designSample,trimmingInformation)
-        %GENERATE_CANDIDATE_SPACE Initial definition of the candidate space
-        %   GENERATE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
-        %   outside regions of the candidate space. For CandidateSpaceConvexHull, this
-        %   means a convex hull is created around the inside designs.
+        %GENERATE_CANDIDATE_SPACE Define the candidate space from sample points
+        %   GENERATE_CANDIDATE_SPACE uses sample points and trimming information
+        %   to determine which corners should be removed. The inside definition 
+        %   is then updated accordingly.
         %
-        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
-        %   points in DESIGNSAMPLE and returns a candidate space object OBJ with the new
-        %   definition, assuming all designs are inside the candidate space.
-        %
-        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
-        %   receives the inside/outside (true/false) labels of each design point in 
-        %   ISINSIDE.
+        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE,TRIMMINGINFORMATION)
+        %   sets DesignSampleDefinition to DESIGNSAMPLE, and if 
+        %   trimmingInformation is provided, populates AnchorPoint and
+        %   CornerDirection. 
         %
         %   Inputs:
-        %       - OBJ : CandidateSpaceConvexHull
+        %       - OBJ : CandidateSpaceCornerBoxRemoval
         %       - DESIGNSAMPLE : (nSample,nDesignVariable) double
-        %       - ISINSIDE : (nSample,1) logical
-        %   
+        %       - TRIMMINGINFORMATION : (nCorner,1) struct
+        %           -- Anchor : (1,nDimension) double
+        %           -- CornerDirection : (1,nDimension) logical
+        %
         %   Outputs:
-        %       - OBJ : CandidateSpaceConvexHull
-        %   
-        %   See also convex_hull_plane, is_in_candidate_space.
+        %       - OBJ : CandidateSpaceCornerBoxRemoval
+        %
+        %   See also AnchorPoint, CornerDirection, is_in_candidate_space.
+
             obj.DesignSampleDefinition = designSample;
 
             if(~isempty(trimmingInformation))
@@ -165,6 +220,27 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
         end
 
         function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
+        %UPDATE_CANDIDATE_SPACE Incorporate new corner anchors or samples
+        %   UPDATE_CANDIDATE_SPACE merges existing anchors with new ones from
+        %   trimmingInformation, checks for redundant anchors, and merges new 
+        %   sample points. The inside definition is recalculated.
+        %
+        %   OBJ = OBJ.UPDATE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE,TRIMMINGINFORMATION)
+        %   updates the internal state of the object by appending anchors and 
+        %   corner directions from TRIMMINGINFORMATION. It also checks for
+        %   redundant anchors and merges them if needed. 
+        %
+        %   Inputs:
+        %       - OBJ : CandidateSpaceCornerBoxRemoval
+        %       - DESIGNSAMPLE : (nSample,nDesignVariable) double
+        %       - ISINSIDE : (nSample,1) logical
+        %       - TRIMMINGINFORMATION : struct
+        %
+        %   Outputs:
+        %       - OBJ : CandidateSpaceCornerBoxRemoval
+        %
+        %   See also generate_candidate_space, AnchorPoint, CornerDirection.
+
             if(isempty(obj.DesignSampleDefinition) || isempty(obj.AnchorPoint))
                 obj = obj.generate_candidate_space(designSample,trimmingInformation);
                 return;
@@ -272,29 +348,6 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             obj.DesignSampleDefinition = [obj.DesignSampleDefinition;designSampleNew];
 
             if(~isempty(obj.AnchorPoint))
-                % connect each anchor to its respective corner
-                %anchorCorner = nan(size(obj.AnchorPoint,1),size(obj.DesignSpaceLowerBound,2));
-                %for i=1:size(obj.DesignSpaceLowerBound,2)
-                %    anchorCorner(~obj.CornerDirection(:,i),i) = obj.DesignSpaceLowerBound(i);
-                %    anchorCorner(obj.CornerDirection(:,i),i) = obj.DesignSpaceUpperBound(i);
-                %end
-                %distanceAnchorToCorner = anchorCorner - obj.AnchorPoint;
-                %directionGrowthCorner = distanceAnchorToCorner./vecnorm(distanceAnchorToCorner,2,2);
-
-                % grow away from center
-                %distanceCenterToAnchor = obj.AnchorPoint - center;
-                %directionGrowthCenter = distanceCenterToAnchor./vecnorm(distanceCenterToAnchor,2,2);
-                
-                %directionGrowthCorner = directionGrowthCenter;
-                %directionGrowthCenter = directionGrowthCorner;
-                %directionGrowth = (directionGrowthCorner + directionGrowthCenter)/2;
-
-                %directionGrowth = nan(size(obj.AnchorPoint,1),size(obj.DesignSpaceLowerBound,2));
-                %for i=1:size(obj.DesignSpaceLowerBound,2)
-                %    directionGrowth(~obj.CornerDirection(:,i),i) = -1;
-                %    directionGrowth(obj.CornerDirection(:,i),i) = 1;
-                %end
-
                 isInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
                 insideSample = obj.DesignSampleDefinition(isInsideDefinition,:);
                 nAnchor = size(obj.AnchorPoint,1);
@@ -308,9 +361,6 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                         directionGrowth(i,j) = sum(iDimension==j);
                     end
                 end
-                %[~,preferentialDirection] = max(directionGrowth,[],2);
-                %directionGrowth = zeros(size(directionGrowth));
-                %directionGrowth(:,preferentialDirection) = 1;
                 directionGrowth(~obj.CornerDirection) = -directionGrowth(~obj.CornerDirection);
 
                 directionGrowth = directionGrowth./vecnorm(directionGrowth,2,2);
