@@ -327,6 +327,7 @@ plot3(anchorPoint(1),anchorPoint(2),anchorPoint(3),optionsPointOutside{:},'Marke
 daspect([1,1,1]);
 pbaspect([1,1,1]);
 arrow3([anchorPoint(1),anchorPoint(2),anchorPoint(3)], [anchorPoint(1)+0.3*planeOrientation(1),anchorPoint(2)+0.3*planeOrientation(2),anchorPoint(3)+0.3*planeOrientation(3)], 'f', 2, 2);
+plot_design_box_3d(gcf,designSpace,'FaceColor','none','EdgeColor','k','linewidth',0.01);
 set(gca,'XColor', 'none','YColor','none','ZColor','none');
 grid off;
 view(3);

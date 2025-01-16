@@ -43,7 +43,7 @@ function candidateBoxLean = box_trimming_leanness(designSample,isKeep,trimmingOr
 %
 %   See also design_bounding_box, box_trimming_operation, sso_box_stochastic.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

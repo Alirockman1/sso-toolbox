@@ -65,7 +65,7 @@ function [solutionSpace,problemData,iterData,algoData,batchOptions] = batch_sso_
 %   batch_analysis_read_table, 
 %   plot_batch_sso_stochastic_analysis_component_metrics.
 %   
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

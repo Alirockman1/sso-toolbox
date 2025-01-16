@@ -1,7 +1,7 @@
 %TEST_COMPONENT_TRUSS_GENERIC_MOVABLE_NODE Truss design problem w/ component SSO 
 %   TEST_COMPONENT_TRUSS_GENERIC_MOVABLE_NODE
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

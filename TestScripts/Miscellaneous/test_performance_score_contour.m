@@ -43,6 +43,7 @@ plot([quantityOfInterestUpperLimit(1) quantityOfInterestUpperLimit(1)],ylim,'k:'
 grid minor;
 plot([quantitiesOfInterestLowerBound(1) quantitiesOfInterestUpperBound(1)],[0 0],'k--','Linewidth',0.7,'HandleVisibility','off');
 xlim([quantitiesOfInterestLowerBound(1) quantitiesOfInterestUpperBound(1)]);
+text([quantityOfInterestLowerLimit(1) quantityOfInterestUpperLimit(1)], -0.5*ones(1,2), {'$$y_{jl}$$','$$y_{ju}$$'},'Horiz','center','Vert','top','Fontsize',12,'interpreter','latex');
 xlabel('$$y_j$$','interpreter','latex','FontSize',16);
 ylabel('Deficit $$\varphi_j$$','interpreter','latex','FontSize',16);
 set(gca,'XTick',[]);
@@ -68,6 +69,8 @@ clim([-0.5 1.5]);
 colormap(color_palette_tol(9:31,'smooth-rainbow'));
 colorbar;
 grid minor;
+text([quantityOfInterestLowerLimit(1) quantityOfInterestUpperLimit(1)], [1,1], {'$$y_{1l}$$','$$y_{1u}$$'},'Horiz','center','Vert','top','Fontsize',12,'interpreter','latex');
+text([1,1], [quantityOfInterestLowerLimit(2) quantityOfInterestUpperLimit(2)], {'$$y_{2l}$$','$$y_{2u}$$'},'Horiz','right','Vert','middle','Fontsize',12,'interpreter','latex');
 xlabel('$$y_1$$','interpreter','latex','FontSize',16);
 ylabel('$$y_2$$','interpreter','latex','FontSize',16);
 set(gca,'XTick',[],'YTick',[]);

@@ -26,7 +26,7 @@ function plotHandle = plot_convex_hull_3d(figureHandle,hullSample,convexHullInde
 %
 %   See also patch, compute_convex_hull, legend, plot_convex_hull_2d.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

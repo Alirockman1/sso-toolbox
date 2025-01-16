@@ -35,7 +35,7 @@ function designSample = sampling_full_factorial(designBox,nSample,varargin)
 %
 %   See also fullfact, nthroot, sampling_full_factorial_condensed.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

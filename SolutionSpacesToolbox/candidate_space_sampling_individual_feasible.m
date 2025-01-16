@@ -36,7 +36,7 @@ function [designSample,paddingSample] = candidate_space_sampling_individual_feas
 %
 %   See also sso_component_stochastic, candidate_space_sampling_all_feasible.
 %   
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

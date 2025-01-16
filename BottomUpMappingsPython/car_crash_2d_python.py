@@ -51,6 +51,23 @@ def car_crash_2d_python(designSample,systemParameter):
     - All forces, mass, speeds, and displacements are assumed to be given in 
       compatible units such that the energy computations are valid (e.g., 
       Newtons for force, meters for displacement, kg for mass, m/s for speed).
+
+    Copyright 2025 Eduardo Rodrigues Della Noce
+    SPDX-License-Identifier: Apache-2.0
+    """
+
+    """
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
     """
 
     designSample = numpy.array(designSample,ndmin=2)

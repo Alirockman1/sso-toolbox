@@ -47,7 +47,7 @@ function plotHandle = plot_svm_training_data_3d(figureHandle,svm,options)
 %
 %   See also plot3, ClassificationSVM, legend, plot_svm_training_data_2d.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

@@ -33,7 +33,7 @@ function [label,score] = design_deficit_to_label_score(measureDeficit,deficitWei
 %
 %   See also DesignEvaluatorBottomUpMapping.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
     % set default weight

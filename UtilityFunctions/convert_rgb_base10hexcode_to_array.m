@@ -29,7 +29,7 @@ function arrayRgb = convert_rgb_base10hexcode_to_array(hex10Rgb,nDigit)
 %
 %   See also hex2rgb, rgb2hex.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
     
 %   Licensed under the Apache License, Version 2.0 (the "License");

@@ -55,7 +55,7 @@ function algorithmData = postprocess_sso_box_stochastic(problemData,iterationDat
 %
 %   See also sso_box_stochastic, plot_sso_box_stochastic_metrics, cumsum.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

@@ -3,7 +3,7 @@
 %   a known analytical solution, namely the simplifed 2D car crash problem.
 %   Both solution and algorithm performance metrics are plotted at the end.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

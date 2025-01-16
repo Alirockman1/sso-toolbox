@@ -33,7 +33,7 @@ function [label,score] = design_fulfills_limit_criteria(measure,lowerLimit,upper
 %
 %   See also design_measure_to_deficit, design_deficit_label_score.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 	if(nargin<3)

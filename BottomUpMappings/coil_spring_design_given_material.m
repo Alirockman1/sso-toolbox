@@ -33,7 +33,7 @@ function performanceMeasure = coil_spring_design_given_material(designSample,sys
 %
 %   See also coil_spring_design.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

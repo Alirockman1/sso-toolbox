@@ -44,7 +44,7 @@ function figureHandle = plot_sso_component_stochastic_metrics(algorithmData,vara
 %   See also sso_component_stochastic, postprocess_component_stochastic, 
 %   save_print_figure.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

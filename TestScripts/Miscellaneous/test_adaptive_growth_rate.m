@@ -28,7 +28,7 @@ purity = 0:0.0001:1;
 legendEntry = {};
 for i=1:size(growthExponent,2)
     growthRateFactor(i,:) = ((1-targetPurity)*purity./((1-purity)*targetPurity)).^(1/growthExponent(i));
-    legendEntry{end+1} = sprintf('$$g_e = %d$$ - New Update Strategy',growthExponent(i));
+    legendEntry{end+1} = sprintf('$$g_e = %d$$ - new update strategy',growthExponent(i));
 end
 
 figure;
@@ -42,9 +42,9 @@ lim = axis;
 plot([0 1],[1 1],'k--','linewidth',1.0,'HandleVisibility','off');
 plot([targetPurity targetPurity],lim(3:4),'k:','linewidth',1.5);
 axis([min(purity) max(purity) lim(3) lim(4)]);
-xlabel('Purity $$a_{i-1}$$','interpreter','latex','FontSize',14);
-ylabel('Growth Rate Adaptation Factor $$(g_i/g_{i-1})$$','interpreter','latex','FontSize',14);
-legend([legendEntry,{'Original Update Strategy','Target Purity $$a^t$$'}],...
+xlabel('Purity $$a_{\alpha-1}$$','interpreter','latex','FontSize',14);
+ylabel('Growth rate adaptation factor $$(g_\alpha/g_{\alpha-1})$$','interpreter','latex','FontSize',14);
+legend([legendEntry,{'Original update strategy','Target purity $$a^t$$'}],...
     'Location','northwest','interpreter','latex','FontSize',12);
 lim = axis;
 axis([...

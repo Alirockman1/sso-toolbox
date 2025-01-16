@@ -28,7 +28,7 @@ function [isInside,score] = is_in_design_box(designSample,designBox)
 %
 %   See also is_in_convex_hull_with_face.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

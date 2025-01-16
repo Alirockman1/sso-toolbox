@@ -26,7 +26,7 @@ function plotHandle = plot_design_box_2d(figureHandle,designBox,varargin)
 %
 %   See also patch, legend, plot_design_box_3d.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

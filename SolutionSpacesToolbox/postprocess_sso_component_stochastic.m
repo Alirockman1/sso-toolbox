@@ -53,7 +53,7 @@ function algorithmData = postprocess_sso_component_stochastic(problemData,iterat
 %
 %   See also sso_component_stochastic, plot_sso_component_stochastic_metrics.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

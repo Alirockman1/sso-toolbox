@@ -63,7 +63,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
 %
 %   See also sso_stochastic_options.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

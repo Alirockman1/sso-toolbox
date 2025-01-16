@@ -2,7 +2,7 @@ function [scoreThreshold,iterData] = design_fast_forward_find_uncertainty_score(
 %
 %   See also run_bottom_up_mapping, active_learning_model_training_options.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

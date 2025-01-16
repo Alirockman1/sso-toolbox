@@ -34,7 +34,7 @@ function finalPointError = brachistochrone_solve_analytical(radiusAngle,distance
 %
 %   See also fsolve, bead_slide_time.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

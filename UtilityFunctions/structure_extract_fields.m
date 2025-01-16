@@ -42,7 +42,7 @@ function structureExtracted = structure_extract_fields(structure,desiredFields,f
 %
 %   See also struct, fieldnames.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

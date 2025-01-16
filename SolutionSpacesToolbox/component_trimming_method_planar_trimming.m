@@ -40,7 +40,7 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
 %   See also component_trimming_operation, component_trimming_leanness, 
 %   component_trimming_method_corner_box_removal.
 %   
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

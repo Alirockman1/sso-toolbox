@@ -56,7 +56,7 @@ function [performanceMeasure,physicalFeasibilityMeasure] = two_links_general_bea
 %
 %   See also two_links_ibeams_constant_web_thickness.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
