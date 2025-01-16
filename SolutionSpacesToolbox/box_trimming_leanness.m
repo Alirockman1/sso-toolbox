@@ -100,7 +100,7 @@ function candidateBoxLean = box_trimming_leanness(designSample,isKeep,trimmingOr
                 closestKeep = [];
                 if(options.Slack<1)
                     isInsideBoxCurrent = is_in_design_box(designSample,candidateBoxCurrent);
-                    if(l==1) % lower boundary
+                    if(k==1) % lower boundary
                         remainRegion = (designSample(:,j)>=designSample(iExclude,j));
                         closestKeep = min(designSample(isInsideBoxCurrent&remainRegion&isKeep,j));
                     else % upper boundary

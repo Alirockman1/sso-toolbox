@@ -1,4 +1,4 @@
-function trimmedCandidateSpace = component_trimming_leanness(designSample,labelKeep,trimmingOrder,componentIndex,candidateSpace,varargin)
+function trimmedCandidateSpace = component_trimming_leanness(designSample,isKeep,trimmingOrder,componentIndex,candidateSpace,varargin)
 %COMPONENT_TRIMMING_LEANNESS Apply the leanness condition to the current problem
 %   COMPONENT_TRIMMING_LEANNESS trims out all design points that can be removed 
 %   without trimming out designs that should be kept. This is mainly used to
@@ -60,13 +60,13 @@ function trimmedCandidateSpace = component_trimming_leanness(designSample,labelK
     parser = inputParser;
     parser.KeepUnmatched = true;
     parser.addRequired('designSample',@(x)isnumeric(x));
-    parser.addRequired('labelKeep',@(x)islogical(x));
+    parser.addRequired('isKeep',@(x)islogical(x));
     parser.addRequired('trimmingOrder',@(x)isnumeric(x));
     parser.addRequired('componentIndex',@(x)iscell(x)&&(size(x,1)==1));
     parser.addRequired('candidateSpace',@(x)isa(x,'CandidateSpaceBase'));
     parser.addParameter('TrimmingMethodFunction',@component_trimming_method_planar_trimming,@(x)isa(x,'function_handle'));
     parser.addParameter('TrimmingMethodOptions',{},@(x)(iscell(x)));
-    parser.parse(designSample,labelKeep,trimmingOrder,componentIndex,candidateSpace,varargin{:});
+    parser.parse(designSample,isKeep,trimmingOrder,componentIndex,candidateSpace,varargin{:});
 
     % unwrap
     trimmingMethodFunction = parser.Results.TrimmingMethodFunction;
@@ -76,46 +76,47 @@ function trimmedCandidateSpace = component_trimming_leanness(designSample,labelK
     nExclude = size(trimmingOrder,1);
     nComponent = size(componentIndex,2);
 
-    activeComponent = true(size(designSample,1),nComponent);
+    isInsideComponent = true(size(designSample,1),nComponent);
     for i=1:size(componentIndex,2)
-        activeComponent(:,i) = candidateSpace(i).is_in_candidate_space(designSample(:,componentIndex{i}));
+        isInsideComponent(:,i) = candidateSpace(i).is_in_candidate_space(designSample(:,componentIndex{i}));
     end
-    activeAll = all(activeComponent,2);
-    activeKeep = activeAll & labelKeep;
+    isInsideAll = all(isInsideComponent,2);
+    isInsideAllKeep = isInsideAll & isKeep;
+    trimmingInformation = cell(1,nComponent);
     
     for i=1:nExclude
         iExclude = trimmingOrder(i);
-        if(~activeAll(iExclude))
+        if(~isInsideAll(iExclude))
             continue;
         end
 
         for j=1:nComponent
-            activeComponentDesign = activeComponent(:,j);
+            isInsideComponentDesign = isInsideComponent(:,j);
 
-            designSampleComponent = designSample(activeComponentDesign,componentIndex{j});
-            iRemovalComponent = convert_index_base(activeComponentDesign,iExclude,'forward');
-            activeKeepComponent = activeKeep(activeComponentDesign);
+            designSampleComponent = designSample(isInsideComponentDesign,componentIndex{j});
+            iRemovalComponent = convert_index_base(isInsideComponentDesign,iExclude,'forward');
+            isInsideAllKeepComponent = isInsideAllKeep(isInsideComponentDesign);
 
-            removalCandidateComponent = trimmingMethodFunction(...
-                designSampleComponent,iRemovalComponent,activeKeepComponent,trimmingMethodOptions{:});
+            [removalCandidateComponent,trimmingInformationCandidateComponent] = trimmingMethodFunction(...
+                designSampleComponent,iRemovalComponent,isInsideAllKeepComponent,trimmingMethodOptions{:});
 
             removalCandidate = false(nSample,size(removalCandidateComponent,2));
-            removalCandidate(activeComponentDesign,:) = removalCandidateComponent;
+            removalCandidate(isInsideComponentDesign,:) = removalCandidateComponent;
 
             % see if any elimination is possible without eliminating designs that must be kept
-            unwantedRemoval = removalCandidate & activeKeep;
+            unwantedRemoval = removalCandidate & isInsideAllKeep;
             canBeRemoved = ~any(unwantedRemoval,1);
             trimRemoval = any(removalCandidate(:,canBeRemoved),2);
 
-            activeComponent(trimRemoval,j) = false;
-            activeAll(trimRemoval) = false;
+            isInsideComponent(trimRemoval,j) = false;
+            isInsideAll(trimRemoval) = false;
+            trimmingInformation{j} = [trimmingInformation{j};trimmingInformationCandidateComponent(canBeRemoved)];
         end
     end
 
     for i=1:size(componentIndex,2)
         % Eliminate from sampling designs that were taken out by other components
         designSampleComponent = designSample(:,componentIndex{i});
-        isInsideComponent = activeComponent(:,i);
-        trimmedCandidateSpace(i) = candidateSpace(i).generate_candidate_space(designSampleComponent,isInsideComponent);
+        trimmedCandidateSpace(i) = candidateSpace(i).update_candidate_space(designSampleComponent,isInsideComponent(:,i),trimmingInformation{i});
     end
 end
