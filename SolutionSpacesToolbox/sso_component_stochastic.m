@@ -398,7 +398,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         if(applyLeannessEachTrim)
             console.info('Applying the leanness condition... ');
             isRemoveLeanness = ~trimmingIsUseful & ~isPadding;
-            isKeepLeanness = trimmingIsAcceptable & trimmingIsUseful;
+            isKeepLeanness = trimmingIsAcceptable & trimmingIsUseful & ~isPadding;
             trimmingOrder = trimming_order(isRemoveLeanness,trimmingScore,'OrderPreference','score-low-to-high');
             candidateSpaceTrimmed = component_trimming_leanness(trimmingSample,isKeepLeanness,trimmingOrder,componentIndex,candidateSpaceTrimmed,trimmingOperationOptions{:});
             console.info('Elapsed time is %g seconds.\n',toc);
@@ -597,7 +597,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
                 console.info('Applying the leanness condition... ');
 
                 isRemoveLeanness = ~trimmingIsUseful & ~trimmingIsPadding;
-                isKeepLeanness = trimmingIsAcceptable & trimmingIsUseful;
+                isKeepLeanness = trimmingIsAcceptable & trimmingIsUseful & ~trimmingIsPadding;
                 trimmingOrder = trimming_order(isRemoveLeanness,trimmingScore,'OrderPreference','score-low-to-high');
                 candidateSpaceTrimmed = component_trimming_leanness(trimmingSample,isKeepLeanness,trimmingOrder,componentIndex,candidateSpaceTrimmed,trimmingOperationOptions{:});
 
@@ -684,7 +684,7 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
     if(applyLeannessFinalTrim)
         console.info('Applying the leanness condition... ');
         isRemoveLeanness = ~trimmingIsUseful & ~trimmingIsPadding;
-        isKeepLeanness = trimmingIsAcceptable & trimmingIsUseful;
+        isKeepLeanness = trimmingIsAcceptable & trimmingIsUseful & ~trimmingIsPadding;
         trimmingOrder = trimming_order(isRemoveLeanness,trimmingScore,'OrderPreference','score-low-to-high');
         candidateSpace = component_trimming_leanness(trimmingSample,isKeepLeanness,trimmingOrder,componentIndex,candidateSpace,trimmingOperationOptions{:});
         console.info('Elapsed time is %g seconds.\n',toc);

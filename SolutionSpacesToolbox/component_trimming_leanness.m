@@ -74,10 +74,10 @@ function trimmedCandidateSpace = component_trimming_leanness(designSample,isKeep
 
     nSample = size(designSample,1);
     nExclude = size(trimmingOrder,1);
-    nComponent = size(componentIndex,2);
+    nComponent = length(componentIndex);
 
     isInsideComponent = true(size(designSample,1),nComponent);
-    for i=1:size(componentIndex,2)
+    for i=1:nComponent
         isInsideComponent(:,i) = candidateSpace(i).is_in_candidate_space(designSample(:,componentIndex{i}));
     end
     isInsideAll = all(isInsideComponent,2);
@@ -108,9 +108,11 @@ function trimmedCandidateSpace = component_trimming_leanness(designSample,isKeep
             canBeRemoved = ~any(unwantedRemoval,1);
             trimRemoval = any(removalCandidate(:,canBeRemoved),2);
 
-            isInsideComponent(trimRemoval,j) = false;
-            isInsideAll(trimRemoval) = false;
-            trimmingInformation{j} = [trimmingInformation{j};trimmingInformationCandidateComponent(canBeRemoved)];
+            if(any(trimRemoval))
+                isInsideComponent(trimRemoval,j) = false;
+                isInsideAll(trimRemoval) = false;
+                trimmingInformation{j} = [trimmingInformation{j},trimmingInformationCandidateComponent(canBeRemoved)];
+            end
         end
     end
 
