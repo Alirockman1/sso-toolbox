@@ -41,7 +41,7 @@ function [removalCandidate,removalInformation] = component_trimming_method_corne
 
     parser = inputParser;
     parser.addParameter('CornersToTest','all');
-    parser.addParameter('TrimmingSlack',0.0);
+    parser.addParameter('TrimmingSlack',0.5);
     parser.addParameter('ConsiderOnlyKeepInSlack',true);
     parser.parse(varargin{:});
     options = parser.Results;

@@ -38,7 +38,7 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %%
-trussAnalysisChoice = '16-DoF-2D';
+trussAnalysisChoice = '4-DoF-2D';
 useBoxResultForComponent = false;
 
 computeDisplacement = true;
@@ -46,7 +46,7 @@ computeMass = false;
 computeDisplacementAndMass = true;
 
 computePlanarTrimmingComponent = true;
-computeCornerBoxRemovalComponent = false;
+computeCornerBoxRemovalComponent = true;
 computeHolePunchingComponent = false;
 
 
