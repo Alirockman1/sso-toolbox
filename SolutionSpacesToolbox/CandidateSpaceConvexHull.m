@@ -345,7 +345,7 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         end
 
         function plotHandle = plot_candidate_space(obj,figureHandle,varargin)
-        %PLOT_CANDIDATE_SPACE Visualization of the boundary of the canidate space 2D/3D
+        %PLOT_CANDIDATE_SPACE Visualization of the boundary of the canidate space 1D/2D/3D
         %   PLOT_CANDIDATE_SPACE allows for the visualization of the boundary of the
         %   candidate space in the given figure. 
         %
@@ -354,9 +354,9 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         %   object plot PLOTHANDLE.
         %
         %   PLOTHANDLE = OBJ.PLOT_CANDIDATE_SPACE(...,NAME,VALUE) allows the 
-        %   specification for additional options in the process. For 2D candidate 
-        %   spaces, these options should refer to 'plot', and for 3D spaces, they
-        %   should refer to 'trisurf'.
+        %   specification for additional options in the process. For 1D candidate spaces,
+        %   these options should refer to 'line', for 2D they should refer to 'plot', 
+        %   and for 3D spaces, they should refer to 'trisurf'.
         %
         %   Input:
         %       - OBJ : CandidateSpaceConvexHull
@@ -365,10 +365,12 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         %   Output:
         %       - PLOTHANDLE : line OR trisurf-object
         %
-        %   See also plot_convex_hull_2d, plot_convex_hull_3d.
+        %   See also plot_convex_hull_1d, plot_convex_hull_2d, plot_convex_hull_3d.
 
             nDimension = size(obj.ActiveDesign,2);
-            if(nDimension==2)
+            if(nDimension==1)
+                plotHandle = plot_convex_hull_1d(figureHandle,obj.ActiveDesign,obj.ConvexHullIndex,varargin{:});
+            elseif(nDimension==2)
                 plotHandle = plot_convex_hull_2d(figureHandle,obj.ActiveDesign,obj.ConvexHullIndex,varargin{:});
             elseif(nDimension==3)
                 plotHandle = plot_convex_hull_3d(figureHandle,obj.ActiveDesign,obj.ConvexHullIndex,varargin{:});

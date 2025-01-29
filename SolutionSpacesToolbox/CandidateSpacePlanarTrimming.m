@@ -470,7 +470,9 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             convexHullIndex = compute_convex_hull(hullPoint);
 
             % plot convex hull
-            if(nDimension==2)
+            if(nDimension==1)
+                plotHandle = plot_convex_hull_1d(figureHandle,hullPoint,convexHullIndex,varargin{:});
+            elseif(nDimension==2)
                 plotHandle = plot_convex_hull_2d(figureHandle,hullPoint,convexHullIndex,varargin{:});
             elseif(nDimension==3)
                 plotHandle = plot_convex_hull_3d(figureHandle,hullPoint,convexHullIndex,varargin{:});

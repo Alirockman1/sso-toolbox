@@ -236,7 +236,7 @@ classdef (Abstract) CandidateSpaceBase
         end
 
         function plotHandle = plot_candidate_space(obj,figureHandle,varargin)
-        %PLOT_CANDIDATE_SPACE Visualization of the boundary of the canidate space 2D/3D
+        %PLOT_CANDIDATE_SPACE Visualization of the boundary of the canidate space 1D/2D/3D
         %   PLOT_CANDIDATE_SPACE allows for the visualization of the boundary of the
         %   candidate space in the given figure. 
         %
@@ -245,21 +245,23 @@ classdef (Abstract) CandidateSpaceBase
         %   object plot PLOTHANDLE.
         %
         %   PLOTHANDLE = OBJ.PLOT_CANDIDATE_SPACE(...,NAME,VALUE) allows the 
-        %   specification for additional options in the process. For 2D candidate 
-        %   spaces, these options should refer to 'contour', and for 3D spaces, they
-        %   should refer to 'patch'.
+        %   specification for additional options in the process. For 1D candidate spaces,
+        %   these options should refer to 'line', for 2D they should refer to 'contour',
+        %   and for 3D spaces, they should refer to 'patch'.
         %
         %   Input:
         %       - OBJ : CandidateSpaceBase
         %       - FIGUREHANDLE : Figure
         %
         %   Output:
-        %       - PLOTHANDLE : contour object OR patch object
+        %       - PLOTHANDLE : line OR contour object OR patch object
         %
-        %   See also plot_candidate_space_2d, plot_candidate_space_3d.
+        %   See also plot_candidate_space_1d, plot_candidate_space_2d, plot_candidate_space_3d.
 
             nDimension = size(obj.DesignSampleDefinition,2);
-            if(nDimension==2)
+            if(nDimension==1)
+                plotHandle = plot_candidate_space_1d(figureHandle,obj,varargin{:});
+            elseif(nDimension==2)
                 plotHandle = plot_candidate_space_2d(figureHandle,obj,varargin{:});
             elseif(nDimension==3)
                 plotHandle = plot_candidate_space_3d(figureHandle,obj,varargin{:});
