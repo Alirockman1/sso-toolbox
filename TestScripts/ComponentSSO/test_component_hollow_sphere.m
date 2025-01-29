@@ -1,8 +1,9 @@
-%TEST_COMPONENT_HOLLOW_SPHERE Component solution spaces for a sphere problem 
-%   TEST_COMPONENT_HOLLOW_SPHERE computes a component solution space for a 
-%   design problem where the good designs are enclosed in a sphere.
-%   The analytical solution for this problem is known and is plotted together
-%   with the computed component solution spaces for comparison.
+%TEST_COMPONENT_HOLLOW_SPHERE Hollow sphere design problem
+%   TEST_COMPONENT_HOLLOW_SPHERE uses a hollow sphere geometry to test the 
+%   computation of component solution spaces. The problem involves finding
+%   points that lie within a hollow spherical shell defined by inner and
+%   outer radii. The solution space is computed using both box-shaped and
+%   component-based approaches, and the results are compared.
 %
 %   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
@@ -19,13 +20,14 @@
 %   See the License for the specific language governing permissions and
 %   limitations under the License.
 
-%% Cleanup
-fclose all;
+
+%% cleanup
 close all;
+fclose all;
 clear all;
-clc;
 more off;
 diary off;
+clc;
 
 
 %% debugging
@@ -33,103 +35,178 @@ rng(4);
 
 
 %% Documentation / Archive
-rngState = rng;
+RNGstate = rng;
 saveFolder = save_diary_files(mfilename);
 goldenRatio = (1+sqrt(5))/2;
 figureSize = [goldenRatio 1]*8.5;
 
 
-%% function call
-%
+%% setup problem parameters
+% Define sphere parameters
+sphereInnerRadius = 2;
+sphereOuterRadius = 5;  % radius of the sphere
+sphereCenter = [0, 0, 0];  % center coordinates
+
 systemFunction = @distance_to_center;
-systemParameter = [0,0,0];
-%                        x1 x2 x3
-designSpaceLowerBound = [-6 -6 -6];
-designSpaceUpperBound = [ 6  6  6];
-componentIndex = {[1,3],[2]};
-%
-performanceLowerLimit = -inf;
-performanceUpperLimit = 5;
-%
-initialDesign = [0,0,0];
+systemParameter = sphereCenter;  % center coordinates [x,y,z]
+
+% Design space bounds
+designSpaceLowerBound = [-6 -6 -6];  % Lower bounds for x,y,z
+designSpaceUpperBound = [6 6 6];     % Upper bounds for x,y,z
+
+% Initial design at sphere center
+initialDesign = [3 0 0];
 
 
-%% Component Opt - Function
-timeElapsedAlgorithm = tic;
-options = sso_stochastic_options('component',...
-    'NumberSamplesPerIterationExploration',100,...
-    'NumberSamplesPerIterationConsolidation',100,...
+%% Perform Solution Space Computation
+bottomUpMapping = BottomUpMappingFunction(systemFunction,systemParameter);
+
+performanceLowerLimit = sphereInnerRadius;
+performanceUpperLimit = sphereOuterRadius;  % Points within sphere radius are good designs
+
+optionsBox = sso_stochastic_options('box',...
+    'UseAdaptiveGrowthRate',true,...
+    'NumberSamplesPerIteration',100,...
+    'GrowthRate',0.1,...
     'FixIterNumberExploration',true,...
     'FixIterNumberConsolidation',true,...
     'MaxIterExploration',20,...
     'MaxIterConsolidation',20,...
-    'CandidateSpaceConstructor',@CandidateSpacePlanarTrimming,...
-    'TrimmingMethodFunction',@component_trimming_method_planar_trimming,...
-    ... 'TrimmingMethodOptions',{'ReferenceDesigns','boundary-center'},...
-    ... 'TrimmingMethodOptions',{'CornersToTest','away'},...
-    ... 'TrimmingComponentChoiceOptions',{'WeightedCostType','ComponentDimension'},...
-    'GrowthRate',0.2,...
+    'TrimmingOperationOptions',{'PassesCriterion','full'},...
+    'TrimmingOrderOptions',{'OrderPreference','score'},...
+    'LoggingLevel','all');
+
+designEvaluator = DesignEvaluatorBottomUpMapping(bottomUpMapping,performanceLowerLimit,performanceUpperLimit);
+[designBoxOptimal,problemDataBox,iterDataBox] = sso_box_stochastic(designEvaluator,...
+    initialDesign,designSpaceLowerBound,designSpaceUpperBound,optionsBox);
+
+
+%% Component solution spaces setup - planar trimming
+options = sso_stochastic_options('component',...
     'UseAdaptiveGrowthRate',true,...
-    'ApplyLeanness','never',...
+    'TargetAcceptedRatioExploration',0.7,...
+    'GrowthRate',0.1,...
+    'FixIterNumberExploration',true,...
+    'FixIterNumberConsolidation',true,...
+    'MaxIterExploration',20,...
+    'MaxIterConsolidation',20,...
+    'NumberSamplesPerIteration',100,...
+    'CandidateSpaceConstructor',@CandidateSpaceConvexHull,...
+    'TrimmingMethodFunction',@component_trimming_method_planar_trimming,...
     'UsePaddingSamplesInTrimming',true,...
     'UsePreviousEvaluatedSamplesConsolidation',false,...
-    'ShapeSamplesUsefulExploration',false,...
-    'ShapeSamplesUsefulConsolidation',false,...
+    'ApplyLeanness','never',...
+    'LoggingLevel','all',...
     'TrimmingOperationOptions',{'PassesCriterion','full'},...
     'TrimmingOrderOptions',{'OrderPreference','score'});
 
-bottomUpMapping = BottomUpMappingFunction(systemFunction,systemParameter);
-designEvaluator = DesignEvaluatorBottomUpMapping(...
-    bottomUpMapping,...
-    performanceLowerLimit,...
-    performanceUpperLimit);
-[componentSolutionSpace,problemData,iterData] = sso_component_stochastic(designEvaluator,...
+% Define components - split into xy-plane and z coordinate
+componentIndex = {[1,2],[3]};
+        
+[planarTrimmingSolutionSpace,problemDataPlanarTrimming,iterDataPlanarTrimming] = sso_component_stochastic(designEvaluator,...
     initialDesign,designSpaceLowerBound,designSpaceUpperBound,componentIndex,options);
-toc(timeElapsedAlgorithm)
 
 
-%% Plot Comparison
-% analytical solution
-radiusOptimalAnalytical = performanceUpperLimit*sqrt(2/3);
-heightOptimalAnalytical = performanceUpperLimit*sqrt(1/3);
-circleAngle = linspace(0,2*pi,100);
-analyticalSolutionCircleX = radiusOptimalAnalytical*cos(circleAngle);
-analyticalSolutionCircleY = radiusOptimalAnalytical*sin(circleAngle);
+%% Component solution spaces - corner box removal
+options = sso_stochastic_options('component',...
+    'UseAdaptiveGrowthRate',true,...
+    'TargetAcceptedRatioExploration',0.7,...
+    'GrowthRate',0.1,...
+    'FixIterNumberExploration',true,...
+    'FixIterNumberConsolidation',true,...
+    'MaxIterExploration',20,...
+    'MaxIterConsolidation',20,...
+    'NumberSamplesPerIteration',100,...
+    'CandidateSpaceConstructor',@CandidateSpaceCornerBoxRemoval,...
+    'TrimmingMethodFunction',@component_trimming_method_corner_box_removal,...
+    'UsePaddingSamplesInTrimming',true,...
+    'UsePreviousEvaluatedSamplesConsolidation',false,...
+    'ApplyLeanness','never',...
+    'LoggingLevel','all',...
+    'TrimmingOperationOptions',{'PassesCriterion','full'},...
+    'TrimmingOrderOptions',{'OrderPreference','score'});
 
-% component 1
-designSampleComponent = componentSolutionSpace(1).DesignSampleDefinition;
-isInsideComponent = componentSolutionSpace(1).IsInsideDefinition;
+% Define components - split into xy-plane and z coordinate
+componentIndex = {[1,2],[3]};
+        
+[cornerBoxRemovalSolutionSpace,problemDataCornerBoxRemoval,iterDataCornerBoxRemoval] = sso_component_stochastic(designEvaluator,...
+    initialDesign,designSpaceLowerBound,designSpaceUpperBound,componentIndex,options);
+
+
+%% visualization
+% Create sphere surface for visualization
+[sphereX, sphereY, sphereZ] = sphere(50);
+sphereX = sphereX * sphereOuterRadius;
+sphereY = sphereY * sphereOuterRadius;
+sphereZ = sphereZ * sphereOuterRadius;
+
+% Plot Component 1 (xy-plane)
 figure;
-plot(designSampleComponent(isInsideComponent,1),designSampleComponent(isInsideComponent,2),'g.');
 hold on;
-plot(designSampleComponent(~isInsideComponent,1),designSampleComponent(~isInsideComponent,2),'.','color',[227 114 34]/255);
-plot(analyticalSolutionCircleX,analyticalSolutionCircleY,'m-','linewidth',2.0);
-componentSolutionSpace(1).plot_candidate_space(gcf,'FaceColor','k','EdgeColor','k','FaceAlpha',0.1);
-xlabel('x_1');
-ylabel('x_3');
-axis([-5 +5 -5 +5]);
+% Plot box solution space
+plot_design_box_2d(gcf,designBoxOptimal(:,componentIndex{1}),'FaceAlpha',0.5,'FaceColor',[0.8 0.8 0.8]);
+% Plot component solution spaces
+planarTrimmingSolutionSpace(1).plot_candidate_space(gcf,'FaceColor','green','EdgeColor','green','FaceAlpha',0.1);
+cornerBoxRemovalSolutionSpace(1).plot_candidate_space(gcf,'FaceColor','blue','EdgeColor','blue','FaceAlpha',0.1);
+xlabel('x');
+ylabel('y');
+axis equal;
 grid minor;
-legend({'Inside Component Space','Outside Component Space','Analytical Solution','Decision Boundary'});
-save_print_figure(gcf,[saveFolder,'Component1TrimmingPlot']);
+title('Component 1 (xy-plane)');
+legend({'Box Solution Space', 'Planar Trimming', 'Corner Box Removal'});
+save_print_figure(gcf,[saveFolder,'Component1View']);
 
-% component 2
-designSampleComponent = componentSolutionSpace(2).DesignSampleDefinition;
-isInsideComponent = componentSolutionSpace(2).IsInsideDefinition;
+% Plot Component 2 (z coordinate)
 figure;
-plot(designSampleComponent(isInsideComponent,1),zeros(size(designSampleComponent(isInsideComponent,1))),'g.');
 hold on;
-plot(designSampleComponent(~isInsideComponent,1),zeros(size(designSampleComponent(~isInsideComponent,1))),'.','color',[227 114 34]/255);
-plot([-heightOptimalAnalytical heightOptimalAnalytical],[0 0],'mx','linewidth',2.0);
-xlabel('x_2');
-axis([-5 +5 -1 +1]);
+% Plot box solution space
+plot_design_box_1d(gcf,designBoxOptimal(:,componentIndex{2}),'Color',[0.8 0.8 0.8],'YValue',-1);
+% Plot component solution spaces
+planarTrimmingSolutionSpace(2).plot_candidate_space(gcf,'Color','green','YValue',0);
+cornerBoxRemovalSolutionSpace(2).plot_candidate_space(gcf,'Color','blue','YValue',1);
+axis equal;
 grid minor;
-legend({'Inside Component Space','Outside Component Space','Analytical Solution'});
-save_print_figure(gcf,[saveFolder,'Component2TrimmingPlot']);
+title('Component 2 (z coordinate)');
+legend({'Box Solution Space', 'Planar Trimming', 'Corner Box Removal'});
+save_print_figure(gcf,[saveFolder,'Component2View']);
 
 
-%% 
-algoData = postprocess_sso_component_stochastic(problemData,iterData);
-plot_sso_component_stochastic_metrics(algoData,'SaveFolder',saveFolder);
+%% performance metrics
+resultsFolder = [saveFolder,sprintf('ResultsBox/')];
+mkdir(resultsFolder);
+algoDataBox = postprocess_sso_box_stochastic(problemDataBox,iterDataBox);
+plot_sso_box_stochastic_metrics(algoDataBox,...
+    'SaveFolder',resultsFolder,...
+    'CloseFigureAfterSaving',true,...
+    'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
+
+resultsFolder = [saveFolder,sprintf('ResultsPlanarTrimming/')];
+mkdir(resultsFolder);
+algoDataPlanarTrimming = postprocess_sso_component_stochastic(problemDataPlanarTrimming,iterDataPlanarTrimming);
+plot_sso_component_stochastic_metrics(algoDataPlanarTrimming,...
+    'SaveFolder',resultsFolder,...
+    'CloseFigureAfterSaving',true,...
+    'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
+
+resultsFolder = [saveFolder,sprintf('ResultsCornerBoxRemoval/')];
+mkdir(resultsFolder);
+algoDataCornerBoxRemoval = postprocess_sso_component_stochastic(problemDataCornerBoxRemoval,iterDataCornerBoxRemoval);
+plot_sso_component_stochastic_metrics(algoDataCornerBoxRemoval,...
+    'SaveFolder',resultsFolder,...
+    'CloseFigureAfterSaving',true,...
+    'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
+
+resultsFolder = [saveFolder,sprintf('ResultsComparison/')];
+mkdir(resultsFolder);
+plot_sso_comparison_box_component_stochastic_metrics(...
+    {algoDataBox},...
+    {algoDataPlanarTrimming,algoDataCornerBoxRemoval},...
+    'ComponentLabel',{'Planar Trimming','Corner Box Removal'},...
+    'BoxColor','k',...
+    'ComponentColor',color_palette_tol({'green','blue'}),...
+    'SaveFolder',resultsFolder,...
+    'CloseFigureAfterSaving',false,...
+    'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
 
 
 %% Save and Stop Transcripting
