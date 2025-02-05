@@ -38,15 +38,15 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %%
-trussAnalysisChoice = '4-DoF-2D';
+trussAnalysisChoice = '9-DoF-3D';
 useBoxResultForComponent = false;
 
 computeDisplacement = true;
 computeMass = false;
-computeDisplacementAndMass = true;
+computeDisplacementAndMass = false;
 
 computePlanarTrimmingComponent = true;
-computeCornerBoxRemovalComponent = true;
+computeCornerBoxRemovalComponent = false;
 computeHolePunchingComponent = false;
 
 
@@ -1086,7 +1086,7 @@ function plot_relevant_results_truss_moving_node(typeName,systemParameter,initia
         nodePositionRandom(isDesignVariable) = column_vector_to_row_major_matrix(randomTrussMovingNode(i,:)',nDimension);
         nodeDisplacementRandom = ...
             truss_analysis(...
-                nodePositionInitial,...
+                nodePositionRandom,...
                 systemParameter.FixedDegreesOfFreedom,...
                 systemParameter.NodeForce,...
                 systemParameter.NodeElement,...

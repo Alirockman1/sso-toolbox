@@ -136,9 +136,27 @@ componentIndex = {[1,2],[3]};
 %% visualization
 % Create sphere surface for visualization
 [sphereX, sphereY, sphereZ] = sphere(50);
-sphereX = sphereX * sphereOuterRadius;
-sphereY = sphereY * sphereOuterRadius;
-sphereZ = sphereZ * sphereOuterRadius;
+outerSphereX = sphereX * sphereOuterRadius;
+outerSphereY = sphereY * sphereOuterRadius;
+outerSphereZ = sphereZ * sphereOuterRadius;
+innerSphereX = sphereX * sphereInnerRadius;
+innerSphereY = sphereY * sphereInnerRadius;
+innerSphereZ = sphereZ * sphereInnerRadius;
+
+% Plot inner and outer spheres in 3D
+figure;
+hold on;
+surf(outerSphereX, outerSphereY, outerSphereZ, 'FaceColor', 'red', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
+surf(innerSphereX, innerSphereY, innerSphereZ, 'FaceColor', 'red', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
+axis equal;
+grid on;
+xlabel('x');
+ylabel('y');
+zlabel('z');
+title('Inner and Outer Spheres');
+view(3);
+save_print_figure(gcf,[saveFolder,'SpheresView']);
+
 
 % Plot Component 1 (xy-plane)
 figure;
@@ -169,6 +187,71 @@ grid minor;
 title('Component 2 (z coordinate)');
 legend({'Box Solution Space', 'Planar Trimming', 'Corner Box Removal'});
 save_print_figure(gcf,[saveFolder,'Component2View']);
+
+
+% Plot 3D view of all solution spaces
+figure;
+hold on;
+
+% Plot spheres for reference
+surf(outerSphereX, outerSphereY, outerSphereZ, 'FaceColor', 'red', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+surf(innerSphereX, innerSphereY, innerSphereZ, 'FaceColor', 'red', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+
+% Plot box solution space
+plot_design_box_3d(gcf, designBoxOptimal, 'FaceAlpha', 0.3, 'FaceColor', [0.8 0.8 0.8]);
+
+
+% Plot component solution spaces by extruding 2D spaces
+
+% Planar Trimming
+% Create vertices for each point in xy combined with each z value
+xyPointsPlanar = planarTrimmingSolutionSpace(1).ActiveDesign;
+zPointsPlanar = [min(planarTrimmingSolutionSpace(2).ActiveDesign) ; max(planarTrimmingSolutionSpace(2).ActiveDesign)];
+numXYPoints = size(xyPointsPlanar, 1);
+numZPoints = length(zPointsPlanar);
+verticesPlanar = zeros(numXYPoints * numZPoints, 3);
+idx = 1;
+for i = 1:numXYPoints
+    for j = 1:numZPoints
+        verticesPlanar(idx,:) = [xyPointsPlanar(i,:), zPointsPlanar(j)];
+        idx = idx + 1;
+    end
+end
+% Create a boundary around these points
+k = boundary(verticesPlanar, 0.5); % Use boundary function to create surface
+trisurf(k, verticesPlanar(:,1), verticesPlanar(:,2), verticesPlanar(:,3), ...
+    'FaceColor', 'green', 'EdgeColor', 'green', 'FaceAlpha', 0.2);
+
+% Corner Box Removal
+% Create vertices for each point in xy combined with each z value
+xyPointsCorner = cornerBoxRemovalSolutionSpace(1).ActiveDesign;
+zPointsCorner = [min(cornerBoxRemovalSolutionSpace(2).ActiveDesign) ; max(cornerBoxRemovalSolutionSpace(2).ActiveDesign)];
+numXYPoints = size(xyPointsCorner, 1);
+numZPoints = length(zPointsCorner);
+verticesCorner = zeros(numXYPoints * numZPoints, 3);
+idx = 1;
+for i = 1:numXYPoints
+    for j = 1:numZPoints
+        verticesCorner(idx,:) = [xyPointsCorner(i,:), zPointsCorner(j)];
+        idx = idx + 1;
+    end
+end
+% Create a boundary around these points
+k = boundary(verticesCorner, 0.5);
+trisurf(k, verticesCorner(:,1), verticesCorner(:,2), verticesCorner(:,3), ...
+    'FaceColor', 'blue', 'EdgeColor', 'none', 'FaceAlpha', 0.2);
+
+axis equal;
+grid on;
+xlabel('x');
+ylabel('y');
+zlabel('z');
+title('3D View of Solution Spaces');
+legend({'Outer Sphere', 'Inner Sphere', 'Box Solution Space', ...
+        'Planar Trimming', 'Corner Box Removal'});
+view(3);
+save_print_figure(gcf,[saveFolder,'SolutionSpaces3DView']);
+
 
 
 %% performance metrics

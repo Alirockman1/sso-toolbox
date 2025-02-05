@@ -36,7 +36,7 @@ rng(4);
 
 
 %% Documentation / Archive
-RNGstate = rng;
+rngState = rng;
 saveFolder = save_diary_files(mfilename);
 goldenRatio = (1+sqrt(5))/2;
 figureSize = [goldenRatio 1]*8.5;
@@ -44,6 +44,8 @@ figureSize = [goldenRatio 1]*8.5;
 
 %% setup problem parameters
 nDivision = 15; % number of design variables (discritization)
+componentIndex = {1:3,4:6,7:9,10:12,13:15};
+
 initialDistanceWidth = 4; % distance in longitudinal (x) direction
 initialDistanceHeight = 2; % distance in vertical (y) direction
 nInterpolationPoint = 5000; % number of interpolation points
@@ -100,6 +102,7 @@ optionsBox = sso_stochastic_options('box',...
     'TrimmingOrderOptions',{'OrderPreference','score'},...
     'LoggingLevel','all');
 
+rng(rngState);
 designEvaluator = DesignEvaluatorBottomUpMapping(bottomUpMapping,performanceLowerLimit,performanceUpperLimit);
 [designBoxOptimal,problemDataBox,iterDataBox] = sso_box_stochastic(designEvaluator,...
     designOptimal,designSpaceLowerBound,designSpaceUpperBound,optionsBox);
@@ -143,8 +146,7 @@ options = sso_stochastic_options('component',...
     'TrimmingOperationOptions',{'PassesCriterion','reduced'},...
     'TrimmingOrderOptions',{'OrderPreference','score'});
 
-componentIndex = {1:3,4:6,7:9,10:12,13:15};
-        
+rng(rngState);
 [planarTrimmingSolutionSpace,problemDataPlanarTrimming,iterDataPlanarTrimming] = sso_component_stochastic(designEvaluator,...
     designOptimal,designSpaceLowerBound,designSpaceUpperBound,componentIndex,options);
 
@@ -170,8 +172,7 @@ options = sso_stochastic_options('component',...
     'TrimmingOrderOptions',{'OrderPreference','score'},...
     'MaximumGrowthAdaptationFactor',1.0);
 
-componentIndex = {1:3,4:6,7:9,10:12,13:15};
-        
+rng(rngState);
 [cornerBoxRemovalSolutionSpace,problemDataCornerBoxRemoval,iterDataCornerBoxRemoval] = sso_component_stochastic(designEvaluator,...
     designOptimal,designSpaceLowerBound,designSpaceUpperBound,componentIndex,options);
 
@@ -187,7 +188,7 @@ for i=1:size(componentIndex,2)
     planarTrimmingSolutionSpace(i).plot_candidate_space(gcf,...
         'FaceColor','green','EdgeColor','green','FaceAlpha',0.1);
     cornerBoxRemovalSolutionSpace(i).plot_candidate_space(gcf,...
-        'FaceColor','blue','EdgeColor','blue','FaceAlpha',0.1);
+        'FaceColor','blue','EdgeColor','none','FaceAlpha',0.1);
     grid minor;
     
 
@@ -229,7 +230,7 @@ resultsFolder = [saveFolder,sprintf('ResultsCornerBoxRemoval/')];
 mkdir(resultsFolder);
 algoDataCornerBoxRemoval = postprocess_sso_component_stochastic(problemDataCornerBoxRemoval,iterDataCornerBoxRemoval);
 plot_sso_component_stochastic_metrics(algoDataCornerBoxRemoval,...
-    'SaveFolder',saveFolder,...
+    'SaveFolder',resultsFolder,...
     'CloseFigureAfterSaving',true,...
     'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
 
