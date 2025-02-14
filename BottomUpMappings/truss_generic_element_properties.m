@@ -1,0 +1,103 @@
+function [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_element_properties(designSample, systemParameter)
+%TRUSS_GENERIC_ELEMENT_PROPERTIES Bottom-up Mapping (Element Properties)
+%   This function calculates truss performance with element properties as
+%   design variables. Each element's properties are defined by:
+%   - Young's modulus (E)
+%   - Radius (r)
+%   - Thickness (t)
+%   - Density (ρ)
+%
+%   Input:
+%       - designSample: (nSample, 4*nElement) matrix where each group of 4 columns
+%         represents [E, r, t, ρ] for an element
+%       - systemParameter: struct containing:
+%           -- NodePosition: (nNode, 2/3) node coordinates
+%           -- NodeForce: (nNode, 2/3) external forces
+%           -- NodeElement: (nElement, 2) element connectivity
+%           -- FixedDegreesOfFreedom: (nNode, 2/3) boundary conditions
+%
+%   Output:
+%       - performanceMeasure: (nSample, 2+2*nElement) matrix containing:
+%           (1) Tip displacement, (2) Total mass, 
+%           (3:2+nElement) Absolute stresses, 
+%           (3+nElement:end) Buckling ratios
+%
+%	See also truss_analysis, truss_two_bar_hollow_circle.
+%
+%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   SPDX-License-Identifier: Apache-2.0
+
+%   Licensed under the Apache License, Version 2.0 (the "License");
+%   you may not use this file except in compliance with the License.
+%   You may obtain a copy of the License at
+% 
+%       http://www.apache.org/licenses/LICENSE-2.0
+% 
+%   Unless required by applicable law or agreed to in writing, software
+%   distributed under the License is distributed on an "AS IS" BASIS,
+%   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+%   See the License for the specific language governing permissions and
+%   limitations under the License.
+
+    nElement = size(systemParameter.NodeElement, 1);
+    nSample = size(designSample, 1);
+    performanceMeasure = nan(nSample, 2 + 2*nElement);
+    
+    % Precompute element lengths based on fixed node positions
+    nodePosition = systemParameter.NodePosition;
+    elementNodes = systemParameter.NodeElement;
+    nodeDistance = nodePosition(elementNodes(:,2),:) - nodePosition(elementNodes(:,1),:);
+    elementLength = vecnorm(nodeDistance, 2, 2);
+
+    % physical feasibility 
+    includePhysicalFeasibility = isfield(systemParameter, 'PhysicalFeasibilityEstimator') && ~isempty(systemParameter.PhysicalFeasibilityEstimator);
+    if(~includePhysicalFeasibility)
+        physicalFeasibilityMeasure = [];
+    else
+        physicalFeasibilityMeasure = nan(nSample, nElement);
+    end
+
+    % Find tip node with applied force
+    isTrussTip = any(systemParameter.NodeForce~=0,2);
+    for i = 1:nSample
+        % Extract element properties from design sample
+        elementProperties = reshape(designSample(i,:), 4, nElement)';
+        youngsModulus = elementProperties(:,1);
+        elementRadius = elementProperties(:,2);
+        elementThickness = elementProperties(:,3);
+        elementDensity = elementProperties(:,4);
+        
+        % Calculate cross-sectional properties
+        elementArea = pi*(2*elementRadius.*elementThickness - elementThickness.^2);  % Area of hollow circle
+        elementMomentOfInertia = (pi/4)*(elementRadius.^4 - (elementRadius - elementThickness).^4);  % Moment of inertia
+        
+        % Perform truss analysis
+        [nodeDisplacement, ~, axialForce] = truss_analysis(...
+            nodePosition,...
+            systemParameter.FixedDegreesOfFreedom,...
+            systemParameter.NodeForce,...
+            elementNodes,...
+            elementArea,...
+            youngsModulus);
+        
+        % Calculate performance metrics
+        stress = truss_deformed_stress(axialForce,elementArea);
+        totalMass = sum(elementDensity .* elementArea .* elementLength);
+        
+        % Buckling calculations
+        criticalLoad = (pi^2 * youngsModulus .* elementMomentOfInertia) ./ (elementLength.^2);
+        bucklingRatio = axialForce(:,1) ./ criticalLoad;
+        
+        % Handle numerical issues
+        tipDisplacement = -nodeDisplacement(isTrussTip);
+        tipDisplacement(isnan(tipDisplacement)) = inf;
+        stress(isnan(stress)) = inf;
+        bucklingRatio(isnan(bucklingRatio)) = inf;
+        
+        performanceMeasure(i,:) = [tipDisplacement, totalMass, stress', bucklingRatio'];
+
+        if(includePhysicalFeasibility)
+            physicalFeasibilityMeasure(i,:) = systemParameter.PhysicalFeasibilityEstimator(youngsModulus,elementDensity);
+        end
+    end
+end 
