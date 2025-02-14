@@ -106,7 +106,7 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
         end
     end
     if(isempty(options.BoxColor))
-        options.BoxColor = color_palette_tol(1:nBox)
+        options.BoxColor = color_palette_tol(1:nBox);
     end
 
     % create different labels for components
@@ -126,7 +126,7 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
         end
     end
     if(isempty(options.ComponentColor))
-        options.BoxColor = color_palette_tol((nBox+1):(nBox+1+nComponent))
+        options.BoxColor = color_palette_tol((nBox+1):(nBox+1+nComponent));
     end
 
     defaultGeneralPlotOptions = {'linewidth',1.1,'Marker','.','MarkerSize',8};

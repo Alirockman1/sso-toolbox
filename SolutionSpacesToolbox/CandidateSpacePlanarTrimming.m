@@ -417,6 +417,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             % check if it's inside the bounding box
             if(nargin<3 || includeBoundingBox)
                 boundingBox = design_bounding_box(obj.DesignSampleDefinition,obj.IsInsideDefinition);
+                boundingBox = min(max(boundingBox,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
                 [isInsideBounding,scoreBounding] = is_in_design_box(designSample,boundingBox);
                 isInside(~isInsideBounding) = false;
                 score = max(score,scoreBounding);
@@ -461,9 +462,10 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 dotProduct = sum((obj.AnchorPoint(i,:) - obj.DesignSampleDefinition).*obj.PlaneOrientationAnchor(i,:),2);
                 distanceToPlane = obj.PlaneOrientationAnchor(i,:).*dotProduct;
                 candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
+                candidateHullPoint = min(max(candidateHullPoint,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
 
                 isInside = obj.is_in_candidate_space(candidateHullPoint);
-                hullPoint = [hullPoint;candidateHullPoint(isInside,:)];
+                hullPoint = unique([hullPoint;candidateHullPoint(isInside,:)],'rows');
             end
 
             % create a convex hull based on that
