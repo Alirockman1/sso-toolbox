@@ -195,7 +195,7 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
             
-            obj.DesignSpaceLowerBound = parser.Results.designSpaceLowerBound;;
+            obj.DesignSpaceLowerBound = parser.Results.designSpaceLowerBound;
             obj.DesignSpaceUpperBound = parser.Results.designSpaceUpperBound;
             obj.SamplingBoxSlack = parser.Results.SamplingBoxSlack;
 
@@ -286,17 +286,19 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         %   See also generate_candidate_space, is_in_candidate_space.
 
             center = mean(obj.ActiveDesign,1);
-            
-            distances = obj.ActiveDesign - center;
-            directionGrowth = distances./vecnorm(distances,2,2);
             designSpaceFactor = obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound;
             designSpace = [obj.DesignSpaceLowerBound;obj.DesignSpaceUpperBound];
+            
+            distances = obj.ActiveDesign - center;
+            normalizedDistances = distances./(designSpaceFactor);
+            normalizedDirectionGrowth = normalizedDistances./vecnorm(normalizedDistances,2,2);
 
             % find maximum growth rate not to escape design space
-            maxGrowthRate = region_limit_line_search([],obj.ActiveDesign,designSpaceFactor.*directionGrowth,designSpace);
+            directionGrowth = designSpaceFactor.*normalizedDirectionGrowth;
+            maxGrowthRate = region_limit_line_search([],obj.ActiveDesign,directionGrowth,designSpace);
             sampleGrowthRate = min(growthRate,maxGrowthRate);
 
-            newSamples = obj.ActiveDesign + sampleGrowthRate.*designSpaceFactor.*directionGrowth;
+            newSamples = obj.ActiveDesign + sampleGrowthRate.*directionGrowth;
             newSamples = max(newSamples, obj.DesignSpaceLowerBound); % lower bound limit
             newSamples = min(newSamples, obj.DesignSpaceUpperBound); % upper bound limit
             newSamples = unique([obj.ActiveDesign;newSamples],'rows');

@@ -338,12 +338,14 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
 
             center = mean(obj.DesignSampleDefinition(obj.IsInsideDefinition,:),1);
             distanceToCenter = obj.DesignSampleDefinition - center;
-            directionGrowth = distanceToCenter./vecnorm(distanceToCenter,2,2);
+            normalizedDistanceToCenter = distanceToCenter./(designSpaceFactor);
+            normalizedDirectionGrowth = normalizedDistanceToCenter./vecnorm(normalizedDistanceToCenter,2,2);
 
-            %maxGrowthRate = region_limit_line_search([],obj.DesignSampleDefinition,designSpaceFactor.*directionGrowth,designSpace);
-            %sampleGrowthRate = min(growthRate,maxGrowthRate);
-            sampleGrowthRate = growthRate;
-            designSampleNew = obj.DesignSampleDefinition + sampleGrowthRate.*designSpaceFactor.*directionGrowth;
+            directionGrowth = designSpaceFactor.*normalizedDirectionGrowth;
+            maxGrowthRate = region_limit_line_search([],obj.DesignSampleDefinition,directionGrowth,designSpace);
+            sampleGrowthRate = min(growthRate,maxGrowthRate);
+
+            designSampleNew = obj.DesignSampleDefinition + sampleGrowthRate.*directionGrowth;
             designSampleNew = min(max(designSampleNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
             obj.DesignSampleDefinition = [obj.DesignSampleDefinition;designSampleNew];
 
