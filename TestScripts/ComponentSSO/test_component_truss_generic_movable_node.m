@@ -38,7 +38,7 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %%
-trussAnalysisChoice = '9-DoF-3D';
+trussAnalysisChoice = '16-DoF-2D';
 useBoxResultForComponent = false;
 
 computeDisplacement = true;

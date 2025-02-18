@@ -50,15 +50,14 @@ function [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_elemen
     elementLength = vecnorm(nodeDistance, 2, 2);
 
     % physical feasibility 
-    includePhysicalFeasibility = isfield(systemParameter, 'PhysicalFeasibilityEstimator') && ~isempty(systemParameter.PhysicalFeasibilityEstimator);
-    if(~includePhysicalFeasibility)
-        physicalFeasibilityMeasure = [];
-    else
-        physicalFeasibilityMeasure = nan(nSample, nElement);
+    physicalFeasibilityMeasure = nan(nSample,nElement);
+    includeMaterialPhysicalFeasibility = isfield(systemParameter, 'PhysicalFeasibilityEstimator') && ~isempty(systemParameter.PhysicalFeasibilityEstimator);
+    if(includeMaterialPhysicalFeasibility)
+        physicalFeasibilityMeasure = [physicalFeasibilityMeasure,nan(nSample,nElement)];
     end
 
     % Find tip node with applied force
-    isTrussTip = any(systemParameter.NodeForce~=0,2);
+    isTrussTip = (systemParameter.NodeForce~=0);
     for i = 1:nSample
         % Extract element properties from design sample
         elementProperties = reshape(designSample(i,:), 4, nElement)';
@@ -68,7 +67,7 @@ function [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_elemen
         elementDensity = elementProperties(:,4);
         
         % Calculate cross-sectional properties
-        elementArea = pi*(2*elementRadius.*elementThickness - elementThickness.^2);  % Area of hollow circle
+        elementArea = pi*(elementRadius.^2 - (elementRadius - elementThickness).^2);  % Area of hollow circle
         elementMomentOfInertia = (pi/4)*(elementRadius.^4 - (elementRadius - elementThickness).^4);  % Moment of inertia
         
         % Perform truss analysis
@@ -96,8 +95,9 @@ function [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_elemen
         
         performanceMeasure(i,:) = [tipDisplacement, totalMass, stress', bucklingRatio'];
 
-        if(includePhysicalFeasibility)
-            physicalFeasibilityMeasure(i,:) = systemParameter.PhysicalFeasibilityEstimator(youngsModulus,elementDensity);
+        physicalFeasibilityMeasure(i,1:nElement) = (elementThickness - elementRadius)';
+        if(includeMaterialPhysicalFeasibility)
+            physicalFeasibilityMeasure(i,(nElement+1):end) = systemParameter.PhysicalFeasibilityEstimator(youngsModulus,elementDensity);
         end
     end
 end 
