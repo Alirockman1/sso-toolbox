@@ -32,6 +32,8 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
 %       - ConvexHullFacePoint : points on each facet of the convex hull
 %       - ConvexHullFaceNormal : plane orientation of each facet (pointing 
 %       inwards)
+%       - NormalizeVariables : flag to enable design space normalization
+%       - ScalingFactor : scaling factor for design variable normalization
 %
 %   CANDIDATESPACECONVEXHULL methods:
 %       - generate_candidate_space : create a candidate space based on design 
@@ -141,6 +143,13 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         %
         %   See also SamplingBox, design_bounding_box.
         SamplingBoxSlack
+
+        %NORMALIZEVARIABLES Flag to enable design space normalization
+        %   When true, all computations are performed in normalized design space
+        %   where variables range [0,1] based on DesignSpaceLowerBound/UpperBound
+        %
+        %   NORMALIZEVARIABLES : logical
+        NormalizeVariables
     end
 
     properties (SetAccess=protected, Dependent)
@@ -176,11 +185,13 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         %       bounding box. A value of 0 means no slack and therefore the sampling
         %       box will be the most strict one possible, and 1 means the sampling
         %       box will be the most relaxed.
+        %       - 'NormalizeVariables' : flag to enable design space normalization
         %
         %   Inputs:
         %       - DESIGNSPACELOWERBOUND : (1,nDesignVariable) double
         %       - DESIGNSPACEUPPERBOUND : (1,nDesignVariable) double
         %       - 'SamplingBoxSlack' : double
+        %       - 'NormalizeVariables' : logical
         %
         %   Outputs:
         %       - OBJ : CandidateSpaceConvexHull
@@ -192,12 +203,14 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             parser.addRequired('designSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addRequired('designSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addParameter('SamplingBoxSlack',0.5,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
+            parser.addParameter('NormalizeVariables',false,@islogical);
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
             
             obj.DesignSpaceLowerBound = parser.Results.designSpaceLowerBound;
             obj.DesignSpaceUpperBound = parser.Results.designSpaceUpperBound;
             obj.SamplingBoxSlack = parser.Results.SamplingBoxSlack;
+            obj.NormalizeVariables = parser.Results.NormalizeVariables;
 
             obj.ConvexHullIndex = [];
             obj.ConvexHullFacePoint = [];
@@ -246,9 +259,18 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             obj.IsInsideDefinition = isInside;
             convexHullPoint = designSample(isInside,:);
             
+            % normalize convex hull points if needed
+            if obj.NormalizeVariables
+                convexHullPoint = convexHullPoint ./ (obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound);
+            end
+            
             % compute convex hull and find reference points / normals to each facet
             [obj.ConvexHullIndex,obj.Measure] = compute_convex_hull(convexHullPoint);
             [obj.ConvexHullFacePoint,obj.ConvexHullFaceNormal] = find_facet_reference_point_normal(convexHullPoint,obj.ConvexHullIndex);
+
+            if obj.NormalizeVariables
+                obj.Measure = obj.Measure * prod(obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound);
+            end
 
             % make sure normal vectors are pointing inside
             convexHullCenter = mean(convexHullPoint,1);
@@ -338,6 +360,11 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
                 isInside = true(nSample,1);
                 score = zeros(nSample,1);
                 return;
+            end
+
+            % normalize input samples if needed
+            if obj.NormalizeVariables
+                designSample = designSample ./ (obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound);
             end
 
             [isInside,score] = is_in_convex_hull_with_facet_normal(obj.ConvexHullFacePoint,obj.ConvexHullFaceNormal,designSample);
