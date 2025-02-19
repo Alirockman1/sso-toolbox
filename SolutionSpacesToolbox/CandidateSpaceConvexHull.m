@@ -311,8 +311,8 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             designSpaceFactor = obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound;
             designSpace = [obj.DesignSpaceLowerBound;obj.DesignSpaceUpperBound];
             
-            distances = obj.ActiveDesign - center;
-            normalizedDistances = distances./(designSpaceFactor);
+            distanceToCenter = obj.ActiveDesign - center;
+            normalizedDistances = distanceToCenter./(designSpaceFactor);
             normalizedDirectionGrowth = normalizedDistances./vecnorm(normalizedDistances,2,2);
 
             % find maximum growth rate not to escape design space
