@@ -202,7 +202,7 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             parser = inputParser;
             parser.addRequired('designSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addRequired('designSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
-            parser.addParameter('SamplingBoxSlack',0.5,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
+            parser.addParameter('SamplingBoxSlack',0.0,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
             parser.addParameter('NormalizeVariables',false,@islogical);
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
@@ -257,7 +257,8 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             % Convex Hull Definition
             obj.DesignSampleDefinition = designSample;
             obj.IsInsideDefinition = isInside;
-            convexHullPoint = designSample(isInside,:);
+            nSample = size(designSample,1);
+            convexHullPoint = obj.DesignSampleDefinition(obj.IsInsideDefinition,:);
             
             % normalize convex hull points if needed
             if obj.NormalizeVariables
@@ -280,8 +281,7 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             obj.ConvexHullFaceNormal(wrongOrientation,:) = -obj.ConvexHullFaceNormal(wrongOrientation,:);
 
             % label designs which contribute to shape definition
-            nSample = size(designSample,1);
-            globalConvexHullIndex = convert_index_base(isInside,obj.ConvexHullIndex(:),'backward');
+            globalConvexHullIndex = convert_index_base(obj.IsInsideDefinition,obj.ConvexHullIndex(:),'backward');
             obj.IsShapeDefinition = ismember((1:nSample)',globalConvexHullIndex);
         end
         
@@ -321,8 +321,7 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             sampleGrowthRate = min(growthRate,maxGrowthRate);
 
             newSamples = obj.ActiveDesign + sampleGrowthRate.*directionGrowth;
-            newSamples = max(newSamples, obj.DesignSpaceLowerBound); % lower bound limit
-            newSamples = min(newSamples, obj.DesignSpaceUpperBound); % upper bound limit
+            newSamples = min(max(newSamples, obj.DesignSpaceLowerBound), obj.DesignSpaceUpperBound); % bound limit
             newSamples = unique([obj.ActiveDesign;newSamples],'rows');
             obj = obj.generate_candidate_space(newSamples);
         end
