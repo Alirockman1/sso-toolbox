@@ -60,6 +60,7 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
     parser.addParameter('TrimmingSlack',0.5);
     parser.addParameter('ConsiderOnlyKeepInSlack',true);
     parser.addParameter('NormalizeVariables',false);
+    parser.addParameter('Tolerance',1e-10,@isscalar);
     parser.parse(varargin{:});
     options = parser.Results;
 
@@ -86,7 +87,7 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
     designReference = [designReference;mean(designSampleComponent(isKeep,:),1)];
 
     % find all distances
-    distanceToAnchor = (designSampleComponent(iRemove,:) - designSampleComponent)./normalizationFactor;
+    distanceToAnchorBase = (designSampleComponent(iRemove,:) - designSampleComponent)./normalizationFactor;
 
     planeOrientation = (designReference - designSampleComponent(iRemove,:))./normalizationFactor;
     normalizedPlaneOrientation = planeOrientation./vecnorm(planeOrientation,2,2);
@@ -100,8 +101,9 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
     removalCandidate = false(nSample,nRemovalCandidate);
     for i=1:nRemovalCandidate
         anchorPoint = designSampleComponent(iRemove,:);
-        dotProduct = sum(normalizedPlaneOrientation(i,:).*distanceToAnchor,2);
-        removalCandidateCurrent = (dotProduct>0);
+        dotProduct = sum(normalizedPlaneOrientation(i,:).*distanceToAnchorBase,2);
+        dotProductWithTolerance = dotProduct - options.Tolerance;
+        removalCandidateCurrent = (dotProductWithTolerance>0);
 
         if(options.TrimmingSlack<1)
             isInsideSlack = ~removalCandidateCurrent;
@@ -119,7 +121,8 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
             dotProduct = sum(normalizedPlaneOrientation(i,:).*distanceToAnchorCurrent,2);
         end
 
-        removalCandidate(:,i) = (dotProduct>0);
+        dotProductWithTolerance = dotProduct - options.Tolerance;
+        removalCandidate(:,i) = (dotProductWithTolerance>0);
         if(nargout>1)
             removalInformation(i).Anchor = anchorPoint;
             removalInformation(i).PlaneOrientationInside = normalizedPlaneOrientation(i,:);

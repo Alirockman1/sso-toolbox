@@ -42,7 +42,7 @@ function [isInside,score] = is_in_convex_hull_with_facet_normal(facetPoint,facet
 %   limitations under the License.
 
     parser = inputParser;
-    parser.addParameter('Tolerance',1e-6,@isscalar);
+    parser.addParameter('Tolerance',1e-10,@isscalar);
     parser.parse(varargin{:});
     tolerance = parser.Results.Tolerance;
 

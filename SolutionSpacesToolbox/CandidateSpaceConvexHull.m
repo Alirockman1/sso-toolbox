@@ -150,6 +150,12 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         %
         %   NORMALIZEVARIABLES : logical
         NormalizeVariables
+
+        %NORMALIZEGROWTHDIRECTION Determine if growth direction should be normalized
+        %   When true, the growth direction is normalized to the design space.
+        %
+        %   NORMALIZEGROWTHDIRECTION : logical
+        NormalizeGrowthDirection
     end
 
     properties (SetAccess=protected, Dependent)
@@ -204,6 +210,7 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             parser.addRequired('designSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addParameter('SamplingBoxSlack',0.0,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
             parser.addParameter('NormalizeVariables',false,@islogical);
+            parser.addParameter('NormalizeGrowthDirection',false,@islogical);
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
             
@@ -211,7 +218,7 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             obj.DesignSpaceUpperBound = parser.Results.designSpaceUpperBound;
             obj.SamplingBoxSlack = parser.Results.SamplingBoxSlack;
             obj.NormalizeVariables = parser.Results.NormalizeVariables;
-
+            obj.NormalizeGrowthDirection = parser.Results.NormalizeGrowthDirection;
             obj.ConvexHullIndex = [];
             obj.ConvexHullFacePoint = [];
             obj.ConvexHullFaceNormal = [];
@@ -312,8 +319,10 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             designSpace = [obj.DesignSpaceLowerBound;obj.DesignSpaceUpperBound];
             
             distanceToCenter = obj.ActiveDesign - center;
-            normalizedDistances = distanceToCenter./(designSpaceFactor);
-            normalizedDirectionGrowth = normalizedDistances./vecnorm(normalizedDistances,2,2);
+            if(obj.NormalizeGrowthDirection)
+                distanceToCenter = distanceToCenter./(designSpaceFactor);
+            end
+            normalizedDirectionGrowth = distanceToCenter./vecnorm(distanceToCenter,2,2);
 
             % find maximum growth rate not to escape design space
             directionGrowth = designSpaceFactor.*normalizedDirectionGrowth;

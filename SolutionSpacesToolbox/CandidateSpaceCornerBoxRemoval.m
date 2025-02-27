@@ -100,6 +100,12 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
         %
         %   See also update_candidate_space.
         DetachTolerance
+
+        %NORMALIZEGROWTHDIRECTION Determine if growth direction should be normalized
+        %   When true, the growth direction is normalized to the design space.
+        %
+        %   NORMALIZEGROWTHDIRECTION : logical
+        NormalizeGrowthDirection
     end
 
     properties (SetAccess = protected, Dependent)
@@ -174,12 +180,14 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             parser.addRequired('DesignSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addRequired('DesignSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addParameter('DetachTolerance',0.00);
+            parser.addParameter('NormalizeGrowthDirection',false,@islogical);
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
             
             obj.DesignSpaceLowerBound = parser.Results.DesignSpaceLowerBound;
             obj.DesignSpaceUpperBound = parser.Results.DesignSpaceUpperBound;
             obj.DetachTolerance = parser.Results.DetachTolerance;
+            obj.NormalizeGrowthDirection = parser.Results.NormalizeGrowthDirection;
 
             obj.DesignSampleDefinition = [];
             obj.IsInsideDefinition = [];
@@ -338,8 +346,10 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
 
             center = mean(obj.DesignSampleDefinition(obj.IsInsideDefinition,:),1);
             distanceToCenter = obj.DesignSampleDefinition - center;
-            normalizedDistanceToCenter = distanceToCenter./(designSpaceFactor);
-            normalizedDirectionGrowth = normalizedDistanceToCenter./vecnorm(normalizedDistanceToCenter,2,2);
+            if(obj.NormalizeGrowthDirection)
+                distanceToCenter = distanceToCenter./(designSpaceFactor);
+            end
+            normalizedDirectionGrowth = distanceToCenter./vecnorm(distanceToCenter,2,2);
 
             directionGrowth = designSpaceFactor.*normalizedDirectionGrowth;
             maxGrowthRate = region_limit_line_search([],obj.DesignSampleDefinition,directionGrowth,designSpace);

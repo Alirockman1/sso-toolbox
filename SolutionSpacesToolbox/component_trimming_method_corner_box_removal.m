@@ -43,6 +43,7 @@ function [removalCandidate,removalInformation] = component_trimming_method_corne
     parser.addParameter('CornersToTest','all');
     parser.addParameter('TrimmingSlack',0.5);
     parser.addParameter('ConsiderOnlyKeepInSlack',true);
+    parser.addParameter('NormalizeVariables',false,@islogical);
     parser.parse(varargin{:});
     options = parser.Results;
 
@@ -61,7 +62,6 @@ function [removalCandidate,removalInformation] = component_trimming_method_corne
     nCombination = size(combination,1);
     nSample = size(designSampleComponent,1);
     removalCandidate = false(nSample,nCombination);
-    anchorPoint = repmat(designSampleComponent(iRemove,:),nCombination,1);
     maximumSlack = nan(1,nDesignVariable);
     anchorSlack = nan(1,nDesignVariable);
 
@@ -76,15 +76,22 @@ function [removalCandidate,removalInformation] = component_trimming_method_corne
             lowerBound = min(designSampleComponent,[],1);
             upperBound = max(designSampleComponent,[],1);
 
+            if(options.NormalizeVariables)
+                normalizationFactor = upperBound-lowerBound;
+            else
+                normalizationFactor = ones(1,nDesignVariable);
+            end
+
             isInsideSlack = ~removalCandidateCurrent;
             if(options.ConsiderOnlyKeepInSlack)
                 isInsideSlack = isInsideSlack & isKeep;
             end
-            insideToAnchorDistance = distanceToAnchor(isInsideSlack,:);
+            insideToAnchorDistance = distanceToAnchor(isInsideSlack,:)./normalizationFactor;
 
-            [maximumSlackInside,iDimension] = max(insideToAnchorDistance,[],2);
+            [maximumSlackInside,iDimensionMaximumSlack] = max(insideToAnchorDistance,[],2);
             for j=1:nDesignVariable
-                allowedSlack = maximumSlackInside(iDimension==j);
+                allowedSlack = maximumSlackInside(iDimensionMaximumSlack==j).*normalizationFactor(j);
+                
                 if(isempty(allowedSlack))
                     if(~combination(i,j))
                         maximumSlack(j) = upperBound(j) - anchorPoint(j);
