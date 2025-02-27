@@ -43,9 +43,11 @@ function performanceMeasure = truss_generic_element_properties_dependent_density
     
     % Calculate density using provided estimation function
     elementDensity = systemParameter.EstimateMassGivenYoungsModulus(youngsModulus);
+    yieldStrength = systemParameter.EstimateYieldStrengthGivenYoungsModulus(youngsModulus);
     
     % Update system parameters with calculated density
     systemParameter.ElementDensity = elementDensity;
+    systemParameter.ElementYieldStrength = yieldStrength;
     
     % Call fixed density version with updated parameters
     performanceMeasure = truss_generic_element_properties_fixed_density(designSample, systemParameter);

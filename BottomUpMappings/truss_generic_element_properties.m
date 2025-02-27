@@ -60,11 +60,12 @@ function [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_elemen
     isTrussTip = (systemParameter.NodeForce~=0);
     for i = 1:nSample
         % Extract element properties from design sample
-        elementProperties = reshape(designSample(i,:), 4, nElement)';
+        elementProperties = reshape(designSample(i,:), 5, nElement)';
         youngsModulus = elementProperties(:,1);
         elementRadius = elementProperties(:,2);
         elementThickness = elementProperties(:,3);
         elementDensity = elementProperties(:,4);
+        elementYieldStrength = elementProperties(:,5);
         
         % Calculate cross-sectional properties
         elementArea = pi*(elementRadius.^2 - (elementRadius - elementThickness).^2);  % Area of hollow circle
@@ -84,8 +85,10 @@ function [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_elemen
         totalMass = sum(elementDensity .* elementArea .* elementLength);
         
         % Buckling calculations
-        criticalLoad = (pi^2 * youngsModulus .* elementMomentOfInertia) ./ (elementLength.^2);
-        bucklingRatio = axialForce(:,1) ./ criticalLoad;
+        bucklingCriticalLoad = (pi^2 * youngsModulus .* elementMomentOfInertia) ./ (elementLength.^2);
+
+        stressRatio = abs(stress) ./ elementYieldStrength;
+        bucklingRatio = axialForce(:,1) ./ bucklingCriticalLoad;
         
         % Handle numerical issues
         tipDisplacement = -nodeDisplacement(isTrussTip);
@@ -93,7 +96,7 @@ function [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_elemen
         stress(isnan(stress)) = inf;
         bucklingRatio(isnan(bucklingRatio)) = inf;
         
-        performanceMeasure(i,:) = [tipDisplacement, totalMass, stress', bucklingRatio'];
+        performanceMeasure(i,:) = [tipDisplacement, totalMass, stressRatio', bucklingRatio'];
 
         physicalFeasibilityMeasure(i,1:nElement) = (elementThickness - elementRadius)';
         if(includeMaterialPhysicalFeasibility)

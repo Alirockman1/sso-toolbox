@@ -41,9 +41,24 @@ figureSize = [goldenRatio 1]*8.5;
 % Material properties arrays
 youngsModulusMaterial = [200e9, 70e9, 116e9, 45e9]; % [Pa] Steel, Aluminum, Titanium, Magnesium
 densityMaterial = [7850, 2700, 4500, 1740];         % [kg/m^3] Steel, Aluminum, Titanium, Magnesium
+yieldStrengthMaterial = [250e6, 110e6, 1200e6, 200e6]; % [Pa] Steel, Aluminum, Titanium, Magnesium
+
 
 [youngsModulusMaterial,materialOrder] = sort(youngsModulusMaterial);
 densityMaterial = densityMaterial(materialOrder);
+yieldStrengthMaterial = yieldStrengthMaterial(materialOrder);
+
+figure;
+plot(youngsModulusMaterial,densityMaterial,'-o');
+xlabel('Young''s Modulus [Pa]');
+ylabel('Density [kg/m^3]');
+save_print_figure(gcf,[saveFolder,'MaterialRelationEtoRho'],'PrintFormat',{'png','pdf'},'Size',figureSize);
+
+figure;
+plot(youngsModulusMaterial,yieldStrengthMaterial,'-o');
+xlabel('Young''s Modulus [Pa]');
+ylabel('Yield Strength [Pa]');
+save_print_figure(gcf,[saveFolder,'MaterialRelationEtoSigmaY'],'PrintFormat',{'png','pdf'},'Size',figureSize);
 
 
 %%
@@ -540,12 +555,12 @@ initialDesign = repmat([minimumYoungsModulus,minimumRadius,minimumThickness]+[ma
 componentIndex = arrayfun(@(i) (3*(i-1)+1):3*i, 1:nElement, 'UniformOutput', false);
 
 systemParameter.EstimateMassGivenYoungsModulus = @(E) interp1(youngsModulusMaterial,densityMaterial,E);
+systemParameter.EstimateYieldStrengthGivenYoungsModulus = @(E) interp1(youngsModulusMaterial,yieldStrengthMaterial,E);
 
 
 %% Analyse initial truss
 % deformed nitial truss
 elementYoungsModulus = initialDesign(1:3:end)';
-
 elementRadius = initialDesign(2:3:end)';
 elementThickness = initialDesign(3:3:end)';
 elementCrossSectionArea = pi*elementRadius.^2 - pi*(elementRadius-elementThickness).^2;
@@ -558,14 +573,16 @@ nodeDisplacementInitial = ...
 	    systemParameter.NodeElement,...
 	    elementCrossSectionArea,...
 	    elementYoungsModulus);
+
+figure;
 plot_truss_deformation(gcf,systemParameter.NodePosition,systemParameter.NodeElement,nodeDisplacementInitial);
 save_print_figure(gcf,[saveFolder,'InitialTrussDeformation'],'PrintFormat',{'png','pdf'},'Size',figureSize);
 
 
 %% establish upper performance limits
 nElement = size(systemParameter.NodeElement,1);
-performanceLowerLimit = [  0   0 repmat(-inf,1,2*nElement)];
-performanceUpperLimit = [nan nan repmat(inf,1,2*nElement)];
+performanceLowerLimit = [  0   0 -inf(1,2*nElement)];
+performanceUpperLimit = [nan nan ones(1,nElement) ones(1,nElement)];
 
 % update uppwer limit based on either optimal value or initial value
 bottomUpMapping = BottomUpMappingFunction(systemFunction,'SystemParameter',systemParameter);
@@ -698,7 +715,7 @@ function [solutionSpaceBox,componentSolutionSpacePlanarTrimming,componentSolutio
             'MaxIterExploration',maxIter,...
             'MaxIterConsolidation',maxIter,...
             'CandidateSpaceConstructor',@CandidateSpaceConvexHull,...
-            'CandidateSpaceOptions',{'NormalizeVariables',true},...
+            'CandidateSpaceOptions',{'NormalizeVariables',true,'NormalizeGrowthDirection',true},...
             'TrimmingMethodFunction',@component_trimming_method_planar_trimming,...
             'TrimmingMethodOptions',{'NormalizeVariables',true},...
             'UseAdaptiveGrowthRate',true,...
@@ -740,8 +757,9 @@ function [solutionSpaceBox,componentSolutionSpacePlanarTrimming,componentSolutio
             'MaxIterExploration',maxIter,...
             'MaxIterConsolidation',maxIter,...
             'CandidateSpaceConstructor',@CandidateSpaceCornerBoxRemoval,...
+            'CandidateSpaceOptions',{'NormalizeGrowthDirection',true},...
             'TrimmingMethodFunction',@component_trimming_method_corner_box_removal,...
-            ... 'TrimmingMethodOptions',{'CornersToTest','away'},...
+            'TrimmingMethodOptions',{'NormalizeVariables',true},...
             'UseAdaptiveGrowthRate',true,...
             'GrowthRate',growthRate,...
             'ApplyLeanness','never',...
@@ -1158,12 +1176,15 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
     % (13) axes
     grid('off');
     if(~options.IncludeAxesInformation)
-        if(is3dPlot)
-            set(gca,'XColor', 'none','YColor','none','ZColor','none');
-        else
-            set(gca,'XColor', 'none','YColor','none');
-        end
+        set(gca,'XColor', 'none','YColor','none','ZColor','none');
     end
+    for i=1:nElement
+        figure(figureHandle(i));
+        xlabel('Young''s Modulus [Pa]');
+        ylabel('Element Radius [m]');
+        zlabel('Element Thickness [m]');
+    end
+    
 
     % (14) legend
     if(options.IncludeLegend)

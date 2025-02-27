@@ -47,15 +47,23 @@ function performanceMeasure = truss_generic_element_properties_fixed_density(des
     else
         elementDensity = elementDensity(:);
     end
-    
+
+    % get element yield strength
+    elementYieldStrength = systemParameter.ElementYieldStrength;
+    if(isscalar(elementYieldStrength))
+        elementYieldStrength = elementYieldStrength * ones(1, nSample*nElements);
+    else
+        elementYieldStrength = elementYieldStrength(:);
+    end
+
     % Reshape the input array to separate elements and insert density
     reshapedSamplePerElement = reshape(designSample',3,[])';
     
     % Create density array matching dimensions and concatenate
-    expandedSample = [reshapedSamplePerElement,elementDensity];
+    expandedSample = [reshapedSamplePerElement,elementDensity,elementYieldStrength];
     
     % Reshape back to original format with added density column
-    designSampleWithDensity = reshape(expandedSample', 4*nElements, [])';
+    designSampleWithDensity = reshape(expandedSample', 5*nElements, [])';
 
     % Call the original function with the expanded design sample
     performanceMeasure = truss_generic_element_properties(designSampleWithDensity, systemParameter);
