@@ -40,11 +40,11 @@ performanceUpperLimit = 4;
 
 
 %% design space definition
-systemParameter = {[1,2]};
-designSpaceLowerBound = [1,1];
-designSpaceUpperBound = [30,30];
-componentIndex = {[1,2]};
-initialDesign = [5,5];
+systemParameter = {[1,2,3]};
+designSpaceLowerBound = [1,1,1];
+designSpaceUpperBound = [30,30,30];
+componentIndex = {[1,2,3]'};
+initialDesign = [5,5,5];
 
 
 %% solution space computation
@@ -114,7 +114,7 @@ for i=1:nComponent
     figure;
     componentSolutionSpacePlanar(i).plot_candidate_space(gcf,'FaceColor','g','EdgeColor','g','FaceAlpha',0.1);
     hold on;
-    componentSolutionSpaceCornerBox(i).plot_candidate_space(gcf,'FaceColor','b','EdgeColor','b','FaceAlpha',0.1);
+    componentSolutionSpaceCornerBox(i).plot_candidate_space(gcf,'FaceColor','b','EdgeColor','none','FaceAlpha',0.1);
     title(['Component ',num2str(i)]);
     legend('Planar Trimming','Corner Box Removal');
     save_print_figure(gcf,[saveFolder,'ComponentSolutionSpace',num2str(i)],'PrintFormat',{'png','pdf'});
