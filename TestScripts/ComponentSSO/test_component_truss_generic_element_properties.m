@@ -541,12 +541,12 @@ end
 nElement = size(systemParameter.NodeElement,1);
 
 minimumYoungsModulus = min(youngsModulusMaterial);
-minimumRadius = 0.02;
-minimumThickness = 0.01;
+minimumRadius = 0.001;
+minimumThickness = 0.001;
 
 maximumYoungsModulus = max(youngsModulusMaterial);
-maximumRadius = 10;
-maximumThickness = 5;
+maximumRadius = 0.1;
+maximumThickness = 0.05;
 
 designSpaceLowerBound = repmat([minimumYoungsModulus,minimumRadius,minimumThickness],1,nElement);
 designSpaceUpperBound = repmat([maximumYoungsModulus,maximumRadius,maximumThickness],1,nElement);
@@ -1183,6 +1183,9 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
         xlabel('Young''s Modulus [Pa]');
         ylabel('Element Radius [m]');
         zlabel('Element Thickness [m]');
+
+        axis('tight','vis3d');
+        camproj('perspective');
     end
     
 

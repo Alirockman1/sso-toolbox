@@ -45,7 +45,7 @@ function performanceMeasure = truss_generic_element_properties_fixed_density(des
     if(isscalar(elementDensity))
         elementDensity = elementDensity * ones(1, nSample*nElements);
     else
-        elementDensity = elementDensity(:);
+        elementDensity = row_major_matrix_to_column_vector(elementDensity);
     end
 
     % get element yield strength
@@ -53,7 +53,7 @@ function performanceMeasure = truss_generic_element_properties_fixed_density(des
     if(isscalar(elementYieldStrength))
         elementYieldStrength = elementYieldStrength * ones(1, nSample*nElements);
     else
-        elementYieldStrength = elementYieldStrength(:);
+        elementYieldStrength = row_major_matrix_to_column_vector(elementYieldStrength);
     end
 
     % Reshape the input array to separate elements and insert density

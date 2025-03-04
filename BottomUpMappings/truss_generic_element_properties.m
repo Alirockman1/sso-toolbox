@@ -8,8 +8,8 @@ function [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_elemen
 %   - Density (ρ)
 %
 %   Input:
-%       - designSample: (nSample, 4*nElement) matrix where each group of 4 columns
-%         represents [E, r, t, ρ] for an element
+%       - designSample: (nSample, 5*nElement) matrix where each group of 5 columns
+%         represents [E, r, t, ρ, sigmaY] for an element
 %       - systemParameter: struct containing:
 %           -- NodePosition: (nNode, 2/3) node coordinates
 %           -- NodeForce: (nNode, 2/3) external forces
@@ -19,7 +19,7 @@ function [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_elemen
 %   Output:
 %       - performanceMeasure: (nSample, 2+2*nElement) matrix containing:
 %           (1) Tip displacement, (2) Total mass, 
-%           (3:2+nElement) Absolute stresses, 
+%           (3:2+nElement) Ratio of absolute stresses and yield strength, 
 %           (3+nElement:end) Buckling ratios
 %
 %	See also truss_analysis, truss_two_bar_hollow_circle.
@@ -89,11 +89,11 @@ function [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_elemen
 
         stressRatio = abs(stress) ./ elementYieldStrength;
         bucklingRatio = axialForce(:,1) ./ bucklingCriticalLoad;
+        tipDisplacement = -nodeDisplacement(isTrussTip);
         
         % Handle numerical issues
-        tipDisplacement = -nodeDisplacement(isTrussTip);
         tipDisplacement(isnan(tipDisplacement)) = inf;
-        stress(isnan(stress)) = inf;
+        stressRatio(isnan(stressRatio)) = inf;
         bucklingRatio(isnan(bucklingRatio)) = inf;
         
         performanceMeasure(i,:) = [tipDisplacement, totalMass, stressRatio', bucklingRatio'];
