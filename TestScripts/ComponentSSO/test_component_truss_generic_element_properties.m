@@ -63,6 +63,7 @@ save_print_figure(gcf,[saveFolder,'MaterialRelationEtoSigmaY'],'PrintFormat',{'p
 
 %%
 trussAnalysisChoice = '2-Bar-2D';
+fixRadius = false;
 useBoxResultForComponent = false;
 
 computeDisplacement = true;
@@ -86,7 +87,7 @@ switch trussAnalysisChoice
         growthRateDisplacement = 0.07;
         growthRateMass = 0.07;
         trimmingPasses = 'reduced';
-        requirementSpacesType = 'Omega0';
+        requirementSpacesType = 'Omega1';
         systemParameter.NodePosition = [...
             0   0;  ...
             0   1; ...
@@ -110,7 +111,7 @@ switch trussAnalysisChoice
         growthRateDisplacement = 0.07;
         growthRateMass = 0.07;
         trimmingPasses = 'reduced';
-        requirementSpacesType = 'Omega0';
+        requirementSpacesType = 'Omega1';
         systemParameter.NodePosition = [...
             0 0;  ...
             1 0; ...
@@ -144,7 +145,7 @@ switch trussAnalysisChoice
         growthRateDisplacement = 0.01;
         growthRateMass = 0.01;
         trimmingPasses = 'reduced';
-        requirementSpacesType = 'Omega0';
+        requirementSpacesType = 'Omega1';
         systemParameter.NodePosition = [...
 	          1, 1; ... % (1)
               1, 0; ... % (2)
@@ -208,7 +209,7 @@ switch trussAnalysisChoice
         growthRateDisplacement = 0.007;
         growthRateMass = 0.007;
         trimmingPasses = 'reduced';
-        requirementSpacesType = 'Omega0';
+        requirementSpacesType = 'Omega1';
         systemParameter.NodePosition = [...
               1, 1; ... % (1)
               1, 0; ... % (2)
@@ -323,7 +324,7 @@ switch trussAnalysisChoice
         growthRateDisplacement = 0.04;
         growthRateMass = 0.04;
         trimmingPasses = 'reduced';
-        requirementSpacesType = 'Omega0';
+        requirementSpacesType = 'Omega1';
         systemParameter.NodePosition = [...
               0   0   0; % (1)
               0 0.5   1; % (2)
@@ -370,7 +371,7 @@ switch trussAnalysisChoice
         growthRateDisplacement = 0.005;
         growthRateMass = 0.005;
         trimmingPasses = 'reduced';
-        requirementSpacesType = 'Omega0';
+        requirementSpacesType = 'Omega1';
         systemParameter.NodePosition = [...
               0   0   0; % (1)
               0 0.5   1; % (2)
@@ -437,7 +438,7 @@ switch trussAnalysisChoice
         growthRateDisplacement = 0.004;
         growthRateMass = 0.007;
         trimmingPasses = 'single';
-        requirementSpacesType = 'Omega0';
+        requirementSpacesType = 'Omega1';
         systemParameter.NodePosition = [...
               0   0   0; % (1)
               0 0.5   1; % (2)
@@ -540,17 +541,17 @@ end
 %% base parameters
 nElement = size(systemParameter.NodeElement,1);
 
-minimumYoungsModulus = min(youngsModulusMaterial);
 minimumRadius = 0.001;
 minimumThickness = 0.001;
+minimumYoungsModulus = min(youngsModulusMaterial);
 
+maximumRadius = 1;
+maximumThickness = 1;
 maximumYoungsModulus = max(youngsModulusMaterial);
-maximumRadius = 0.1;
-maximumThickness = 0.05;
 
-designSpaceLowerBound = repmat([minimumYoungsModulus,minimumRadius,minimumThickness],1,nElement);
-designSpaceUpperBound = repmat([maximumYoungsModulus,maximumRadius,maximumThickness],1,nElement);
-initialDesign = repmat([minimumYoungsModulus,minimumRadius,minimumThickness]+[maximumYoungsModulus,maximumRadius,maximumThickness],1,nElement)/2;
+designSpaceLowerBound = repmat([minimumRadius,minimumThickness,minimumYoungsModulus],1,nElement);
+designSpaceUpperBound = repmat([maximumRadius,maximumThickness,maximumYoungsModulus],1,nElement);
+initialDesign = repmat([minimumRadius,minimumThickness,minimumYoungsModulus]+[maximumRadius,maximumThickness,maximumYoungsModulus],1,nElement)/2;
 
 componentIndex = arrayfun(@(i) (3*(i-1)+1):3*i, 1:nElement, 'UniformOutput', false);
 
@@ -559,10 +560,10 @@ systemParameter.EstimateYieldStrengthGivenYoungsModulus = @(E) interp1(youngsMod
 
 
 %% Analyse initial truss
-% deformed nitial truss
-elementYoungsModulus = initialDesign(1:3:end)';
-elementRadius = initialDesign(2:3:end)';
-elementThickness = initialDesign(3:3:end)';
+% deformed initial truss
+elementRadius = initialDesign(1:3:end)';
+elementThickness = initialDesign(2:3:end)';
+elementYoungsModulus = initialDesign(3:3:end)';
 elementCrossSectionArea = pi*elementRadius.^2 - pi*(elementRadius-elementThickness).^2;
 
 nodeDisplacementInitial = ...
@@ -586,6 +587,10 @@ performanceUpperLimit = [nan nan ones(1,nElement) ones(1,nElement)];
 
 % update uppwer limit based on either optimal value or initial value
 bottomUpMapping = BottomUpMappingFunction(systemFunction,'SystemParameter',systemParameter);
+if(fixRadius)
+    [bottomUpMapping,designSpaceLowerBound,designSpaceUpperBound,initialDesign,componentIndex] = ...
+        BottomUpMappingFixedVariables(bottomUpMapping,repmat([true false false],1,nElement),initialDesign(1:3:end),designSpaceLowerBound,designSpaceUpperBound,initialDesign,componentIndex);
+end
 performanceMeasureInitial = bottomUpMapping.response(initialDesign);
 
 
@@ -594,9 +599,13 @@ performanceMeasureInitial = bottomUpMapping.response(initialDesign);
 if(computeDisplacement)
     performanceUpperLimitDisplacement = performanceUpperLimit;
     performanceUpperLimitDisplacement(1) = performanceMeasureInitial(1);
+
+    performanceLowerLimitDisplacement = performanceLowerLimit;
+    performanceLowerLimitDisplacement(1) = performanceMeasureInitial(1)*0.95;
+
     designEvaluatorDisplacement = DesignEvaluatorBottomUpMapping(...
         bottomUpMapping,...
-        performanceLowerLimit,...
+        performanceLowerLimitDisplacement,...
         performanceUpperLimitDisplacement);
 
     [solutionSpaceBoxDisplacement,componentSolutionSpacePlanarTrimmingDisplacement,componentSolutionSpaceCornerBoxRemovalDisplacement,componentSolutionSpaceHolePunchingDisplacement] = ...
@@ -908,20 +917,42 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
     parser.parse(varargin{:});
     options = parser.Results;
 
-    nElement(1) = size(options.BoxSolutionSpaceDisplacement,2)/3;
-    nElement(2) = size(options.BoxSolutionSpaceMass,2)/3;
-    nElement(3) = size(options.BoxSolutionSpaceDisplacementAndMass,2)/3;
-    nElement(4) = length(options.PlanarTrimmingSolutionSpaceDisplacement);
-    nElement(5) = length(options.PlanarTrimmingSolutionSpaceMass);
-    nElement(6) = length(options.PlanarTrimmingSolutionSpaceDisplacementAndMass);
-    nElement(7) = length(options.CornerBoxRemovalSolutionSpaceDisplacement);
-    nElement(8) = length(options.CornerBoxRemovalSolutionSpaceMass);
-    nElement(9) = length(options.CornerBoxRemovalSolutionSpaceDisplacementAndMass);
-    nElement(10) = length(options.HolePunchingSolutionSpaceDisplacement);
-    nElement(11) = length(options.HolePunchingSolutionSpaceMass);
-    nElement(12) = length(options.HolePunchingSolutionSpaceDisplacementAndMass);
-    nElement = max(nElement);
-    
+    nElement(1) = length(options.PlanarTrimmingSolutionSpaceDisplacement);
+    nElement(2) = length(options.PlanarTrimmingSolutionSpaceMass);
+    nElement(3) = length(options.PlanarTrimmingSolutionSpaceDisplacementAndMass);
+    nElement(4) = length(options.CornerBoxRemovalSolutionSpaceDisplacement);
+    nElement(5) = length(options.CornerBoxRemovalSolutionSpaceMass);
+    nElement(6) = length(options.CornerBoxRemovalSolutionSpaceDisplacementAndMass);
+    nElement(7) = length(options.HolePunchingSolutionSpaceDisplacement);
+    nElement(8) = length(options.HolePunchingSolutionSpaceMass);
+    nElement(9) = length(options.HolePunchingSolutionSpaceDisplacementAndMass);
+    [nElement,iEntry] = max(nElement);
+
+    switch iEntry
+        case 1
+            nDimension = size(options.PlanarTrimmingSolutionSpaceDisplacement(1).DesignSpaceLowerBound,2);
+        case 2
+            nDimension = size(options.PlanarTrimmingSolutionSpaceMass(1).DesignSpaceLowerBound,2);
+        case 3
+            nDimension = size(options.PlanarTrimmingSolutionSpaceDisplacementAndMass(1).DesignSpaceLowerBound,2);
+        case 4
+            nDimension = size(options.CornerBoxRemovalSolutionSpaceDisplacement(1).DesignSpaceLowerBound,2);
+        case 5
+            nDimension = size(options.CornerBoxRemovalSolutionSpaceMass(1).DesignSpaceLowerBound,2);
+        case 6
+            nDimension = size(options.CornerBoxRemovalSolutionSpaceDisplacementAndMass(1).DesignSpaceLowerBound,2);
+        case 7
+            nDimension = size(options.HolePunchingSolutionSpaceDisplacement(1).DesignSpaceLowerBound,2);
+        case 8
+            nDimension = size(options.HolePunchingSolutionSpaceMass(1).DesignSpaceLowerBound,2);
+        case 9
+            nDimension = size(options.HolePunchingSolutionSpaceDisplacementAndMass(1).DesignSpaceLowerBound,2);
+    end
+    if(nDimension==2)
+        boxPlotFunction = @plot_design_box_2d;
+    elseif(nDimension==3)
+        boxPlotFunction = @plot_design_box_3d;
+    end
 
     %% common options
     % (1) box - displacement 
@@ -1019,11 +1050,11 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
     if(~isempty(options.BoxSolutionSpaceDisplacement))
         for i=1:nElement
             figure(figureHandle(i));
-            currentIndex = 1 + 3*(i-1) + [0:2];
+            currentIndex = 1 + nDimension*(i-1) + [0:(nDimension-1)];
             if i < nElement
-                plot_design_box_3d(gcf,options.BoxSolutionSpaceDisplacement(:,currentIndex),boxDisplacementOptions{:});
+                boxPlotFunction(gcf,options.BoxSolutionSpaceDisplacement(:,currentIndex),boxDisplacementOptions{:});
             else
-                handleDisplacementBox = plot_design_box_3d(gcf,options.BoxSolutionSpaceDisplacement(:,currentIndex),boxDisplacementOptions{:});
+                handleDisplacementBox = boxPlotFunction(gcf,options.BoxSolutionSpaceDisplacement(:,currentIndex),boxDisplacementOptions{:});
             end
         end
     end
@@ -1033,11 +1064,11 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
     if(~isempty(options.BoxSolutionSpaceMass))
         for i=1:nElement
             figure(figureHandle(i));
-            currentIndex = 1 + 3*(i-1) + [0:2];
+            currentIndex = 1 + nDimension*(i-1) + [0:(nDimension-1)];
             if i < nElement
-                plot_design_box_3d(gcf,options.BoxSolutionSpaceMass(:,currentIndex),boxMassOptions{:});
+                boxPlotFunction(gcf,options.BoxSolutionSpaceMass(:,currentIndex),boxMassOptions{:});
             else
-                handleMassBox = plot_design_box_3d(gcf,options.BoxSolutionSpaceMass(:,currentIndex),boxMassOptions{:});
+                handleMassBox = boxPlotFunction(gcf,options.BoxSolutionSpaceMass(:,currentIndex),boxMassOptions{:});
             end
         end
     end
@@ -1047,11 +1078,11 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
     if(~isempty(options.BoxSolutionSpaceDisplacementAndMass))
         for i=1:nElement
             figure(figureHandle(i));
-            currentIndex = 1 + 3*(i-1) + [0:2];
+            currentIndex = 1 + nDimension*(i-1) + [0:(nDimension-1)];
             if i < nElement
-                plot_design_box_3d(gcf,options.BoxSolutionSpaceDisplacementAndMass(:,currentIndex),boxDisplacementAndMassOptions{:});
+                boxPlotFunction(gcf,options.BoxSolutionSpaceDisplacementAndMass(:,currentIndex),boxDisplacementAndMassOptions{:});
             else
-                handleDisplacementAndMassBox = plot_design_box_3d(gcf,options.BoxSolutionSpaceDisplacementAndMass(:,currentIndex),boxDisplacementAndMassOptions{:});
+                handleDisplacementAndMassBox = boxPlotFunction(gcf,options.BoxSolutionSpaceDisplacementAndMass(:,currentIndex),boxDisplacementAndMassOptions{:});
             end
         end
     end
@@ -1176,16 +1207,24 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
     % (13) axes
     grid('off');
     if(~options.IncludeAxesInformation)
-        set(gca,'XColor', 'none','YColor','none','ZColor','none');
+        if(nDimension==2)
+            set(gca,'XColor', 'none','YColor','none');
+        elseif(nDimension==3)
+            set(gca,'XColor', 'none','YColor','none','ZColor','none');
+        end
     end
     for i=1:nElement
         figure(figureHandle(i));
-        xlabel('Young''s Modulus [Pa]');
-        ylabel('Element Radius [m]');
-        zlabel('Element Thickness [m]');
-
-        axis('tight','vis3d');
-        camproj('perspective');
+        if(nDimension==2)
+            xlabel('Element Thickness [m]');
+            ylabel('Young''s Modulus [Pa]');
+        elseif(nDimension==3)
+            xlabel('Element Radius [m]');
+            ylabel('Element Thickness [m]');
+            zlabel('Young''s Modulus [Pa]');
+            axis('tight','vis3d');
+            camproj('perspective');
+        end
     end
     
 

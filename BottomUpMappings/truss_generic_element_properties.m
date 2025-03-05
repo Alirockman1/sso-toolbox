@@ -61,9 +61,9 @@ function [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_elemen
     for i = 1:nSample
         % Extract element properties from design sample
         elementProperties = reshape(designSample(i,:), 5, nElement)';
-        youngsModulus = elementProperties(:,1);
-        elementRadius = elementProperties(:,2);
-        elementThickness = elementProperties(:,3);
+        elementRadius = elementProperties(:,1);
+        elementThickness = elementProperties(:,2);
+        youngsModulus = elementProperties(:,3);
         elementDensity = elementProperties(:,4);
         elementYieldStrength = elementProperties(:,5);
         

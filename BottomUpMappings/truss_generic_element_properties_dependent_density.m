@@ -1,10 +1,10 @@
-function performanceMeasure = truss_generic_element_properties_dependent_density(designSample, systemParameter)
+function [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_element_properties_dependent_density(designSample, systemParameter)
 %TRUSS_GENERIC_ELEMENT_PROPERTIES_DEPENDENT_DENSITY Bottom-up Mapping (Density from Young's Modulus)
 %   This variant calculates material density based on Young's modulus using a
 %   provided estimation function. Design variables per element are:
-%   - Young's modulus (E)
 %   - Radius (r)
 %   - Thickness (t)
+%   - Young's modulus (E)
 %   (Density ρ is calculated from E via systemParameter.EstimateMassGivenYoungsModulus)
 %
 %   PERFORMANCEMEASURE = TRUSS_GENERIC_ELEMENT_PROPERTIES_DEPENDENT_DENSITY(DESIGNSAMPLE,
@@ -39,7 +39,7 @@ function performanceMeasure = truss_generic_element_properties_dependent_density
     nElements = size(designSample, 2) / 3;
     
     % Extract Young's modulus from every 3rd column starting at column 1
-    youngsModulus = designSample(:, 1:3:3*nElements);
+    youngsModulus = designSample(:, 3:3:3*nElements);
     
     % Calculate density using provided estimation function
     elementDensity = systemParameter.EstimateMassGivenYoungsModulus(youngsModulus);
@@ -50,5 +50,5 @@ function performanceMeasure = truss_generic_element_properties_dependent_density
     systemParameter.ElementYieldStrength = yieldStrength;
     
     % Call fixed density version with updated parameters
-    performanceMeasure = truss_generic_element_properties_fixed_density(designSample, systemParameter);
+    [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_element_properties_fixed_density(designSample, systemParameter);
 end

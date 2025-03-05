@@ -1,10 +1,10 @@
-function performanceMeasure = truss_generic_element_properties_fixed_density(designSample, systemParameter)
+function [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_element_properties_fixed_density(designSample, systemParameter)
 %TRUSS_GENERIC_ELEMENT_PROPERTIES_FIXED_DENSITY Bottom-up Mapping (Fixed Density)
 %   Variant with fixed material density from system parameters. Design variables
 %   per element are:
-%   - Young's modulus (E)
 %   - Radius (r)
 %   - Thickness (t)
+%   - Young's modulus (E)
 %   (Density ρ comes from systemParameter.ElementDensity)
 %
 %   PERFORMANCEMEASURE = TRUSS_GENERIC_ELEMENT_PROPERTIES_FIXED_DENSITY(DESIGNSAMPLE,
@@ -66,5 +66,5 @@ function performanceMeasure = truss_generic_element_properties_fixed_density(des
     designSampleWithDensity = reshape(expandedSample', 5*nElements, [])';
 
     % Call the original function with the expanded design sample
-    performanceMeasure = truss_generic_element_properties(designSampleWithDensity, systemParameter);
+    [performanceMeasure, physicalFeasibilityMeasure] = truss_generic_element_properties(designSampleWithDensity, systemParameter);
 end 
