@@ -264,7 +264,10 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
 
             aspaceComponentIndex = cell(size(options.ComponentIndex));
             for i=1:length(aspaceComponentIndex)
-                aspaceComponentIndex{i} = convert_index_base(compensationAspaceIndex,options.ComponentIndex{i}','forward')';
+                if(~isempty(options.ComponentIndex{i}))
+                    convertedIndex = convert_index_base(compensationAspaceIndex(:),options.ComponentIndex{i}(:),'forward');
+                    aspaceComponentIndex{i} = convertedIndex(~isnan(convertedIndex));
+                end
             end
 
             obj.BaseDesignEvaluator = baseDesignEvaluator;
@@ -273,9 +276,9 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
             obj.BspaceUpperBound = bspaceUpperBound;
             obj.BspaceInitialDesign = bspaceInitialDesign;
             [~,obj.OptimizationOptions] = merge_name_value_pair_argument(...
-                    {'OptimizationMethodOptions',{'Display','none'}},...
-                    parser.Results.OptimizationOptions,...
-                    {'CompensationAspaceIndex',compensationAspaceIndex});
+                {'OptimizationMethodOptions',{'Display','none'}},...
+                parser.Results.OptimizationOptions,...
+                {'CompensationAspaceIndex',compensationAspaceIndex});
             obj.AspaceOrderPasses = options.AspaceOrderPasses;
             obj.AspaceOrderKnnsearchOptions = options.AspaceOrderKnnsearchOptions;
             obj.AcceptFullSpaceSample = options.AcceptFullSpaceSample;
