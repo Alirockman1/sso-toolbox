@@ -179,7 +179,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             parser = inputParser;
             parser.addRequired('DesignSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addRequired('DesignSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
-            parser.addParameter('DetachTolerance',0.00);
+            parser.addParameter('DetachTolerance',0);
             parser.addParameter('NormalizeGrowthDirection',false,@islogical);
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
@@ -343,20 +343,31 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
         %   See also generate_candidate_space, is_in_candidate_space.
             designSpaceFactor = obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound;
             designSpace = [obj.DesignSpaceLowerBound;obj.DesignSpaceUpperBound];
+            
+            if(obj.NormalizeGrowthDirection)
+                designSpaceNormalization = designSpaceFactor;
+            else
+                designSpaceNormalization = 1;
+            end
 
             center = mean(obj.DesignSampleDefinition(obj.IsInsideDefinition,:),1);
-            distanceToCenter = obj.DesignSampleDefinition - center;
-            if(obj.NormalizeGrowthDirection)
-                distanceToCenter = distanceToCenter./(designSpaceFactor);
-            end
+            distanceToCenter = (obj.DesignSampleDefinition - center)./designSpaceNormalization;
             normalizedDirectionGrowth = distanceToCenter./vecnorm(distanceToCenter,2,2);
 
+            % positive direction - away from center
             directionGrowth = designSpaceFactor.*normalizedDirectionGrowth;
             maxGrowthRate = region_limit_line_search([],obj.DesignSampleDefinition,directionGrowth,designSpace);
             sampleGrowthRate = min(growthRate,maxGrowthRate);
+            designSampleNewPositive = obj.DesignSampleDefinition + sampleGrowthRate.*directionGrowth;
 
-            designSampleNew = obj.DesignSampleDefinition + sampleGrowthRate.*directionGrowth;
-            designSampleNew = min(max(designSampleNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
+            % negative direction - towards center
+            directionGrowth = -designSpaceFactor.*normalizedDirectionGrowth;
+            maxGrowthRate = region_limit_line_search([],obj.DesignSampleDefinition,directionGrowth,designSpace);
+            sampleGrowthRate = min(growthRate,maxGrowthRate);
+            designSampleNewNegative = obj.DesignSampleDefinition + sampleGrowthRate.*directionGrowth;
+
+            % aggregate
+            designSampleNew = min(max([designSampleNewPositive;designSampleNewNegative],obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
             obj.DesignSampleDefinition = [obj.DesignSampleDefinition;designSampleNew];
 
             if(~isempty(obj.AnchorPoint))
@@ -366,7 +377,8 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                 nDimension = size(obj.DesignSpaceLowerBound,2);
                 directionGrowth = zeros(nAnchor,nDimension);
                 for i=1:nAnchor
-                    distanceToAnchor = insideSample - obj.AnchorPoint(i,:);
+                    % check distances to anchor in each dimension (positive -> inside)
+                    distanceToAnchor = (insideSample - obj.AnchorPoint(i,:))./designSpaceNormalization;
                     distanceToAnchor(:,obj.CornerDirection(i,:)) = -distanceToAnchor(:,obj.CornerDirection(i,:));
                     [~,iDimension] = max(distanceToAnchor,[],2);
                     for j=1:nDimension
