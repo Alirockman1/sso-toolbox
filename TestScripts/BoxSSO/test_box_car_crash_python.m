@@ -29,7 +29,7 @@ diary off;
 
 
 %% debugging
-rng(6);
+rng(4);
 
 
 %% Documentation / Archive
@@ -63,7 +63,7 @@ options = sso_stochastic_options('box',...
     'FixIterNumberExploration',true,...
     'FixIterNumberConsolidation',true,...
     'UseAdaptiveGrowthRate',false);
-[designBox,problemData,iterData] = sso_box_stochastic(...
+[designBox,optimizationData] = sso_box_stochastic(...
     designEvaluator,initialDesign,designSpaceLowerBound,designSpaceUpperBound,options);
 
 
@@ -85,7 +85,7 @@ save_print_figure(gcf,[saveFolder,'SolutionBox'],'Size',figureSize);
 
 
 %% Performance Metrics
-algoData = postprocess_sso_box_stochastic(problemData,iterData);
+algoData = postprocess_sso_box_stochastic(optimizationData);
 plot_sso_box_stochastic_metrics(algoData,...
     'SaveFolder',saveFolder,...
     'SaveFigureOptions',{'Size',figureSize});

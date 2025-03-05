@@ -1,4 +1,4 @@
-function [figureElementHandle,problemData,evaluationData] = plot_selective_design_space_projection(varargin)
+function [figureElementHandle,outputData] = plot_selective_design_space_projection(varargin)
 %PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION Pair-view of box-shaped solution space
 %   PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION projects the solution space design
 %   box into 2D-planes and allows for the visualization of them together with
@@ -148,8 +148,9 @@ function [figureElementHandle,problemData,evaluationData] = plot_selective_desig
     
     
     %% Pre-allocate important arrays
-    if(nargout>=2)
-        problemData = struct(...
+    isOutputData = (nargout>=2);
+    if(isOutputData)
+        outputData = struct(...
             'DesignEvaluator',designEvaluator,...
             'DesignBox',designBox,...
             'DesignSpaceLowerBound',designSpaceLowerBound,...
@@ -163,8 +164,8 @@ function [figureElementHandle,problemData,evaluationData] = plot_selective_desig
     evaluationFields = {'SamplingMethod','SamplingOptions','NumberSamplesPerPlot','MarkerColorsCriterion'};
     evaluationOptions = namedargs2cell(structure_extract_fields(options,evaluationFields));
     evaluationInput = [{designEvaluator,designBox,designSpaceLowerBound,designSpaceUpperBound,desiredPairs},evaluationOptions];
-    if(nargout>=3)
-        [plotData,evaluationData] = evaluate_selective_design_space_projection(evaluationInput{:});
+    if(isOutputData)
+        [plotData,outputData.EvaluationData] = evaluate_selective_design_space_projection(evaluationInput{:});
     else
         plotData = evaluate_selective_design_space_projection(evaluationInput{:});
     end

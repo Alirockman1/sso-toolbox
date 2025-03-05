@@ -83,7 +83,7 @@ designEvaluator = DesignEvaluatorBottomUpMapping(...
     bottomUpMapping,...
     performanceLowerLimit,...
     performanceUpperLimit);
-[componentSolutionSpace,problemData,iterData] = sso_component_stochastic(designEvaluator,...
+[componentSolutionSpace,optimizationData] = sso_component_stochastic(designEvaluator,...
     initialDesign,designSpaceLowerBound,designSpaceUpperBound,componentIndex,options);
 toc(timeElapsedAlgorithm)
 
@@ -128,7 +128,7 @@ save_print_figure(gcf,[saveFolder,'Component2TrimmingPlot']);
 
 
 %% 
-algoData = postprocess_sso_component_stochastic(problemData,iterData);
+algoData = postprocess_sso_component_stochastic(optimizationData);
 plot_sso_component_stochastic_metrics(algoData,'SaveFolder',saveFolder);
 
 

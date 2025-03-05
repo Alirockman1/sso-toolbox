@@ -1,4 +1,4 @@
-function [componentSolutionSpace,problemData,iterationData] = sso_component_stochastic(designEvaluator,initialDesign,designSpaceLowerBound,designSpaceUpperBound,componentIndex,varargin)
+function [componentSolutionSpace,optimizationData] = sso_component_stochastic(designEvaluator,initialDesign,designSpaceLowerBound,designSpaceUpperBound,componentIndex,varargin)
 %SSO_COMPONENT_STOCHASTIC Component solution spaces optimization (stochastic)
 %   SSO_COMPONENT_STOCHASTIC computes the optimal component solution spaces 
 %   using a stochastic approach, where samples are generated inside the 
@@ -18,13 +18,9 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
 %   OPTIONS) also allows one to change the options being used through the output
 %   of 'sso_stochastic_options' OPTIONS.
 %
-%   [COMPONENTSOLUTIONSPACE,PROBLEMDATA] = SSO_COMPONENT_STOCHASTIC(...)  
-%   additionally returns the fixed problem data in PROBLEMDATA.
-%
-%   [COMPONENTSOLUTIONSPACE,PROBLEMDATA,ITERATIONDATA] = 
-%   SSO_COMPONENT_STOCHASTIC(...) additionally returns data generated at each 
-%   iteration of the process ITERATIONDATA.
-%
+%   [COMPONENTSOLUTIONSPACE,OPTIMIZATIONDATA] = SSO_COMPONENT_STOCHASTIC(...)  
+%   additionally returns the fixed problem and iteration data in 
+%   OPTIMIZATIONDATA.
 %
 %   Input:
 %       - DESIGNEVALUATOR : DesignEvaluatorBase
@@ -36,32 +32,32 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
 %       - OPTIONS : structure
 %
 %   Output:
-%       - CANDIDATEBOX  : (2,nDesignVariable) double
-%       - PROBLEMDATA : struct
+%       - COMPONENTSOLUTIONSPACE  : (1,nComponent) CandidateSpaceBase
+%       - OPTIMIZATIONDATA : struct
 %           - DesignEvaluator : DesignEvaluatorBase 
-%           - InitialBox : (2,nDesignVariable) double
+%           - InitialDesign : (1,nDesignVariable) double OR (2,nDesignVariable) 
 %           - DesignSpaceLowerBound : (1,nDesignVariable) double
 %           - DesignSpaceUpperBound : (1,nDesignVariable) double
 %           - Options : struct
 %           - InitialRNGState : struct
-%       - ITERATIONDATA : (nIteration,1) struct
-%           - EvaluatedDesignSamples : (nSample,nDesignVariable) double
-%           - EvaluationOutput : class-dependent
-%           - Phase : integer
-%           - GrowthRate : double
-%           - NumberPaddingSamplesGenerated : double
-%           - PaddingSamplesUsed : (nPaddingSample,nDesignVariable) double
-%           - DesignScore : (nSample,1) double
-%           - IsGoodPerformance : (nSample,1) logical
-%           - IsPhysicallyFeasible : (nSample,1) logical
-%           - IsAcceptable : (nSample,1) logical
-%           - isUseful : (nSample,1) logical
-%           - SamplingBoxBeforeTrim : (2,nDesignVariable) double
-%           - SamplingBoxAfterTrim : (2,nDesignVariable) double
-%           - CandidateSpacesBeforeTrim : (1,nComponent) CandidateSpaceBase
-%           - CandidateSpacesAfterTrim : (1,nComponent) CandidateSpaceBase
+%           - IterationData : (nIteration,1) struct
+%               -- EvaluatedDesignSamples : (nSample,nDesignVariable) double
+%               -- EvaluationOutput : class-dependent
+%               -- Phase : integer
+%               -- GrowthRate : double
+%               -- NumberPaddingSamplesGenerated : double
+%               -- PaddingSamplesUsed : (nPaddingSample,nDesignVariable) double
+%               -- DesignScore : (nSample,1) double
+%               -- IsGoodPerformance : (nSample,1) logical
+%               -- IsPhysicallyFeasible : (nSample,1) logical
+%               -- IsAcceptable : (nSample,1) logical
+%               -- isUseful : (nSample,1) logical
+%               -- SamplingBoxBeforeTrim : (2,nDesignVariable) double
+%               -- SamplingBoxAfterTrim : (2,nDesignVariable) double
+%               -- CandidateSpacesBeforeTrim : (1,nComponent) CandidateSpaceBase
+%               -- CandidateSpacesAfterTrim : (1,nComponent) CandidateSpaceBase
 %
-%   See also sso_stochastic_options.
+%   See also sso_stochastic_options, sso_box_stochastic.
 %
 %   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
@@ -158,8 +154,9 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
     
                              
     %% Log Initialization
-    if(nargout>=2)
-        problemData = struct(...
+    isOutputOptimizationData = (nargout>=2);
+    if(isOutputOptimizationData)
+        optimizationData = struct(...
             'DesignClassifier',designEvaluator,...
             'InitialDesign',samplingBox,...
             'DesignSpaceLowerBound',designSpaceLowerBound,...
@@ -167,32 +164,6 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
             'ComponentIndex',{componentIndex},...
             'Options',options,...
             'InitialRNGState',rng);
-    end
-
-    isOutputIterationData = (nargout>=3);
-    if(isOutputIterationData)
-        iterationData = struct(... 
-            ... % system data
-        	'EvaluatedDesignSamples',[],...
-            'EvaluationOutput',[],...
-            ... % algorithm data
-            'Phase',[],...
-            'GrowthRate',[],...
-            'NumberPaddingSamplesGenerated',[],...
-            'PaddingSamplesUsed',[],...
-            ... % problem data
-            'DesignScore',[],...
-            'IsGoodPerformance',[],...
-            'IsPhysicallyFeasible',[],...
-            'IsAcceptable',[],...
-            'IsUseful',[],...
-            ... % trimming data
-            'SamplingBoxBeforeTrim',[],...
-            'SamplingBoxAfterTrim',[],... 
-            'CandidateSpacesBeforeTrim',[],...
-            'CandidateSpacesAfterTrim',[],...
-            'ComponentMeasureBeforeTrim',[],...
-            'ComponentMeasureAfterTrim',[]);
         iLog = 1;
     end
     
@@ -307,10 +278,10 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         if(nAcceptable==0 || nUseful==0 || nAccetableUseful==0)
             console.warn('SSOOptBox:BadSampling',['No good points found, ',...
                 'rolling back and reducing growth rate to minimum...']);
-            if(isOutputIterationData)
+            if(isOutputOptimizationData)
                 console.info('Logging relevant information... ');
                 tic
-                iterationData(iLog) = struct(... 
+                optimizationData.IterationData(iLog) = struct(... 
                     ... % system data
                     'EvaluatedDesignSamples',designSample,...
                     'EvaluationOutput',outputEvaluation,...
@@ -430,10 +401,10 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         
         
         %% Save Data
-        if(isOutputIterationData)
+        if(isOutputOptimizationData)
             console.info('Logging relevant information... ');
             tic
-            iterationData(iLog) = struct(... 
+            optimizationData.IterationData(iLog) = struct(... 
                 ... % system data
                 'EvaluatedDesignSamples',designSample,...
                 'EvaluationOutput',outputEvaluation,...
@@ -640,10 +611,10 @@ function [componentSolutionSpace,problemData,iterationData] = sso_component_stoc
         
         
         %% Save Data
-        if(isOutputIterationData)
+        if(isOutputOptimizationData)
             console.info('Logging relevant information... ');
             tic
-            iterationData(iLog) = struct(... 
+            optimizationData.IterationData(iLog) = struct(... 
                 ... % system data
                 'EvaluatedDesignSamples',designSample,...
                 'EvaluationOutput',outputEvaluation,...

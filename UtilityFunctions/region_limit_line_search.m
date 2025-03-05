@@ -82,6 +82,27 @@ function [stepSizeLimitInside,stepSizeLimitOutside] = region_limit_line_search(r
 end
 
 function [stepSizeLower,stepSizeUpper] = bracketing_line_search(regionCriterion,stepSize,maxIter)
+%BRACKETING_LINE_SEARCH Find interval containing the boundary
+%   BRACKETING_LINE_SEARCH uses a doubling/halving strategy to find an interval
+%   that contains the boundary between inside and outside of a region.
+%
+%   [STEPSIZELOWER,STEPSIZEUPPER] = BRACKETING_LINE_SEARCH(REGIONCRITERION,
+%   STEPSIZE,MAXITER) finds an interval [STEPSIZELOWER,STEPSIZEUPPER] that 
+%   contains the boundary between inside and outside of the region defined by
+%   REGIONCRITERION. It starts with the initial step size STEPSIZE and performs
+%   at most MAXITER iterations.
+%
+%   Input:
+%       - REGIONCRITERION : function_handle
+%       - STEPSIZE : (nSample,1) double
+%       - MAXITER : integer
+%
+%   Output:
+%       - STEPSIZELOWER : (nSample,1) double
+%       - STEPSIZEUPPER : (nSample,1) double
+%
+%   See also bissection_line_search.
+
 	initialState = regionCriterion(0);
 	previousStepSize = stepSize;
     previousState = regionCriterion(stepSize);
@@ -113,6 +134,28 @@ function [stepSizeLower,stepSizeUpper] = bracketing_line_search(regionCriterion,
 end
 
 function [stepSizeLower,stepSizeUpper] = bissection_line_search(regionCriterion,stepSizeLower,stepSizeUpper,maxIter)
+%BISSECTION_LINE_SEARCH Refine boundary location using binary search
+%   BISSECTION_LINE_SEARCH uses binary search to refine the location of the
+%   boundary between inside and outside of a region.
+%
+%   [STEPSIZELOWER,STEPSIZEUPPER] = BISSECTION_LINE_SEARCH(REGIONCRITERION,
+%   STEPSIZELOWER,STEPSIZEUPPER,MAXITER) refines the interval 
+%   [STEPSIZELOWER,STEPSIZEUPPER] that contains the boundary between inside and
+%   outside of the region defined by REGIONCRITERION. It performs MAXITER
+%   iterations of binary search to narrow down the interval.
+%
+%   Input:
+%       - REGIONCRITERION : function_handle
+%       - STEPSIZELOWER : (nSample,1) double
+%       - STEPSIZEUPPER : (nSample,1) double
+%       - MAXITER : integer
+%
+%   Output:
+%       - STEPSIZELOWER : (nSample,1) double
+%       - STEPSIZEUPPER : (nSample,1) double
+%
+%   See also bracketing_line_search.
+
 	initialState = regionCriterion(0);
 
 	% perform binary search to find approximate boundary

@@ -1,4 +1,4 @@
-function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEvaluator,initialBox,designSpaceLowerBound,designSpaceUpperBound,varargin)
+function [candidateBox,optimizationData] = sso_box_stochastic(designEvaluator,initialBox,designSpaceLowerBound,designSpaceUpperBound,varargin)
 %SSO_BOX_STOCHASTIC Box-shaped solution spaces optimization (Stochastic method)
 %   SSO_BOX_STOCHASTIC uses a modified version of the stochastic method to 
 %   compute optimal soluton (or requirement) spaces. 
@@ -15,12 +15,8 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
 %   change the options being used through the output of 'sso_stochastic_options'
 %   OPTIONS.
 %
-%   [CANDIDATEBOX,PROBLEMDATA] = SSO_BOX_STOCHASTIC(...) additionally returns
-%   the fixed problem data in PROBLEMDATA.
-%
-%   [CANDIDATEBOX,PROBLEMDATA,ITERATIONDATA] = SSO_BOX_STOCHASTIC(...) 
-%   additionally returns data generated at each iteration of the process
-%   ITERATIONDATA.
+%   [CANDIDATEBOX,OPTIMIZATIONDATA] = SSO_BOX_STOCHASTIC(...) additionally returns
+%   the fixed problem and iteration data in OPTIMIZATIONDATA.
 %
 %
 %   Input:
@@ -32,25 +28,25 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
 %
 %   Output:
 %       - CANDIDATEBOX  : (2,nDesignVariable) double
-%       - PROBLEMDATA : struct
+%       - OPTIMIZATIONDATA : struct
 %           - DesignEvaluator : DesignEvaluatorBase 
 %           - InitialBox : (2,nDesignVariable) double
 %           - DesignSpaceLowerBound : (1,nDesignVariable) double
 %           - DesignSpaceUpperBound : (1,nDesignVariable) double
 %           - Options : struct
 %           - InitialRNGState : struct
-%       - ITERATIONDATA : (nIteration,1) struct
-%           - EvaluatedDesignSamples : (nSample,nDesignVariable) double
-%           - EvaluationOutput : class-dependent
-%           - Phase : integer
-%           - GrowthRate : double
-%           - DesignScore : (nSample,1) double
-%           - IsGoodPerformance : (nSample,1) logical
-%           - IsPhysicallyFeasible : (nSample,1) logical
-%           - IsAcceptable : (nSample,1) logical
-%           - IsUseful : (nSample,1) logical
-%           - CandidateBoxBeforeTrim : (2,nDesignVariable) double
-%           - CandidateBoxAfterTrim : (2,nDesignVariable) double
+%           - IterationData : (nIteration,1) struct
+%               - EvaluatedDesignSamples : (nSample,nDesignVariable) double
+%               - EvaluationOutput : class-dependent
+%               - Phase : integer
+%               - GrowthRate : double
+%               - DesignScore : (nSample,1) double
+%               - IsGoodPerformance : (nSample,1) logical
+%               - IsPhysicallyFeasible : (nSample,1) logical
+%               - IsAcceptable : (nSample,1) logical
+%               - IsUseful : (nSample,1) logical
+%               - CandidateBoxBeforeTrim : (2,nDesignVariable) double
+%               - CandidateBoxAfterTrim : (2,nDesignVariable) double
 %
 %   See also sso_stochastic_options.
 %
@@ -106,34 +102,16 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
     nDimension = size(designSpaceLowerBound,2);
     
     %% Log Initialization
-    if(nargout>=2)
-        problemData = struct(...
+    isOutputOptimizationData = (nargout>=2);
+    if(isOutputOptimizationData)
+        optimizationData = struct(...
             'DesignEvaluator',designEvaluator,...
             'InitialBox',candidateBox,...
             'DesignSpaceLowerBound',designSpaceLowerBound,...
             'DesignSpaceUpperBound',designSpaceUpperBound,...
             'Options',options,...
             'InitialRNGState',rng);
-    end
-
-    isOutputIterationData = (nargout>=3);
-    if(isOutputIterationData)
-        iterationData = struct(... % system data
-        	'EvaluatedDesignSamples',[],...
-            'EvaluationOutput',[],...
-            ... % algorithm data
-            'Phase',[],...
-            'GrowthRate',[],...
-            ... % evaluation data
-            'DesignScore',[],...
-            'IsGoodPerformance',[],...
-            'IsPhysicallyFeasible',[],...
-            'IsAcceptable',[],...
-            'IsUseful',[],...
-            ... % trimming data
-            'CandidateBoxBeforeTrim',[],...
-            'CandidateBoxAfterTrim',[]);
-        logindex = 1;
+        iLog = 1;
     end
 
     %% Phase I - Exploration
@@ -227,11 +205,11 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
             console.warn('SSOOptBox:BadSampling',['No good/useful points found, ',...
                 'rolling back and reducing growth rate to minimum...']);
 
-            if(isOutputIterationData)
+            if(isOutputOptimizationData)
                 console.info('Logging relevant information... ');
                 tic
                 
-                iterationData(logindex) = struct(... 
+                optimizationData.IterationData(iLog) = struct(... 
                     ... % system data
                     'EvaluatedDesignSamples',designSample,...
                     'EvaluationOutput',outputEvaluation,...
@@ -249,7 +227,7 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
                     'CandidateBoxAfterTrim',candidateBox);
                 
                 % Finalizing
-                logindex = logindex + 1;
+                iLog = iLog + 1;
                 console.info('Elapsed time is %g seconds.\n',toc);
             end
 
@@ -302,12 +280,12 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
         
         console.info('Elapsed time is %g seconds.\n',toc);  
         
-        if(isOutputIterationData)
+        if(isOutputOptimizationData)
             %% Save Data
             console.info('Logging relevant information... ');
             tic
 
-            iterationData(logindex) = struct(...
+            optimizationData.IterationData(iLog) = struct(...
                 ... % system data
                 'EvaluatedDesignSamples',designSample,...
                 'EvaluationOutput',outputEvaluation,...
@@ -325,7 +303,7 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
                 'CandidateBoxAfterTrim',candidateBoxTrimmed);
             
             % Finalizing
-            logindex = logindex + 1;
+            iLog = iLog + 1;
             
             console.info('Elapsed time is %g seconds.\n',toc);
         end
@@ -442,12 +420,12 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
             convergenceConsolidation = true;
         end
         
-        if(isOutputIterationData)
+        if(isOutputOptimizationData)
             %% Save Data
             console.info('Logging relevant information... ');
             tic
 
-            iterationData(logindex) = struct(...
+            optimizationData.IterationData(iLog) = struct(...
                 ... % system data
                 'EvaluatedDesignSamples',designSample,...
                 'EvaluationOutput',outputEvaluation,...
@@ -465,7 +443,7 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
                 'CandidateBoxAfterTrim',candidateBoxTrimmed);
             
             % Finalizing
-            logindex = logindex + 1;
+            iLog = iLog + 1;
             console.info('Elapsed time is %g seconds.\n',toc);
         end
         
