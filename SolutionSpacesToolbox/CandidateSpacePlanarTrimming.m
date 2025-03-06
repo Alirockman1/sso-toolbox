@@ -90,6 +90,15 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
         %
         %   See also AnchorPoint, is_in_candidate_space.
         PlaneOrientationAnchor
+
+        %NORMALIZATIONFACTOR Normalization factors for each plane
+        %   NORMALIZATIONFACTOR contains normalization factors for each plane.
+        %   These factors are used to normalize the distance to the anchor point.
+        %
+        %   NORMALIZATIONFACTOR : (nPlane,1) double
+        %
+        %   See also AnchorPoint, PlaneOrientationAnchor.
+        NormalizationFactor
     end
 
     properties (SetAccess = protected, Dependent)
@@ -172,6 +181,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             obj.DesignSampleDefinition = [];
             obj.AnchorPoint = [];
             obj.PlaneOrientationAnchor = [];
+            obj.NormalizationFactor = [];
         end
         
         function obj = generate_candidate_space(obj,designSample,trimmingInformation)
@@ -203,6 +213,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             if(~isempty(trimmingInformation))
                 obj.AnchorPoint = vertcat(trimmingInformation.Anchor);
                 obj.PlaneOrientationAnchor = vertcat(trimmingInformation.PlaneOrientationInside);
+                obj.NormalizationFactor = vertcat(trimmingInformation.NormalizationFactor);
             end
             obj.IsInsideDefinition = obj.is_in_candidate_space(designSample,false);
         end
@@ -237,17 +248,20 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             end
             anchorPointNew = vertcat(trimmingInformation.Anchor);
             planeOrientationNew = vertcat(trimmingInformation.PlaneOrientationInside);
+            normalizationFactorNew = vertcat(trimmingInformation.NormalizationFactor);
 
             obj.AnchorPoint = [obj.AnchorPoint;anchorPointNew];
             obj.PlaneOrientationAnchor = [obj.PlaneOrientationAnchor;planeOrientationNew];
+            obj.NormalizationFactor = [obj.NormalizationFactor;normalizationFactorNew];
 
             % project points to planes - if no point is inside, plane is redundant and can be removed
             nAnchor = size(obj.AnchorPoint,1);
             hullPointMinMax = [];
             isRedundantAnchor = false(nAnchor,1);
             for i=1:nAnchor
-                dotProduct = sum((obj.AnchorPoint(i,:) - obj.DesignSampleDefinition).*obj.PlaneOrientationAnchor(i,:),2);
-                distanceToPlane = obj.PlaneOrientationAnchor(i,:).*dotProduct;
+                distanceToAnchor = (obj.AnchorPoint(i,:) - obj.DesignSampleDefinition)./obj.NormalizationFactor(i,:);
+                dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor(i,:),2);
+                distanceToPlane = obj.NormalizationFactor(i,:).*obj.PlaneOrientationAnchor(i,:).*dotProduct;
                 candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
 
                 isInside = obj.is_in_candidate_space(candidateHullPoint,false);
@@ -262,6 +276,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             end
             obj.AnchorPoint(isRedundantAnchor,:) = [];
             obj.PlaneOrientationAnchor(isRedundantAnchor,:) = [];
+            obj.NormalizationFactor(isRedundantAnchor,:) = [];
             
             % keep samples in inside/outside
             [~,iLowerBoundaryAll] = min(obj.DesignSampleDefinition,[],1);
@@ -328,14 +343,16 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 isAnchorInCorner = all(isAnchorInLowerBoundary|isAnchorInUpperBoundary,2);
                 obj.AnchorPoint = anchorPointNew(~isAnchorInCorner,:);
                 obj.PlaneOrientationAnchor = obj.PlaneOrientationAnchor(~isAnchorInCorner,:);
+                obj.NormalizationFactor = obj.NormalizationFactor(~isAnchorInCorner,:);
 
                 % project points to planes - if no point is inside, plane is redundant and can be removed
                 nAnchor = size(obj.AnchorPoint,1);
                 isRedundantAnchor = false(nAnchor,1);
                 hullPointMinMax = [];
                 for i=1:nAnchor
-                    dotProduct = sum((obj.AnchorPoint(i,:) - obj.DesignSampleDefinition).*obj.PlaneOrientationAnchor(i,:),2);
-                    distanceToPlane = obj.PlaneOrientationAnchor(i,:).*dotProduct;
+                    distanceToAnchor = (obj.AnchorPoint(i,:) - obj.DesignSampleDefinition)./obj.NormalizationFactor(i,:);
+                    dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor(i,:),2);
+                    distanceToPlane = obj.NormalizationFactor(i,:).*obj.PlaneOrientationAnchor(i,:).*dotProduct;
                     candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
 
                     isInside = obj.is_in_candidate_space(candidateHullPoint,false);
@@ -350,6 +367,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 end
                 obj.AnchorPoint(isRedundantAnchor,:) = [];
                 obj.PlaneOrientationAnchor(isRedundantAnchor,:) = [];
+                obj.NormalizationFactor(isRedundantAnchor,:) = [];
             end
             obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;hullPointMinMax;obj.AnchorPoint],'rows');
             obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
@@ -400,14 +418,16 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             nAnchor = size(obj.AnchorPoint,1);
             if(nAnchor<=nSample)
                 for i=1:nAnchor
-                    dotProduct = sum((obj.AnchorPoint(i,:) - designSample).*obj.PlaneOrientationAnchor(i,:),2);
+                    distanceToAnchor = (obj.AnchorPoint(i,:) - designSample)./obj.NormalizationFactor(i,:);
+                    dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor(i,:),2);
 
                     isInside(dotProduct>0) = false;
                     score = max(score,dotProduct);
                 end
             else
                 for i=1:nSample
-                    dotProduct = dot(obj.AnchorPoint - designSample(i,:),obj.PlaneOrientationAnchor,2);
+                    distanceToAnchor = (obj.AnchorPoint - designSample(i,:))./obj.NormalizationFactor;
+                    dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor,2);
 
                     isInside(i) = all(dotProduct<=0);
                     score(i) = max(dotProduct);
@@ -459,8 +479,9 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             nAnchor = size(obj.AnchorPoint,1);
             % project the points into each plane
             for i=1:nAnchor
-                dotProduct = sum((obj.AnchorPoint(i,:) - obj.DesignSampleDefinition).*obj.PlaneOrientationAnchor(i,:),2);
-                distanceToPlane = obj.PlaneOrientationAnchor(i,:).*dotProduct;
+                distanceToAnchor = (obj.AnchorPoint(i,:) - obj.DesignSampleDefinition)./obj.NormalizationFactor(i,:);
+                dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor(i,:),2);
+                distanceToPlane = obj.NormalizationFactor(i,:).*obj.PlaneOrientationAnchor(i,:).*dotProduct;
                 candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
                 candidateHullPoint = min(max(candidateHullPoint,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
 
