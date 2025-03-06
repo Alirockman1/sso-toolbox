@@ -135,7 +135,7 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
     parser.addParameter('PlotOptionsPhysicallyInfeasible',{},@(x)iscell(x));
     parser.addParameter('PlotOptionsIntervals',{},@(x)iscell);
     parser.addParameter('PlotOptionsBox',{},@(x)iscell(x));
-    parser.parse(designEvaluator,designBox,designSpaceLowerBound,designSpaceUpperBound,desiredPairs,plotGrid,varargin{:});
+    parser.parse(designEvaluator, designBox, designSpaceLowerBound, designSpaceUpperBound, desiredPairs, plotGrid, varargin{:});
     options = parser.Results;
 
     defaultPlotOptionsGood = {'Linestyle','none','Marker','.','Color','g'};
@@ -218,6 +218,8 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
 
         %% Plot Solution
         figureElementHandle.IndividualPlots(j) = subplot(plotGrid(1),plotGrid(2),j);
+        plotTag = sprintf('Plot%d', j);
+        set(gca, 'Tag', plotTag); % Tag for identification
         hold all;
         
         % physically infeasible designs
