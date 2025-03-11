@@ -269,7 +269,7 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             
             % normalize convex hull points if needed
             if obj.NormalizeVariables
-                convexHullPoint = convexHullPoint ./ (obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound);
+                convexHullPoint = (convexHullPoint - obj.DesignSpaceLowerBound) ./ (obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound);
             end
             
             % compute convex hull and find reference points / normals to each facet
@@ -372,7 +372,7 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
 
             % normalize input samples if needed
             if obj.NormalizeVariables
-                designSample = designSample ./ (obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound);
+                designSample = (designSample  - obj.DesignSpaceLowerBound) ./ (obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound);
             end
 
             [isInside,score] = is_in_convex_hull_with_facet_normal(obj.ConvexHullFacePoint,obj.ConvexHullFaceNormal,designSample);
