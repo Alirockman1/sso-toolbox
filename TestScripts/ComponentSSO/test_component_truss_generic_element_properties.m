@@ -62,8 +62,8 @@ save_print_figure(gcf,[saveFolder,'MaterialRelationEtoSigmaY'],'PrintFormat',{'p
 
 
 %%
-trussAnalysisChoice = '2-Bar-2D';
-fixRadius = false;
+trussAnalysisChoice = '39-Bar-3D';
+fixRadius = true;
 useBoxResultForComponent = false;
 
 computeDisplacement = true;
@@ -81,10 +81,10 @@ systemFunction = @truss_generic_element_properties_dependent_density;
 switch trussAnalysisChoice
     case '2-Bar-2D'
         nSample = 100;
-        maxIterDisplacement = 30;
+        maxIterDisplacement = 200;
         maxIterMass = 20;
-        maxIterDisplacementAndMass = 30;
-        growthRateDisplacement = 0.07;
+        maxIterDisplacementAndMass = 200;
+        growthRateDisplacement = 0.01;
         growthRateMass = 0.07;
         trimmingPasses = 'reduced';
         requirementSpacesType = 'Omega1';
@@ -431,7 +431,7 @@ switch trussAnalysisChoice
             8 10; % (20)
             9 10]; % (21)
     case '39-Bar-3D'
-        nSample = 100;
+        nSample = 200;
         maxIterDisplacement = 300;
         maxIterMass = 300;
         maxIterDisplacementAndMass = 300;
@@ -598,10 +598,10 @@ performanceMeasureInitial = bottomUpMapping.response(initialDesign);
 % displacement
 if(computeDisplacement)
     performanceUpperLimitDisplacement = performanceUpperLimit;
-    performanceUpperLimitDisplacement(1) = performanceMeasureInitial(1);
+    performanceUpperLimitDisplacement(1) = performanceMeasureInitial(1)*0.5;
 
     performanceLowerLimitDisplacement = performanceLowerLimit;
-    performanceLowerLimitDisplacement(1) = performanceMeasureInitial(1)*0.95;
+    performanceLowerLimitDisplacement(1) = performanceMeasureInitial(1)*1.5;
 
     designEvaluatorDisplacement = DesignEvaluatorBottomUpMapping(...
         bottomUpMapping,...
@@ -766,9 +766,9 @@ function [solutionSpaceBox,componentSolutionSpacePlanarTrimming,componentSolutio
             'MaxIterExploration',maxIter,...
             'MaxIterConsolidation',maxIter,...
             'CandidateSpaceConstructor',@CandidateSpaceCornerBoxRemoval,...
-            'CandidateSpaceOptions',{'NormalizeGrowthDirection',true},...
+            'CandidateSpaceOptions',{'NormalizeGrowthDirection',false},...
             'TrimmingMethodFunction',@component_trimming_method_corner_box_removal,...
-            'TrimmingMethodOptions',{'NormalizeVariables',true},...
+            'TrimmingMethodOptions',{'NormalizeVariables',false},...
             'UseAdaptiveGrowthRate',true,...
             'GrowthRate',growthRate,...
             'ApplyLeanness','never',...
