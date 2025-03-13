@@ -130,4 +130,10 @@ function designTypeHandle = plot_design_space_projection_axis(plotData,varargin)
     end
     grid('off');
     drawnow;
+
+    % Fix axis to prevent panning
+    pan(gca,'off');
+    pan().setAllowAxesPan(gca,false);
+    zoom(gca,'off');
+    zoom().setAllowAxesZoom(gca,false);
 end
