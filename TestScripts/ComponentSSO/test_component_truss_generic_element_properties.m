@@ -541,12 +541,12 @@ end
 %% base parameters
 nElement = size(systemParameter.NodeElement,1);
 
-minimumRadius = 0.001;
+minimumRadius = 0.5;
 minimumThickness = 0.001;
 minimumYoungsModulus = min(youngsModulusMaterial);
 
-maximumRadius = 1;
-maximumThickness = 1;
+maximumRadius = 1.5;
+maximumThickness = 1.0;
 maximumYoungsModulus = max(youngsModulusMaterial);
 
 designSpaceLowerBound = repmat([minimumRadius,minimumThickness,minimumYoungsModulus],1,nElement);

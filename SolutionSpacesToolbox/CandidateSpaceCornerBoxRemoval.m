@@ -421,7 +421,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                     end
                 end
             end
-            obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;obj.AnchorPoint],'rows');
+            obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;obj.AnchorPoint],'rows'); % TODO consider necessity
             obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
         end
         

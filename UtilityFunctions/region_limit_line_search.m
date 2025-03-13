@@ -185,7 +185,7 @@ function maxStepSize = design_space_line_search_limit(initialPoint,direction,des
 
     distanceRelevant = initialPoint - designSpace(1,:); % distance to lower left corner
     distanceToUpperRight = designSpace(2,:) - initialPoint;
-    distanceRelevant(direction>0) = distanceToUpperRight;
+    distanceRelevant(direction>0) = distanceToUpperRight(direction>0);
 
     maxStepSize = min(distanceRelevant./abs(direction),[],2);
 end
