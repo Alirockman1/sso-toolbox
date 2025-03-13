@@ -1,4 +1,4 @@
-function plotHandle = plot_convex_hull_1d(figureHandle, hullSample, convexHullIndex, varargin)
+function plotHandle = plot_convex_hull_1d(graphicsHandle, hullSample, convexHullIndex, varargin)
 %PLOT_CONVEX_HULL_1D Visualize a 1-dimensional convex hull
 %   PLOT_CONVEX_HULL_1D plots in a figure the interval of a convex hull.
 %   
@@ -61,7 +61,7 @@ function plotHandle = plot_convex_hull_1d(figureHandle, hullSample, convexHullIn
     xData = [min(hullSample), max(hullSample)];
     yData = [yValue, yValue];
 
-    figure(figureHandle);
+    activate_graphics_object(graphicsHandle);
     hold on;
     plotHandle = line(xData, yData, plotOptions{:});
 

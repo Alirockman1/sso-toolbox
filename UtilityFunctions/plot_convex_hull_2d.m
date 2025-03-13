@@ -1,4 +1,4 @@
-function plotHandle = plot_convex_hull_2d(figureHandle,hullSample,convexHullIndex,varargin)
+function plotHandle = plot_convex_hull_2d(graphicsHandle,hullSample,convexHullIndex,varargin)
 %PLOT_CONVEX_HULL_2D Visualize a 2-dimensional convex hull
 %   PLOT_CONVEX_HULL_2D plots in a figure the edges of a convex hull.
 %   
@@ -53,7 +53,7 @@ function plotHandle = plot_convex_hull_2d(figureHandle,hullSample,convexHullInde
         convHullIndexPlot(repeatPlotEntry) = [];
     end
 
-    figure(figureHandle);
+    activate_graphics_object(graphicsHandle);
     hold on;
 	plotHandle = patch('XData',hullSample(convHullIndexPlot,1),'YData',hullSample(convHullIndexPlot,2),plotOptions{:});
 

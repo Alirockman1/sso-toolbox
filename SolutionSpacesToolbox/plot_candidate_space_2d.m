@@ -1,11 +1,11 @@
-function plotHandle = plot_candidate_space_2d(figureHandle,candidateSpace,varargin)
+function plotHandle = plot_candidate_space_2d(graphicsHandle,candidateSpace,varargin)
 %PLOT_CANDIDATE_SPACE_2D Visualize the boundary of a candidate space
 %   PLOT_CANDIDATE_SPACE_2D plots the boundary of a candidate space in the
 %   given figure. It estimates where the boundary is via the scores applied to
 %   a large sample, and using contour to plot where that score is closest to 0.
 %
-%   PLOT_CANDIDATE_SPACE_2D(FIGUREHANDLE,CANDIDATESPACE) plots in figure 
-%   FIGUREHANDLE the boundary of the candidate space CANDIDATESPACE.
+%   PLOT_CANDIDATE_SPACE_2D(GRAPHICSHANDLE,CANDIDATESPACE) plots in 
+%   GRAPHICSHANDLE the boundary of the candidate space CANDIDATESPACE.
 %
 %   PLOT_CANDIDATE_SPACE_2D(...,NAME,VALUE,...) allows for setting
 %   additional options for the plot operation; said options should refer to the
@@ -16,7 +16,7 @@ function plotHandle = plot_candidate_space_2d(figureHandle,candidateSpace,vararg
 %   for 'legend', for example.
 %
 %   Inputs:
-%       - FIGUREHANDLE : Figure
+%       - GRAPHICSHANDLE : Figure
 %       - CANDIDATESPACE : CandidateSpaceBase
 %       - Name-value pair arguments: passed directly to 'contour'.
 %
@@ -109,8 +109,8 @@ function plotHandle = plot_candidate_space_2d(figureHandle,candidateSpace,vararg
     defaultPlotOptions = {};
     [~,plotOptions] = merge_name_value_pair_argument(defaultPlotOptions,inputPlotOptions);
 
-    figure(figureHandle);
-    hold on
+    activate_graphics_object(graphicsHandle);
+    hold on;
     plotHandle = patch('XData',orderedCurve(:,1),'YData',orderedCurve(:,2),plotOptions{:});
 
     if(nargout<1)

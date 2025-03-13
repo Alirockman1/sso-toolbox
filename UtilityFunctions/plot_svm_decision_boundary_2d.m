@@ -1,4 +1,4 @@
-function plotHandle = plot_svm_decision_boundary_2d(figureHandle,svm,varargin)
+function plotHandle = plot_svm_decision_boundary_2d(graphicsHandle,svm,varargin)
 %PLOT_SVM_DECISION_BOUNDARY_2D Visualize the decision boundary of a SVM
 %   PLOT_SVM_DECISION_BOUNDARY_2D plots a visualization of a Support Vector 
 %   Machine decision boundary in 2D. It estimates where the boundary is via the
@@ -103,7 +103,7 @@ function plotHandle = plot_svm_decision_boundary_2d(figureHandle,svm,varargin)
     defaultPlotOptions = {};
     [~,plotOptions] = merge_name_value_pair_argument(defaultPlotOptions,inputPlotOptions);
 
-    figure(figureHandle);
+    activate_graphics_object(graphicsHandle);
     hold on;
     plotHandle = patch('XData',orderedCurve(:,1),'YData',orderedCurve(:,2),plotOptions{:});
 

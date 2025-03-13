@@ -1,11 +1,11 @@
-function plotHandle = plot_candidate_space_1d(figureHandle, candidateSpace, varargin)
+function plotHandle = plot_candidate_space_1d(graphicsHandle, candidateSpace, varargin)
 %PLOT_CANDIDATE_SPACE_1D Visualize the boundary of a 1D candidate space
 %   PLOT_CANDIDATE_SPACE_1D plots the intervals of a 1D candidate space in the
 %   given figure. It estimates where the boundary is via the scores applied to
 %   a large sample to identify potentially disconnected intervals.
 %
-%   PLOT_CANDIDATE_SPACE_1D(FIGUREHANDLE,CANDIDATESPACE) plots in figure 
-%   FIGUREHANDLE the intervals of the candidate space CANDIDATESPACE.
+%   PLOT_CANDIDATE_SPACE_1D(GRAPHICSHANDLE,CANDIDATESPACE) plots in 
+%   GRAPHICSHANDLE the intervals of the candidate space CANDIDATESPACE.
 %
 %   PLOT_CANDIDATE_SPACE_1D(...,NAME,VALUE,...) allows for setting
 %   additional options for the plot operation; said options should refer to the
@@ -20,7 +20,7 @@ function plotHandle = plot_candidate_space_1d(figureHandle, candidateSpace, vara
 %   for 'legend', for example.
 %
 %   Inputs:
-%       - FIGUREHANDLE : Figure
+%       - GRAPHICSHANDLE : Figure
 %       - CANDIDATESPACE : CandidateSpaceBase
 %       - Name-value pair arguments: passed directly to 'line'.
 %
@@ -88,7 +88,7 @@ function plotHandle = plot_candidate_space_1d(figureHandle, candidateSpace, vara
     end
 
     % Plot each interval
-    figure(figureHandle);
+    activate_graphics_object(graphicsHandle);
     hold on;
     plotHandle = gobjects(nIntervals,1);
     for i = 1:nIntervals

@@ -1,12 +1,12 @@
-function plotHandle = plot_candidate_space_3d(fighan,candidateSpace,varargin)
+function plotHandle = plot_candidate_space_3d(graphicsHandle,candidateSpace,varargin)
 %PLOT_CANDIDATE_SPACE_3D Visualize the boundary of a candidate space
 %   PLOT_CANDIDATE_SPACE_3D plots the boundary of a candidate space in the
 %   given figure. It estimates where the boundary is via the scores applied to
 %   a large sample, and using isosurface and patch to plot where that score is 
 %   closest to 0.
 %
-%   PLOT_CANDIDATE_SPACE_3D(FIGUREHANDLE,CANDIDATESPACE) plots in figure 
-%   FIGUREHANDLE the boundary of the candidate space CANDIDATESPACE.
+%   PLOT_CANDIDATE_SPACE_3D(GRAPHICSHANDLE,CANDIDATESPACE) plots in 
+%   GRAPHICSHANDLE the boundary of the candidate space CANDIDATESPACE.
 %
 %   PLOT_CANDIDATE_SPACE_3D(...,NAME,VALUE,...) allows for setting
 %   additional options for the plot operation; said options should refer to the
@@ -17,7 +17,7 @@ function plotHandle = plot_candidate_space_3d(fighan,candidateSpace,varargin)
 %   for 'legend', for example.
 %
 %   Inputs:
-%       - FIGUREHANDLE : Figure
+%       - GRAPHICSHANDLE : Figure
 %       - CANDIDATESPACE : CandidateSpaceBase
 %       - Name-value pair arguments: passed directly to 'patch'.
 %
@@ -43,8 +43,8 @@ function plotHandle = plot_candidate_space_3d(fighan,candidateSpace,varargin)
 
     inputPlotOptions = parser_variable_input_to_structure(varargin{:});
 
-    figure(fighan);
-    hold on
+    activate_graphics_object(graphicsHandle);
+    hold on;
 
     % set step size for fine sampling
     stepSize = 0.01;

@@ -1,15 +1,15 @@
-function plotHandle = plot_svm_training_data_2d(figureHandle,svm,options)
+function plotHandle = plot_svm_training_data_2d(graphicsHandle,svm,options)
 %PLOT_SVM_TRAINING_DATA_2D Visualize the training data of a SVM
 %   PLOT_SVM_TRAINING_DATA_2D plots all the samples used in the training of a
 %	Support Vector Machine in a color-coded way; it also highlights the points
 %	used as support vectors. 
 %
-%   PLOT_SVM_TRAINING_DATA_2D(FIGUREHANDLE,SVM) plots in figure FIGUREHANDLE
+%   PLOT_SVM_TRAINING_DATA_2D(GRAPHICSHANDLE,SVM) plots in GRAPHICSHANDLE
 %   the training data of Support Vector Machine SVM. Designs labeled as 
 %	'true' are shown as green, 'false' are shown as red, and the support vector
 %	have an additional blue circle around them.
 %
-%   PLOT_SVM_TRAINING_DATA_2D(FIGUREHANDLE,SVM,OPTIONS) allows for setting
+%   PLOT_SVM_TRAINING_DATA_2D(GRAPHICSHANDLE,SVM,OPTIONS) allows for setting
 %   additional options for the plot operation; said options should refer to the
 %   'plot' function. OPTIONS should have four fields:
 %		- 'OverallOptions' : 'plot' options which apply to all plots
@@ -84,6 +84,9 @@ function plotHandle = plot_svm_training_data_2d(figureHandle,svm,options)
     defaultSupportVectorOptions = {'Marker','o','Color','b'};
     [~,supportVectorOptions] = merge_name_value_pair_argument(overallOptions,defaultSupportVectorOptions,...
     	options.SupportVectorOptions);
+
+    activate_graphics_object(graphicsHandle);
+    hold on;
 
     % Plot data points, color by class label
     plotHandle(1) = plot(svm.X(label,1), svm.X(label,2),'LineStyle','none',trueOptions{:});
