@@ -219,6 +219,7 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             obj.SamplingBoxSlack = parser.Results.SamplingBoxSlack;
             obj.NormalizeVariables = parser.Results.NormalizeVariables;
             obj.NormalizeGrowthDirection = parser.Results.NormalizeGrowthDirection;
+            
             obj.ConvexHullIndex = [];
             obj.ConvexHullFacePoint = [];
             obj.ConvexHullFaceNormal = [];
