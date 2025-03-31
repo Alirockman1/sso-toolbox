@@ -106,19 +106,29 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
         %   NORMALIZEGROWTHDIRECTION : logical
         NormalizeGrowthDirection
 
-        %DOQUICKEXPANSION Determine if quick expansion is used
-        %   When true, the expansion is done in a quick manner, without checking for 
-        %   duplicate points, detachment or redundancy.
+        %CHECKREDUNDANTRIMMING Determine if redundant trimming is checked
+        %   When true, the redundant trimming is checked.
         %
-        %   DOQUICKEXPANSION : logical
-        DoQuickExpansion
+        %   CHECKREDUNDANTRIMMING : logical
+        CheckRedundantTrimmingGrowth
 
-        %DOQUICKUPDATE Determine if quick update is used
-        %   When true, the update is done in a quick manner, without checking for 
-        %   duplicate points, detachment or redundancy.
+        %CHECKREDUNDANTRIMMING Determine if redundant trimming is checked
+        %   When true, the redundant trimming is checked.
         %
-        %   DOQUICKUPDATE : logical
-        DoQuickUpdate
+        %   CHECKREDUNDANTRIMMING : logical
+        CheckRedundantTrimmingUpdate
+
+        %CHECKDUPLICATEPOINTS Determine if duplicate points are checked
+        %   When true, the duplicate points are checked.
+        %
+        %   CHECKDUPLICATEPOINTSGROWTH : logical
+        CheckDuplicatePointsGrowth
+
+        %CHECKDUPLICATEPOINTSUPDATE Determine if duplicate points are checked
+        %   When true, the duplicate points are checked.
+        %
+        %   CHECKDUPLICATEPOINTSUPDATE : logical
+        CheckDuplicatePointsUpdate
 
         %MEASUREESTIMATIONFACTOR Factor to estimate the measure of the candidate space
         %   MEASUREESTIMATIONFACTOR is a factor that is used to estimate the measure of the 
@@ -208,8 +218,10 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             parser.addRequired('designSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addRequired('designSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addParameter('NormalizeGrowthDirection',false,@islogical);
-            parser.addParameter('DoQuickExpansion',false,@islogical);
-            parser.addParameter('DoQuickUpdate',false,@islogical);
+            parser.addParameter('CheckRedundantTrimmingGrowth',true,@islogical);
+            parser.addParameter('CheckRedundantTrimmingUpdate',true,@islogical);
+            parser.addParameter('CheckDuplicatePointsGrowth',true,@islogical);
+            parser.addParameter('CheckDuplicatePointsUpdate',true,@islogical);
             parser.addParameter('MeasureEstimationFactor',10,@isnumeric);
             parser.addParameter('InsideDotProductTolerance',1e-10,@isnumeric);
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
@@ -217,8 +229,10 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             obj.DesignSpaceLowerBound = parser.Results.designSpaceLowerBound;
             obj.DesignSpaceUpperBound = parser.Results.designSpaceUpperBound;
             obj.NormalizeGrowthDirection = parser.Results.NormalizeGrowthDirection;
-            obj.DoQuickExpansion = parser.Results.DoQuickExpansion;
-            obj.DoQuickUpdate = parser.Results.DoQuickUpdate;
+            obj.CheckRedundantTrimmingGrowth = parser.Results.CheckRedundantTrimmingGrowth;
+            obj.CheckRedundantTrimmingUpdate = parser.Results.CheckRedundantTrimmingUpdate;
+            obj.CheckDuplicatePointsGrowth = parser.Results.CheckDuplicatePointsGrowth;
+            obj.CheckDuplicatePointsUpdate = parser.Results.CheckDuplicatePointsUpdate;
             obj.MeasureEstimationFactor = parser.Results.MeasureEstimationFactor;
             obj.InsideDotProductTolerance = parser.Results.InsideDotProductTolerance;
 
@@ -299,7 +313,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
 
             % project points to planes - if no point is inside, plane is redundant and can be removed
             hullPointMinMax = [];
-            if(~obj.DoQuickUpdate)
+            if(obj.CheckRedundantTrimmingUpdate)
                 nAnchor = size(obj.AnchorPoint,1);
                 isRedundantAnchor = false(nAnchor,1);
                 for i=1:nAnchor
@@ -337,7 +351,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 designSample;...
                 hullPointMinMax;...
                 obj.AnchorPoint];
-            if(~obj.DoQuickUpdate)
+            if(obj.CheckDuplicatePointsUpdate)
                 obj.DesignSampleDefinition = unique(obj.DesignSampleDefinition,'rows');
             end
             obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
@@ -392,18 +406,18 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 anchorPointNew = obj.AnchorPoint + growthRate.*designSpaceFactor.*directionGrowth;
                 anchorPointNew = min(max(anchorPointNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
 
-                isAnchorInLowerBoundary = (anchorPointNew==obj.DesignSpaceLowerBound);
-                isAnchorInUpperBoundary = (anchorPointNew==obj.DesignSpaceUpperBound);
-                isAnchorInCorner = all(isAnchorInLowerBoundary|isAnchorInUpperBoundary,2);
-                obj.AnchorPoint = anchorPointNew(~isAnchorInCorner,:);
-                obj.PlaneOrientationAnchor = obj.PlaneOrientationAnchor(~isAnchorInCorner,:);
-                obj.NormalizationFactor = obj.NormalizationFactor(~isAnchorInCorner,:);
-
                 % project points to planes - if no point is inside, plane is redundant and can be removed
-                if(~obj.DoQuickExpansion)
+                isAnchorInLowerBoundary = (anchorPointNew<=obj.DesignSpaceLowerBound);
+                isAnchorInUpperBoundary = (anchorPointNew>=obj.DesignSpaceUpperBound);
+                isCornerAnchor = all(isAnchorInLowerBoundary|isAnchorInUpperBoundary,2);
+
+                obj.AnchorPoint = anchorPointNew(~isCornerAnchor,:);
+                obj.PlaneOrientationAnchor = obj.PlaneOrientationAnchor(~isCornerAnchor,:);
+                obj.NormalizationFactor = obj.NormalizationFactor(~isCornerAnchor,:);
+
+                if(obj.CheckRedundantTrimmingGrowth)
                     nAnchor = size(obj.AnchorPoint,1);
                     isRedundantAnchor = false(nAnchor,1);
-                    hullPointMinMax = [];
                     for i=1:nAnchor
                         distanceToAnchor = (obj.AnchorPoint(i,:) - obj.DesignSampleDefinition)./obj.NormalizationFactor(i,:);
                         dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor(i,:),2);
@@ -420,13 +434,13 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                         [~,iHullPointMax] = max(hullPoint,[],1);
                         hullPointMinMax = hullPoint([iHullPointMin,iHullPointMax],:);
                     end
-                    obj.AnchorPoint(isRedundantAnchor,:) = [];
-                    obj.PlaneOrientationAnchor(isRedundantAnchor,:) = [];
-                    obj.NormalizationFactor(isRedundantAnchor,:) = [];
+                    obj.AnchorPoint = obj.AnchorPoint(~isRedundantAnchor,:);
+                    obj.PlaneOrientationAnchor = obj.PlaneOrientationAnchor(~isRedundantAnchor,:);
+                    obj.NormalizationFactor = obj.NormalizationFactor(~isRedundantAnchor,:);
                 end
             end
             obj.DesignSampleDefinition = [obj.DesignSampleDefinition;hullPointMinMax;obj.AnchorPoint];
-            if(~obj.DoQuickExpansion)
+            if(obj.CheckDuplicatePointsGrowth)
                 obj.DesignSampleDefinition = unique(obj.DesignSampleDefinition,'rows');
             end
             obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
