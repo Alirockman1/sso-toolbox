@@ -107,19 +107,17 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
         %   NORMALIZEGROWTHDIRECTION : logical
         NormalizeGrowthDirection
 
-        %DOQUICKEXPANSION Determine if quick expansion is used
-        %   When true, the expansion is done in a quick manner, without checking for 
-        %   duplicate points, detachment or redundancy.
+        %CHECKREDUNDANTRIMMING Determine if redundant trimming is checked
+        %   When true, the redundant trimming is checked.
         %
-        %   DOQUICKEXPANSION : logical
-        DoQuickExpansion
+        %   CHECKREDUNDANTRIMMING : logical
+        CheckRedundantTrimming
 
-        %DOQUICKUPDATE Determine if quick update is used
-        %   When true, the update is done in a quick manner, without checking for 
-        %   duplicate points, detachment or redundancy.
+        %CHECKDUPLICATEPOINTS Determine if duplicate points are checked
+        %   When true, the duplicate points are checked.
         %
-        %   DOQUICKUPDATE : logical
-        DoQuickUpdate
+        %   CHECKDUPLICATEPOINTS : logical
+        CheckDuplicatePoints
 
         %MEASUREESTIMATIONFACTOR Factor to estimate the measure of the candidate space
         %   MEASUREESTIMATIONFACTOR is a factor that is used to estimate the measure of the 
@@ -203,8 +201,8 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             parser.addRequired('DesignSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addParameter('DetachTolerance',0);
             parser.addParameter('NormalizeGrowthDirection',false,@islogical);
-            parser.addParameter('DoQuickExpansion',false,@islogical);
-            parser.addParameter('DoQuickUpdate',false,@islogical);
+            parser.addParameter('CheckRedundantTrimming',true,@islogical);
+            parser.addParameter('CheckDuplicatePoints',true,@islogical);
             parser.addParameter('MeasureEstimationFactor',10);
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
@@ -212,8 +210,8 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
             obj.DesignSpaceUpperBound = parser.Results.DesignSpaceUpperBound;
             obj.DetachTolerance = parser.Results.DetachTolerance;
             obj.NormalizeGrowthDirection = parser.Results.NormalizeGrowthDirection;
-            obj.DoQuickExpansion = parser.Results.DoQuickExpansion;
-            obj.DoQuickUpdate = parser.Results.DoQuickUpdate;
+            obj.CheckRedundantTrimming = parser.Results.CheckRedundantTrimming;
+            obj.CheckDuplicatePoints = parser.Results.CheckDuplicatePoints;
             obj.MeasureEstimationFactor = parser.Results.MeasureEstimationFactor;
 
             obj.DesignSampleDefinition = [];
@@ -290,7 +288,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
     
                 % verify if there are any redundant anchor points
                 % -> region removed includes a different anchor with same corner direction
-                if(~obj.DoQuickUpdate)
+                if(obj.CheckRedundantTrimming)
                     nAnchor = size(obj.AnchorPoint,1);
                     isRedundantAnchor = false(nAnchor,1);
                     for i = 1:nAnchor
@@ -306,26 +304,26 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                     end
                     obj.AnchorPoint(isRedundantAnchor,:) = [];
                     obj.CornerDirection(isRedundantAnchor,:) = [];
+                end
 
-                    % check for detachments
-                    if(obj.DetachTolerance>0)
-                        nAnchor = size(obj.AnchorPoint,1);
+                % check for detachments
+                if(obj.DetachTolerance>0)
+                    nAnchor = size(obj.AnchorPoint,1);
+                    
+                    lowerBound = min(obj.DesignSampleDefinition(obj.IsInsideDefinition,:),[],1);
+                    upperBound = max(obj.DesignSampleDefinition(obj.IsInsideDefinition,:),[],1);
+                    allowedSlack = obj.DetachTolerance.*(upperBound - lowerBound);
+    
+                    for i=1:nAnchor
+                        distanceToAnchor = obj.AnchorPoint - obj.AnchorPoint(i,:);
+                        distanceToAnchor(:,obj.CornerDirection(i,:)) = -distanceToAnchor(:,obj.CornerDirection(i,:));
+    
+                        [maximumSlack,iDimension] = max(distanceToAnchor,[],2);
                         
-                        lowerBound = min(obj.DesignSampleDefinition(obj.IsInsideDefinition,:),[],1);
-                        upperBound = max(obj.DesignSampleDefinition(obj.IsInsideDefinition,:),[],1);
-                        allowedSlack = obj.DetachTolerance.*(upperBound - lowerBound);
-        
-                        for i=1:nAnchor
-                            distanceToAnchor = obj.AnchorPoint - obj.AnchorPoint(i,:);
-                            distanceToAnchor(:,obj.CornerDirection(i,:)) = -distanceToAnchor(:,obj.CornerDirection(i,:));
-        
-                            [maximumSlack,iDimension] = max(distanceToAnchor,[],2);
-                            
-                            shouldCollapse = (abs(maximumSlack)<=allowedSlack(:,iDimension)');
-                            dimensionsToCollapse = (distanceToAnchor>=0) & (distanceToAnchor<=allowedSlack) & (obj.CornerDirection~=obj.CornerDirection(i,:));
-                            currentAnchor = repmat(obj.AnchorPoint(i,:),sum(shouldCollapse),1);
-                            obj.AnchorPoint(shouldCollapse & dimensionsToCollapse) = currentAnchor(dimensionsToCollapse(shouldCollapse,:));
-                        end
+                        shouldCollapse = (abs(maximumSlack)<=allowedSlack(:,iDimension)');
+                        dimensionsToCollapse = (distanceToAnchor>=0) & (distanceToAnchor<=allowedSlack) & (obj.CornerDirection~=obj.CornerDirection(i,:));
+                        currentAnchor = repmat(obj.AnchorPoint(i,:),sum(shouldCollapse),1);
+                        obj.AnchorPoint(shouldCollapse & dimensionsToCollapse) = currentAnchor(dimensionsToCollapse(shouldCollapse,:));
                     end
                 end
             end
@@ -343,7 +341,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                 obj.DesignSampleDefinition([iLowerBoundaryAll,iUpperBoundaryAll,iBoundaryInside'],:);...
                 designSample;...
                 obj.AnchorPoint];
-            if(~obj.DoQuickUpdate)
+            if(obj.CheckDuplicatePoints)
                 obj.DesignSampleDefinition = unique(obj.DesignSampleDefinition,'rows');
             end
             obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
@@ -421,7 +419,7 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                 anchorPointNew = min(max(anchorPointNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
                 
                 % don't include anchors that were moved to the boundary corners
-                if(~obj.DoQuickExpansion)
+                if(obj.CheckRedundantTrimming)
                     isAnchorInLowerBoundary = (anchorPointNew<=obj.DesignSpaceLowerBound);
                     isAnchorInUpperBoundary = (anchorPointNew>=obj.DesignSpaceUpperBound);
                     isAnchorInCorner = all(isAnchorInLowerBoundary|isAnchorInUpperBoundary,2);
@@ -429,31 +427,31 @@ classdef CandidateSpaceCornerBoxRemoval < CandidateSpaceBase
                     % only move anchors that were active before
                     obj.AnchorPoint = anchorPointNew(~isAnchorInCorner,:);
                     obj.CornerDirection = obj.CornerDirection(~isAnchorInCorner,:);
+                end
 
-                    % check for detachments
-                    if(obj.DetachTolerance>0)
-                        nAnchor = size(obj.AnchorPoint,1);
+                % check for detachments
+                if(obj.DetachTolerance>0)
+                    nAnchor = size(obj.AnchorPoint,1);
+                    
+                    lowerBound = min(obj.DesignSampleDefinition(obj.IsInsideDefinition,:),[],1);
+                    upperBound = max(obj.DesignSampleDefinition(obj.IsInsideDefinition,:),[],1);
+                    allowedSlack = obj.DetachTolerance.*(upperBound - lowerBound);
+
+                    for i=1:nAnchor
+                        distanceToAnchor = obj.AnchorPoint - obj.AnchorPoint(i,:);
+                        distanceToAnchor(:,obj.CornerDirection(i,:)) = -distanceToAnchor(:,obj.CornerDirection(i,:));
+
+                        [maximumSlack,iDimension] = max(distanceToAnchor,[],2);
                         
-                        lowerBound = min(obj.DesignSampleDefinition(obj.IsInsideDefinition,:),[],1);
-                        upperBound = max(obj.DesignSampleDefinition(obj.IsInsideDefinition,:),[],1);
-                        allowedSlack = obj.DetachTolerance.*(upperBound - lowerBound);
-
-                        for i=1:nAnchor
-                            distanceToAnchor = obj.AnchorPoint - obj.AnchorPoint(i,:);
-                            distanceToAnchor(:,obj.CornerDirection(i,:)) = -distanceToAnchor(:,obj.CornerDirection(i,:));
-
-                            [maximumSlack,iDimension] = max(distanceToAnchor,[],2);
-                            
-                            shouldCollapse = (abs(maximumSlack)<=allowedSlack(:,iDimension)');
-                            dimensionsToCollapse = (distanceToAnchor>=0) & (distanceToAnchor<=allowedSlack) & (obj.CornerDirection~=obj.CornerDirection(i,:));
-                            currentAnchor = repmat(obj.AnchorPoint(i,:),sum(shouldCollapse),1);
-                            obj.AnchorPoint(shouldCollapse & dimensionsToCollapse) = currentAnchor(dimensionsToCollapse(shouldCollapse,:));
-                        end
+                        shouldCollapse = (abs(maximumSlack)<=allowedSlack(:,iDimension)');
+                        dimensionsToCollapse = (distanceToAnchor>=0) & (distanceToAnchor<=allowedSlack) & (obj.CornerDirection~=obj.CornerDirection(i,:));
+                        currentAnchor = repmat(obj.AnchorPoint(i,:),sum(shouldCollapse),1);
+                        obj.AnchorPoint(shouldCollapse & dimensionsToCollapse) = currentAnchor(dimensionsToCollapse(shouldCollapse,:));
                     end
                 end
             end
             obj.DesignSampleDefinition = [obj.DesignSampleDefinition;obj.AnchorPoint];
-            if(~obj.DoQuickExpansion)
+            if(obj.CheckDuplicatePoints)
                 obj.DesignSampleDefinition = unique(obj.DesignSampleDefinition,'rows');
             end
             obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
