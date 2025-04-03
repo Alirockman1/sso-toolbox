@@ -247,12 +247,13 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
                 nSample,...
                 candidateSpaceSamplingOptions{:});
         end
-        % truncate padding samples if there are too many, or generate more
         nPaddingGenerated = size(paddingSample,1);
-        if(~isempty(options.MaximumNumberPaddingSamples) && nPaddingGenerated>=options.MaximumNumberPaddingSamples)
+        
+        % truncate padding samples if there are too many, or generate more
+        if(~isempty(options.MaximumNumberPaddingSamples) && size(paddingSample,1)>options.MaximumNumberPaddingSamples)
             paddingSample = paddingSample(1:options.MaximumNumberPaddingSamples,:);
         end
-        if(size(paddingSample,1)<options.MinimumNumberPaddingSamples)
+        if(~isempty(options.MinimumNumberPaddingSamples) && size(paddingSample,1)<options.MinimumNumberPaddingSamples)
             nPaddingMissing = options.MinimumNumberPaddingSamples - nPaddingGenerated;
             extraPadding = options.SamplingMethodFunction(samplingBoxGrown,nPaddingMissing,options.SamplingMethodOptions{:});
             paddingSample = [paddingSample;extraPadding];

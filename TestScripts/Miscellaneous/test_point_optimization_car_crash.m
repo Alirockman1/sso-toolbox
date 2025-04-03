@@ -74,8 +74,8 @@ initialDesign         = [5.55e5 3.55e5];
 % optimizationFunction = @optimization_patternsearch_wrapper;
 % optimizationOptions = {'Display','diagnose'};
 
-optimizationFunction = @optimization_bayesian;
-optimizationOptions = {'MaxIter',10};
+% optimizationFunction = @optimization_bayesian;
+% optimizationOptions = {'MaxIter',10};
 
 
 %% start point-based optimization - quantity of interest

@@ -68,18 +68,34 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_fmin
 
 	options = optimoptions('fmincon',varargin{:});
 
+	% initialize logger
+	logger_objective_function(objectiveFunction);
+	logger_constraint_function(constraintFunction);
+
 	[designOptimal,objectiveOptimal,exitflag,output,lambda,grad,hessian] = fmincon(...
-		objectiveFunction,...
+		@logger_objective_function,...
 		initialDesign,...
 		[],[],[],[],... % A, b, Aeq, beq
 		designSpaceLowerBound,...
 		designSpaceUpperBound,...
-		constraintFunction,...
+		@logger_constraint_function,...
 		options);
+
+	[evaluatedDesignObjective,evaluatedObjectiveValue] = logger_objective_function();
+	[evaluatedDesignConstraint,evaluatedInequalityConstraintValue,evaluatedEqualityConstraintValue] = logger_constraint_function();
 
 	optimizationOutput.ExitCondition = exitflag;
 	optimizationOutput.InformationOptimizationProcess = output;
 	optimizationOutput.LagrangeMultipliersOptimal = lambda;
 	optimizationOutput.GradientOptimal = grad;
 	optimizationOutput.HessianOptimal = hessian;
+	optimizationOutput.EvaluatedDesignObjective = evaluatedDesignObjective;
+	optimizationOutput.EvaluatedObjectiveValue = evaluatedObjectiveValue;
+	optimizationOutput.EvaluatedDesignConstraint = evaluatedDesignConstraint;
+	optimizationOutput.EvaluatedInequalityConstraintValue = evaluatedInequalityConstraintValue;
+	optimizationOutput.EvaluatedEqualityConstraintValue = evaluatedEqualityConstraintValue;	
+
+	% finalize logger
+	clear logger_objective_function;
+	clear logger_constraint_function;
 end

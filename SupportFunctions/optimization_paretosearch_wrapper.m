@@ -65,17 +65,33 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_pare
 
 	options = optimoptions('paretosearch',varargin{:});
 
+	% initialize logger
+	logger_objective_function(objectiveFunction);
+	logger_constraint_function(constraintFunction);
+
 	nDesignVariable = size(initialDesign,2);
 	[designOptimal,objectiveOptimal,exitflag,output,residuals] = paretosearch(...
-		objectiveFunction,...
+		@logger_objective_function,...
 		nDesignVariable,...
 		[],[],[],[],... % A, b, Aeq, beq
 		designSpaceLowerBound,...
 		designSpaceUpperBound,...
-		constraintFunction,...
+		@logger_constraint_function,...
 		options);
+
+	[evaluatedDesignObjective,evaluatedObjectiveValue] = logger_objective_function();
+	[evaluatedDesignConstraint,evaluatedInequalityConstraintValue,evaluatedEqualityConstraintValue] = logger_constraint_function();
 
 	optimizationOutput.ExitCondition = exitflag;
 	optimizationOutput.InformationOptimizationProcess = output;
 	optimizationOutput.Residuals = residuals;
+	optimizationOutput.EvaluatedDesignObjective = evaluatedDesignObjective;
+	optimizationOutput.EvaluatedObjectiveValue = evaluatedObjectiveValue;
+	optimizationOutput.EvaluatedDesignConstraint = evaluatedDesignConstraint;
+	optimizationOutput.EvaluatedInequalityConstraintValue = evaluatedInequalityConstraintValue;
+	optimizationOutput.EvaluatedEqualityConstraintValue = evaluatedEqualityConstraintValue;
+
+	% finalize logger
+	clear logger_objective_function;
+	clear logger_constraint_function;
 end
