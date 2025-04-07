@@ -487,13 +487,18 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 isInside = true(nSample,1);
                 score = nan(nSample,1);
             end
+
+            tolerance = obj.InsideDotProductTolerance;
+            if(isempty(tolerance))
+                tolerance = 0;
+            end
             
             nAnchor = size(obj.AnchorPoint,1);
             if(nAnchor<=nSample)
                 for i=1:nAnchor
                     distanceToAnchor = (obj.AnchorPoint(i,:) - designSample)./obj.NormalizationFactor(i,:);
                     dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor(i,:),2);
-                    dotProductWithTolerance = dotProduct - obj.InsideDotProductTolerance;
+                    dotProductWithTolerance = dotProduct - tolerance;
 
                     isInside(dotProductWithTolerance>0) = false;
                     score = max(score,dotProductWithTolerance);
@@ -502,7 +507,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 for i=1:nSample
                     distanceToAnchor = (obj.AnchorPoint - designSample(i,:))./obj.NormalizationFactor;
                     dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor,2);
-                    dotProductWithTolerance = dotProduct - obj.InsideDotProductTolerance;
+                    dotProductWithTolerance = dotProduct - tolerance;
 
                     isInside(i) = all(dotProductWithTolerance<=0);
                     score(i) = max(dotProductWithTolerance);
@@ -542,7 +547,16 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
         %
         %   See also plot_convex_hull_2d, plot_convex_hull_3d.
 
-            nDimension = size(obj.DesignSampleDefinition,2);
+            parser = inputParser;
+            parser.KeepUnmatched = true;
+            parser.addParameter('FixedVariables',[]);
+            parser.parse(varargin{:});
+            fixedVariables = parser.Results.FixedVariables;
+            plotOptions = namedargs2cell(parser.Unmatched);
+
+            isFixed = ~isnan(fixedVariables);
+            nFixed = sum(isFixed);
+            nDimension = size(obj.DesignSampleDefinition,2) - nFixed;
             if(nDimension>3)
                 if(nargout>0)
                     plotHandle = [];
@@ -551,17 +565,34 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             end
 
             hullPoint = [];
-            nAnchor = size(obj.AnchorPoint,1);
-            % project the points into each plane
-            for i=1:nAnchor
-                distanceToAnchor = (obj.AnchorPoint(i,:) - obj.DesignSampleDefinition)./obj.NormalizationFactor(i,:);
-                dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor(i,:),2);
-                distanceToPlane = obj.NormalizationFactor(i,:).*obj.PlaneOrientationAnchor(i,:).*dotProduct;
-                candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
-                candidateHullPoint = min(max(candidateHullPoint,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
+            if(~isempty(fixedVariables))
+                % use simpler scheme with direction projection to plane with fixed variables
+                projectedPoints = obj.DesignSampleDefinition;
+                projectedPoints(:,isFixed) = repmat(fixedVariables(isFixed),size(obj.DesignSampleDefinition,1),1);
 
-                isInside = obj.is_in_candidate_space(candidateHullPoint);
-                hullPoint = unique([hullPoint;candidateHullPoint(isInside,:)],'rows');
+                isInside = obj.is_in_candidate_space(projectedPoints);
+                hullPoint = unique([hullPoint;projectedPoints(isInside,:)],'rows');
+                hullPoint = hullPoint(:,~isFixed);
+            else
+                nAnchor = size(obj.AnchorPoint,1);
+                % project the points into each plane and gather the ones inside
+                for i=1:nAnchor
+                    distanceToAnchor = (obj.AnchorPoint(i,:) - obj.DesignSampleDefinition)./obj.NormalizationFactor(i,:);
+                    dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor(i,:),2);
+                    distanceToPlane = obj.NormalizationFactor(i,:).*obj.PlaneOrientationAnchor(i,:).*dotProduct;
+                    candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
+                    candidateHullPoint = min(max(candidateHullPoint,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
+
+                    isInside = obj.is_in_candidate_space(candidateHullPoint);
+                    hullPoint = unique([hullPoint;candidateHullPoint(isInside,:)],'rows');
+                end
+            end
+
+            if(size(hullPoint,1)<=nDimension)
+                if(nargout>0)
+                    plotHandle = [];
+                end
+                return;
             end
 
             % create a convex hull based on that
@@ -569,11 +600,11 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
 
             % plot convex hull
             if(nDimension==1)
-                plotHandle = plot_convex_hull_1d(figureHandle,hullPoint,convexHullIndex,varargin{:});
+                plotHandle = plot_convex_hull_1d(figureHandle,hullPoint,convexHullIndex,plotOptions{:});
             elseif(nDimension==2)
-                plotHandle = plot_convex_hull_2d(figureHandle,hullPoint,convexHullIndex,varargin{:});
+                plotHandle = plot_convex_hull_2d(figureHandle,hullPoint,convexHullIndex,plotOptions{:});
             elseif(nDimension==3)
-                plotHandle = plot_convex_hull_3d(figureHandle,hullPoint,convexHullIndex,varargin{:});
+                plotHandle = plot_convex_hull_3d(figureHandle,hullPoint,convexHullIndex,plotOptions{:});
             end
         end
 

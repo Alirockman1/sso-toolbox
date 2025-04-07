@@ -258,7 +258,15 @@ classdef (Abstract) CandidateSpaceBase
         %
         %   See also plot_candidate_space_1d, plot_candidate_space_2d, plot_candidate_space_3d.
 
-            nDimension = size(obj.DesignSampleDefinition,2);
+            parser = inputParser;
+            parser.KeepUnmatched = true;
+            parser.addParameter('FixedVariables',[]);
+            parser.parse(varargin{:});
+            fixedVariables = parser.Results.FixedVariables;
+
+            nFixed = sum(~isnan(fixedVariables));
+            nDimension = size(obj.DesignSampleDefinition,2) - nFixed;
+            
             if(nDimension==1)
                 plotHandle = plot_candidate_space_1d(figureHandle,obj,varargin{:});
             elseif(nDimension==2)
