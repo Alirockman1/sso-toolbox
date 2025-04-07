@@ -59,19 +59,14 @@ function performanceMeasure = bead_slide_time(designSample,systemParameter)
     nInterpolationPoints = systemParameter(3);
     
     gravityConstant = 9.80;
-    interpolationMethod = 'pchip';
     derivativeNeighborPoint = 2;
     
     nSample = size(designSample,1);
     performanceMeasure = nan(nSample,1);
     for i=1:nSample
         % create a base entry with the rough points given
-        heightBase = [0,designSample(i,:)-distanceY,-distanceY]; % shift so start point is (0,0)
-        widthBase = linspace(0,distanceX,size(heightBase,2));
-
-        % create a fine mesh with the given interpolation points
         widthFine = linspace(0,distanceX,nInterpolationPoints);
-        heightFine = interp1(widthBase,heightBase,widthFine,interpolationMethod);
+        heightFine = [0,designSample{1}(widthFine(2:end-1))-distanceY,-distanceY];
 
         % estimate the slope of the curve with finite differences
         slopeFine = finite_differences_derivative(heightFine,widthFine,1,derivativeNeighborPoint);

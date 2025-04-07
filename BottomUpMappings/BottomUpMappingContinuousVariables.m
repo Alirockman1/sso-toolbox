@@ -77,7 +77,7 @@ classdef BottomUpMappingContinuousVariables < BottomUpMappingBase
         end
     
         methods
-            function [obj,discreteLowerBound,discreteUpperBound,discreteInitialDesign,discreteComponentIndex] = BottomUpMappingContinuousVariables(baseBottomUpMapping, functionalDesignSpace, baseVariableDesignSpace, initialDesign, varargin)
+            function [obj,functionalDiscreteBound,discreteInitialDesign,discreteComponentIndex] = BottomUpMappingContinuousVariables(baseBottomUpMapping, baseVariableDesignSpace, functionalDesignSpace, initialDesign, varargin)
             %BOTTOMUPMAPPINGCONTINUOUSVARIABLES Constructor
             %   BOTTOMUPMAPPINGCONTINUOUSVARIABLES creates an object that wraps another bottom-up
             %   mapping and fixes certain design variables to predefined values.
@@ -143,7 +143,7 @@ classdef BottomUpMappingContinuousVariables < BottomUpMappingBase
                 parser = inputParser;
                 parser.addOptional('ComponentIndex', {});
                 parser.addParameter('InterpolationMethodFunction',@interp1);
-                parser.addParameter('InterpolationMethodOptions',{'pchip'});
+                parser.addParameter('InterpolationMethodOptions',{'pchip','extrap'});
                 parser.addParameter('NumberOfStencils',1);
                 parser.parse(varargin{:});
                 options = parser.Results;
@@ -156,6 +156,8 @@ classdef BottomUpMappingContinuousVariables < BottomUpMappingBase
                 
                 % Assign properties
                 obj.BaseBottomUpMapping = baseBottomUpMapping;
+                obj.InterpolationMethodFunction = options.InterpolationMethodFunction;
+                obj.InterpolationMethodOptions = options.InterpolationMethodOptions;
 
                 % for the number of stencils given, discretize design space,
                 %   initial design and components
@@ -167,14 +169,12 @@ classdef BottomUpMappingContinuousVariables < BottomUpMappingBase
                 end
     
                 % Adapt design space / initial design
-                discreteLowerBound = [];
-                discreteUpperBound = [];
+                functionalDiscreteBound = [];
                 discreteInitialDesign = [];
                 obj.DesignVariableIndexMapping = [];
                 obj.BaseVariablesStencils = cell(1,nDesignVariable);
                 for i=1:nDesignVariable
-                    discreteLowerBound = [discreteLowerBound,functionalDesignSpace(1,i)*ones(1,nStencil(i))];
-                    discreteUpperBound = [discreteUpperBound,functionalDesignSpace(2,i)*ones(1,nStencil(i))];
+                    functionalDiscreteBound = [functionalDiscreteBound,functionalDesignSpace(:,i).*ones(2,nStencil(i))];
                     discreteInitialDesign = [discreteInitialDesign,initialDesign(i)*ones(1,nStencil(i))];
 
                     obj.DesignVariableIndexMapping = [obj.DesignVariableIndexMapping,i*ones(1,nStencil(i))];
