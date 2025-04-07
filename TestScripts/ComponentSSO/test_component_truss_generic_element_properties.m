@@ -62,8 +62,8 @@ save_print_figure(gcf,[saveFolder,'MaterialRelationEtoSigmaY'],'PrintFormat',{'p
 
 
 %%
-trussAnalysisChoice = '4-Bar-2D';
-fixRadius = true;
+trussAnalysisChoice = '2-Bar-2D';
+fixRadius = false;
 useBoxResultForComponent = false;
 
 computeDisplacement = true;
@@ -81,13 +81,13 @@ systemFunction = @truss_generic_element_properties_dependent_density;
 
 switch trussAnalysisChoice
     case '2-Bar-2D'
-        nSample = 300;
-        maxIterDisplacement = 100;
+        nSample = 500;
+        maxIterDisplacement = 250;
         maxIterMass = 20;
         maxIterDisplacementAndMass = 100;
         growthRateDisplacement = 0.01;
         growthRateMass = 0.07;
-        trimmingPasses = 'reduced';
+        trimmingPasses = 'single';
         requirementSpacesType = 'Omega1';
         systemParameter.NodePosition = [...
             0   0;  ...

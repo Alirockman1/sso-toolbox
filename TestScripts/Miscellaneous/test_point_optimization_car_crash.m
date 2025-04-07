@@ -36,7 +36,7 @@ figureSize = [goldenRatio 1]*8.5;
 
 %% problem setup
 systemFunction = @car_crash_2d;
-%               m d1c d2c   v0
+%                     m d1c d2c   v0
 systemParameter = [2000 0.3 0.3 15.6];
 %                       E_rem    a_max order
 performanceLowerLimit = [-inf        0  -inf];
@@ -59,8 +59,8 @@ initialDesign         = [5.55e5 3.55e5];
 
 
 %% optimization methods
-% optimizationFunction = @optimization_fmincon_wrapper;
-% optimizationOptions = {'Display','iter-detailed'};
+optimizationFunction = @optimization_fmincon_wrapper;
+optimizationOptions = {'Display','iter-detailed'};
 
 % optimizationFunction = @optimization_sampling;
 % optimizationOptions = {};

@@ -48,7 +48,7 @@ componentIndex = {1:3,4:6,7:9,10:12,13:15};
 
 initialDistanceWidth = 4; % distance in longitudinal (x) direction
 initialDistanceHeight = 2; % distance in vertical (y) direction
-nInterpolationPoint = 5000; % number of interpolation points
+nInterpolationPoint = 200; % number of interpolation points
 
 
 %% Problem Setup
@@ -84,6 +84,20 @@ radiusAngleOptimal = fsolve(@(rt)brachistochrone_solve_analytical(rt,systemParam
 anglePathAnalytical = linspace(0,radiusAngleOptimal(2),nInterpolationPoint);
 pathWidthAnalytical = radiusAngleOptimal(1)*(anglePathAnalytical-sin(anglePathAnalytical));
 pathHeightAnalytical = radiusAngleOptimal(1)*(-1+cos(anglePathAnalytical)) + initialDistanceHeight;
+
+
+%% plot
+figure; 
+hold on;
+handleNumericalOptimal = plot(pathWidthDivision,[initialDistanceHeight,designOptimal,0]','bo-','linewidth',1);
+plot([0 systemParameter(1)],[0 0],'k--');
+handleBrachistochrone = plot(pathWidthAnalytical,pathHeightAnalytical,'r','linewidth',1);
+grid minor;
+xlim([0 systemParameter(1)])
+title(sprintf('Approximate Optimal Time: %gs',timeOptimal));
+xlabel('Longitudinal Distance [m]');
+ylabel('Vertical Distance [m]');
+legend([handleNumericalOptimal handleBrachistochrone],{'Numerical Optimal Solution','Analytical Optimal Solution'})
 
 
 %% Perform Solution Space Computation
