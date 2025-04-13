@@ -43,7 +43,7 @@ useBoxResultForComponent = false;
 
 computeDisplacement = true;
 computeMass = false;
-computeDisplacementAndMass = false;
+computeDisplacementAndMass = true;
 
 computePlanarTrimmingComponent = true;
 computeCornerBoxRemovalComponent = false;

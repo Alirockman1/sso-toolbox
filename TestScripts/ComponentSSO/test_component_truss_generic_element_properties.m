@@ -62,8 +62,8 @@ save_print_figure(gcf,[saveFolder,'MaterialRelationEtoSigmaY'],'PrintFormat',{'p
 
 
 %%
-trussAnalysisChoice = '2-Bar-2D';
-fixRadius = false;
+trussAnalysisChoice = '6-Bar-2D';
+fixRadius = true;
 useBoxResultForComponent = false;
 
 computeDisplacement = true;
@@ -81,13 +81,13 @@ systemFunction = @truss_generic_element_properties_dependent_density;
 
 switch trussAnalysisChoice
     case '2-Bar-2D'
-        nSample = 500;
-        maxIterDisplacement = 250;
+        nSample = 300;
+        maxIterDisplacement = 150;
         maxIterMass = 20;
         maxIterDisplacementAndMass = 100;
         growthRateDisplacement = 0.01;
         growthRateMass = 0.07;
-        trimmingPasses = 'single';
+        trimmingPasses = 'reduced';
         requirementSpacesType = 'Omega1';
         systemParameter.NodePosition = [...
             0   0;  ...
@@ -105,8 +105,8 @@ switch trussAnalysisChoice
             1 3; ...
             2 3];
     case '4-Bar-2D'
-        nSample = 100;
-        maxIterDisplacement = 250;
+        nSample = 500;
+        maxIterDisplacement = 150;
         maxIterMass = 20;
         maxIterDisplacementAndMass = 200;
         growthRateDisplacement = 0.07;
@@ -134,8 +134,8 @@ switch trussAnalysisChoice
             3 4; ...
             2 4];
     case '6-Bar-2D'
-        nSample = 300;
-        maxIterDisplacement = 500;
+        nSample = 600;
+        maxIterDisplacement = 200;
         maxIterMass = 20;
         maxIterDisplacementAndMass = 30;
         growthRateDisplacement = 0.07;
@@ -805,9 +805,9 @@ function [solutionSpaceBox,componentSolutionSpacePlanarTrimming,componentSolutio
             'MaxIterExploration',maxIter,...
             'MaxIterConsolidation',maxIter,...
             'CandidateSpaceConstructor',@CandidateSpaceCornerBoxRemoval,...
-            'CandidateSpaceOptions',{'NormalizeGrowthDirection',false},...
+            'CandidateSpaceOptions',{'NormalizeGrowthDirection',true,'CheckRedundantTrimmingGrowth',false,'CheckRedundantTrimmingUpdate',true,'CheckDuplicatePointsGrowth',false,'CheckDuplicatePointsUpdate',true,'MeasureEstimationFactor',2},...
             'TrimmingMethodFunction',@component_trimming_method_corner_box_removal,...
-            'TrimmingMethodOptions',{'NormalizeVariables',false},...
+            'TrimmingMethodOptions',{'NormalizeVariables',true},...
             'UseAdaptiveGrowthRate',true,...
             'GrowthRate',growthRate,...
             'MaximumGrowthAdaptationFactor',1.0,...
