@@ -214,6 +214,63 @@ save_print_figure(gcf,[saveFolder,'CandidateSpaceSvmExample'],'Size',figureSize*
 % growth
 
 
+
+%% visualize - corner box removal
+nTest = 30;
+designSample = sampling_latin_hypercube([designSpaceLowerBoundSample; designSpaceUpperBoundSample],nTest);
+
+figure;
+hold all;
+plot(designSample(:,1),designSample(:,2),'k.');
+for i = 1:nTest
+    text(designSample(i,1), designSample(i,2), num2str(i), ...
+        'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right');
+end
+isGood = true(nTest,1);
+isGood([22,28,10,30,12]) = false;
+
+candidateSpace = CandidateSpaceCornerBoxRemoval(designSpaceLowerBoundSpace,designSpaceUpperBoundSpace);
+candidateSpace = component_trimming_operation(designSample,isGood,find(~isGood),{[1,2]'},candidateSpace,'TrimmingMethodFunction',@component_trimming_method_corner_box_removal);
+
+isInside = candidateSpace.IsInsideDefinition;
+
+candidateSpaceGrown = candidateSpace.expand_candidate_space(0.05);
+
+
+figure;
+hold all;
+plot(designSample(isInside,1),designSample(isInside,2),optionsPointInside{:});
+plot(designSample(~isInside,1),designSample(~isInside,2),optionsPointOutside{:});
+candidateSpace.plot_candidate_space(gcf,'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.1,'EdgeColor',colorCandidateSpaceInside);
+anchorPoints = candidateSpace.AnchorPoint;
+plot(anchorPoints(:,1),anchorPoints(:,2),'linestyle','none','Marker','*','MarkerSize',10,'linewidth',2.0,'color',color_palette_tol('purple'));
+
+figure;
+hold all;
+candidateSpace.plot_candidate_space(gcf,'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.0,'EdgeColor',colorCandidateSpaceInside,'Linestyle','--');
+candidateSpaceGrown.plot_candidate_space(gcf,'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.1,'EdgeColor',colorCandidateSpaceInside,'Linestyle','-');
+plot(candidateSpaceGrown.DesignSampleDefinition(candidateSpaceGrown.IsInsideDefinition,1),candidateSpaceGrown.DesignSampleDefinition(candidateSpaceGrown.IsInsideDefinition,2),'*','MarkerSize',6,'color',colorPointInside);
+plot(anchorPoints(:,1),anchorPoints(:,2),'linestyle','none','Marker','*','MarkerSize',10,'linewidth',2.0,'color',color_palette_tol('purple'));
+anchorPointsGrown = candidateSpaceGrown.AnchorPoint;
+plot(anchorPointsGrown(:,1),anchorPointsGrown(:,2),'linestyle','none','Marker','*','MarkerSize',10,'linewidth',2.0,'color',color_palette_tol('purple'));
+growthVectorAnchor = anchorPointsGrown - anchorPoints;
+quiver(anchorPoints(:,1),anchorPoints(:,2),growthVectorAnchor(:,1),growthVectorAnchor(:,2),optionsVector{:});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 %% Save and Stop Transcripting
 save([saveFolder,'Data.mat']);
 diary off;

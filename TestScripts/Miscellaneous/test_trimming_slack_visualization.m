@@ -25,14 +25,16 @@ optionsPointOutside = {'x','color',colorPointOutside,'MarkerSize',10,'linewidth'
 optionsPointInside = {'o','color',colorPointInside,'MarkerSize',10,'linewidth',2.0};
 
 
-%% 
+%% CHOSEN SAMPLES
 designSpaceLowerBound = [0 0];
 designSpaceUpperBound = [1 1];
 anchorPoint = [0.21,0.32];
 planeOrientation = [1,1.5];
-designSample = [0.31,0.61;0.47,0.35];
+designSample = [0.31,0.61;0.47,0.35;0.18,0.75;0.66,0.33;0.62,0.64];
 designPadding = sampling_latin_hypercube([designSpaceLowerBound;designSpaceUpperBound],100);
 
+
+%% PLANAR TRIMMING
 % normalize plane orientation
 planeOrientation = planeOrientation./vecnorm(planeOrientation,2,2);
 
@@ -68,6 +70,64 @@ legend({'Plane at Slack=1','Plane at Slack=0.5','Plane at Slack=0','Removed Desi
 save_print_figure(gcf,[saveFolder,'PlanarTrimming-Slack'],'PrintFormat',{'png','pdf'});
 
 
+%% CORNER BOX REMOVAL
+combination = [false,false];
+
+% find maximum slack
+lowerBound = min(designSample,[],1);
+upperBound = max(designSample,[],1);
+normalizationFactor = upperBound-lowerBound;
+
+distanceToAnchorBase = designSample-anchorPoint;
+distanceToAnchor = distanceToAnchorBase;
+distanceToAnchor(:,combination) = -distanceToAnchor(:,combination);
+insideToAnchorDistance = distanceToAnchor./normalizationFactor;
+
+nDesignVariable = size(designSample,2);
+maximumSlack = nan(1,nDesignVariable);
+[maximumSlackInside,iDimensionMaximumSlack] = max(insideToAnchorDistance,[],2);
+for j=1:nDesignVariable
+    allowedSlack = maximumSlackInside(iDimensionMaximumSlack==j).*normalizationFactor(j);
+    
+    if(isempty(allowedSlack))
+        if(~combination(j))
+            maximumSlack(j) = upperBound(j) - anchorPoint(j);
+        else
+            maximumSlack(j) = anchorPoint(j) - lowerBound(j);
+        end
+    else
+        maximumSlack(j) = min(allowedSlack);
+    end
+end
+anchorSlack(~combination) = maximumSlack(~combination);
+anchorSlack(combination) = -maximumSlack(combination);
+
+anchorPointFull = anchorPoint + (1-1)*anchorSlack;
+anchorPointHalf = anchorPoint + (1-0.5)*anchorSlack;
+anchorPointNull = anchorPoint + (1-0)*anchorSlack;
+
+boxRemovalFull = find_design_space_intersection_corner(designSpaceLowerBound,designSpaceUpperBound,anchorPointFull,combination);
+boxRemovalHalf = find_design_space_intersection_corner(designSpaceLowerBound,designSpaceUpperBound,anchorPointHalf,combination);
+boxRemovalNull = find_design_space_intersection_corner(designSpaceLowerBound,designSpaceUpperBound,anchorPointNull,combination);
+
+figure;
+hold all;
+plot_design_box_2d(gcf,boxRemovalFull,'EdgeColor',color_palette_tol('grey'),'FaceColor','none','linewidth',1.5);
+plot_design_box_2d(gcf,boxRemovalHalf,'EdgeColor',color_palette_tol('purple'),'FaceColor','none','linewidth',1.5);
+plot_design_box_2d(gcf,boxRemovalNull,'EdgeColor',color_palette_tol('yellow'),'FaceColor','none','linewidth',1.5);
+plot(anchorPoint(1),anchorPoint(2),optionsPointOutside{:});
+% plot(anchorPointHalf(1),anchorPointHalf(2),optionsPointOutside{:},'linewidth',1.0,'HandleVisibility','off');
+% plot(anchorPointNull(1),anchorPointNull(2),optionsPointOutside{:},'linewidth',1.0,'HandleVisibility','off');
+plot(designSample(:,1),designSample(:,2),optionsPointInside{:});
+axis([0.1 0.8 0.1 0.8]);
+% daspect([1,1,1]);
+% pbaspect([1,1,1]);
+grid off;
+set(gca,'XColor', 'none','YColor','none');
+legend({'Corner Removed at Slack=1','Corner Removed at Slack=0.5','Corner Removed at Slack=0','Removed Design','Remaining Good Designs'},'location','southeast');
+save_print_figure(gcf,[saveFolder,'PlanarTrimming-Slack'],'PrintFormat',{'png','pdf'});
+
+
 %% Save and Stop Transcripting
 save([saveFolder,'Data.mat']);
 diary off;
@@ -80,4 +140,17 @@ function designSpaceIntersection = find_design_space_intersection_plane(designSp
     designSpace = [designSpaceLowerBound;designSpaceUpperBound];
     designSpaceLimit = region_limit_line_search([],[anchorPoint;anchorPoint],[planeVector;-planeVector],designSpace);
     designSpaceIntersection = anchorPoint + designSpaceLimit.*[planeVector;-planeVector];
+end
+
+function boxRemoval = find_design_space_intersection_corner(designSpaceLowerBound,designSpaceUpperBound,anchorPoint,combination)
+    boxRemoval = [designSpaceLowerBound;designSpaceUpperBound];
+    
+    nDimension = size(designSpaceLowerBound,2);
+    for i=1:nDimension
+        if(combination(i))
+            boxRemoval(1,i) = anchorPoint(i);
+        else
+            boxRemoval(2,i) = anchorPoint(i);
+        end
+    end
 end
