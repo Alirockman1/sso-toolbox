@@ -128,7 +128,6 @@ function [candidateBox,optimizationData] = sso_box_stochastic(designEvaluator,in
             console.info('Adapting growth rate... ');
             tic
 
-            purity = nAcceptable/nSample;
             purity = max(min(purity,options.MaximumGrowthPurity),options.MinimumGrowthPurity);
 
             increaseMeasure = measureGrown - measurePrevious;
@@ -201,9 +200,10 @@ function [candidateBox,optimizationData] = sso_box_stochastic(designEvaluator,in
         
         % Box may have grown too much + "unlucky sampling" w/ no good
         % points, go back in this case
-        if(nAcceptable==0 || nUseful==0 || nAcceptableUseful==0)
-            console.warn('SSOOptBox:BadSampling',['No good/useful points found, ',...
-                'rolling back and reducing growth rate to minimum...']);
+        purity = nAcceptable/nSample;
+        if(nAcceptable==0 || nUseful==0 || nAcceptableUseful==0 || purity<options.MinimumPurityReset)
+            console.warn('SSOOptBox:BadSampling',['Not enough good/useful points found, ',...
+                'rolling back and reducing growth rate...']);
 
             if(isOutputOptimizationData)
                 console.info('Logging relevant information... ');

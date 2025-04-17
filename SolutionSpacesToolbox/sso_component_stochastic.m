@@ -181,7 +181,6 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
             console.info('Adapting growth rate... ');
             tic
 
-            purity = nAcceptable/nSample;
             purity = max(min(purity,options.MaximumGrowthPurity),options.MinimumGrowthPurity);
 
             increaseMeasure = measureGrown - measurePrevious;
@@ -274,11 +273,12 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
             console);
         [nAcceptable,nUseful,nAccetableUseful] = sso_component_sub_count_acceptable_useful(isAcceptable,isUseful,console);
             
-        % Box may have grown too much + "unlucky sampling" w/ no good
+        % Solution space may have grown too much + "unlucky sampling" w/ no good
         % points, go back in this case
-        if(nAcceptable==0 || nUseful==0 || nAccetableUseful==0)
-            console.warn('SSOOptBox:BadSampling',['No good points found, ',...
-                'rolling back and reducing growth rate to minimum...']);
+        purity = nAcceptable/nSample;
+        if(nAcceptable==0 || nUseful==0 || nAccetableUseful==0 || purity<options.MinimumPurityReset)
+            console.warn('SSOOptBox:BadSampling',['Not enough good points found, ',...
+                'rolling back and reducing growth rate...']);
             if(isOutputOptimizationData)
                 console.info('Logging relevant information... ');
                 tic
