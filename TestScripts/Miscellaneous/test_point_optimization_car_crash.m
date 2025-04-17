@@ -46,8 +46,8 @@ bottomUpMapping = BottomUpMappingFunction(systemFunction,systemParameter);
 designEvaluator = DesignEvaluatorBottomUpMapping(bottomUpMapping,...
     performanceLowerLimit,...
     performanceUpperLimit,...
-    ...'PerformanceNormalizationFactor',[5.3e3 3.1392 1.7e4]...
-    'PerformanceNormalizationFactor',[5.3e5 313.92 1.7e6]...
+    'PerformanceNormalizationFactor',[5.3e3 3.1392 1.7e4]...
+    ...'PerformanceNormalizationFactor',[5.3e5 313.92 1.7e6]...
     );
 
 
@@ -60,7 +60,7 @@ initialDesign         = [5.55e5 3.55e5];
 
 %% optimization methods
 optimizationFunction = @optimization_fmincon_wrapper;
-optimizationOptions = {'Display','iter-detailed'};
+optimizationOptions = {'Display','iter-detailed','FiniteDifferenceType','central'};
 
 % optimizationFunction = @optimization_sampling;
 % optimizationOptions = {};
@@ -119,9 +119,25 @@ plot(designOptimalQuantityOfInterest(1),designOptimalQuantityOfInterest(2),'bo')
 plot(designOptimalScore(1),designOptimalScore(2),'mo');
 xlabel('F_1 [N]');
 ylabel('F_2 [N]');
-legend('Good Region','Initial Design','Optimal (Quantities of Interest)','Optimal (Score)',...
-    'location','eastoutside')
+legendEntry = {'Good Region','Initial Design','Optimal (Quantities of Interest)','Optimal (Score)'};
+if(isfield(evaluatorOptimizationOutput,'EvaluatedDesignObjective'))
+    plot(evaluatorOptimizationOutput.EvaluatedDesignObjective(:,1),evaluatorOptimizationOutput.EvaluatedDesignObjective(:,2),'k.','MarkerSize',10);
+    legendEntry{end+1} = 'Evaluated Points';
+
+    % contour
+    stepSize = 0.01;
+    xInterval = designSpaceLowerBound(1) + (0:stepSize:1)*(designSpaceUpperBound(1)-designSpaceLowerBound(1));
+    yInterval = designSpaceLowerBound(2) + (0:stepSize:1)*(designSpaceUpperBound(2)-designSpaceLowerBound(2));
+    [xGrid,yGrid] = meshgrid(xInterval,yInterval);
+    fullGrid = [xGrid(:),yGrid(:)];
+    performanceDeficit = designEvaluator.evaluate(fullGrid);
+    [~,score] = design_deficit_to_label_score(performanceDeficit);
+    scoreGrid = reshape(score,size(xGrid));
+    contour(xInterval,yInterval,scoreGrid,20);
+end
+legend(legendEntry,'location','eastoutside');
 save_print_figure(gcf,[saveFolder,'OptimalSolutionByScore'],'Size',figureSize*1.2);
+
 
 
 %% Save and Stop Transcripting

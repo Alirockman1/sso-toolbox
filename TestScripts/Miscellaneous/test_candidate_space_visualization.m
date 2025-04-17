@@ -260,6 +260,27 @@ quiver(anchorPoints(:,1),anchorPoints(:,2),growthVectorAnchor(:,1),growthVectorA
 
 
 
+%% doksem delete later
+isBad = false(nTest,1);
+badIndex = [23,26,11,18,4,5,12,14,2,1,21,24,17];
+isBad(badIndex) = true;
+
+isGood = ~isBad;
+nBad = sum(isBad);
+badIndex = badIndex(randperm(nBad))';
+
+figure;
+hold all;
+plot(designSample(isGood,1),designSample(isGood,2),'g.','MarkerSize',12);
+plot(designSample(~isGood,1),designSample(~isGood,2),'r.','MarkerSize',16);
+for i = 1:nBad
+    text(designSample(badIndex(i),1), designSample(badIndex(i),2), num2str(i), ...
+        'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right');
+end
+
+candidateSpace = CandidateSpaceConvexHull([0,0],[1,1]);
+candidateSpace = component_trimming_operation(designSample,isGood,badIndex,{[1,2]'},candidateSpace,'TrimmingMethodFunction',@component_trimming_method_planar_trimming,'PassesCriterion','full');
+candidateSpace.plot_candidate_space(gcf,'FaceAlpha',0.3,'FaceColor','c');
 
 
 
