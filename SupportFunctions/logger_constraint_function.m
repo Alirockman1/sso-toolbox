@@ -31,12 +31,23 @@ function varargout = logger_constraint_function(x)
         error('No base function set');
     end
 
+    currentEqualityConstraintValue = [];
     if(nargout(baseFunction) == 1)
         currentInequalityConstraintValue = baseFunction(x);
-        currentEqualityConstraintValue = [];
-    else %if(nargout(baseFunction) == 2)
-        [currentInequalityConstraintValue, currentEqualityConstraintValue] = baseFunction(x);
+    elseif(nargout(baseFunction) == 2)
+        [currentInequalityConstraintValue,currentEqualityConstraintValue] = baseFunction(x);
+    else
+        try
+            [currentInequalityConstraintValue,currentEqualityConstraintValue] = baseFunction(x);
+        catch
+            try
+                currentInequalityConstraintValue = baseFunction(x);
+            catch
+                error('logger_constraint_function:InvalidNumberOfOutputs', 'The function must return either one or two outputs.');
+            end
+        end
     end
+
     designSample = [designSample; x];
     inequalityConstraintValue = [inequalityConstraintValue; currentInequalityConstraintValue];
     equalityConstraintValue = [equalityConstraintValue; currentEqualityConstraintValue];
