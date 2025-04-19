@@ -174,12 +174,16 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
     growthRate = options.GrowthRate;
     convergedExploration = false;
     while((~convergedExploration) && (iExploration<=options.MaxIterExploration))
+        timeStartIteration = tic;
+        
         console.info([repelem('=',120),'\n']);
         console.info('Initiating Phase I - Exploration: Iteration %d\n',iExploration);
 
+        %% Adapt Growth Rate
+        timeElapsedAdaptGrowth = 0;
         if(options.UseAdaptiveGrowthRate && iExploration>1)
             console.info('Adapting growth rate... ');
-            tic
+            timeStartAdaptGrowth = tic;
 
             purity = max(min(purity,options.MaximumGrowthPurity),options.MinimumGrowthPurity);
 
@@ -197,13 +201,14 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
             growthRate = growthAdaptationFactor * growthRate;
             growthRate = max(min(growthRate,options.MaximumGrowthRate),options.MinimumGrowthRate);
 
-            console.info('Elapsed time is %g seconds.\n',toc);
+            timeElapsedAdaptGrowth = toc(timeStartAdaptGrowth);
+            console.info('Elapsed time is %g seconds.\n',timeElapsedAdaptGrowth);
         end
         measurePrevious = measureTrimmed;
 
         %% Modification Step B - Growth: Extend Candidate Space
         console.info('Growing candidate space... ');
-        tic
+        timeStartGrow = tic;
         if(~candidateSpaceDefined)
             % Expand candidate solution box in both sides of each interval isotroply
             samplingBoxGrown = design_box_grow_fixed(samplingBox,designSpaceLowerBound,designSpaceUpperBound,growthRate);
@@ -221,7 +226,8 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
             end
         end
         measureGrown = prod(componentMeasureGrown);
-        console.info('Elapsed time is %g seconds.\n',toc);
+        timeElapsedGrow = toc(timeStartGrow);
+        console.info('Elapsed time is %g seconds.\n',timeElapsedGrow);
         console.debug('- Current Growth Rate: %g\n',growthRate);
         
         
@@ -231,14 +237,10 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
         
         % Generate samples that are to be evaluated
         console.info('Generating new sample points in candidate space... ');
-        tic
+        timeStartGenerate = tic;
         if(~candidateSpaceDefined)
-            console.info('Generating new sample points in candidate box... ');
-            tic
             designSample = options.SamplingMethodFunction(samplingBoxGrown,nSample,options.SamplingMethodOptions{:});
             paddingSample = [];
-            toc
-            console.debug('- Number of samples generated: %g\n',nSample);
         else
             [designSample,paddingSample] = options.CandidateSpaceSamplingFunction(...
                 candidateSpaceGrown,...
@@ -257,31 +259,34 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
             extraPadding = options.SamplingMethodFunction(samplingBoxGrown,nPaddingMissing,options.SamplingMethodOptions{:});
             paddingSample = [paddingSample;extraPadding];
         end
-        console.info('Elapsed time is %g seconds.\n',toc);
+        timeElapsedGenerate = toc(timeStartGenerate);
+        console.info('Elapsed time is %g seconds.\n',timeElapsedGenerate);
         console.debug('- Number of samples generated: %g\n',size(designSample,1));
         console.debug('- Number of padding samples: %g\n',size(paddingSample,1));
             
         % Evaluate the samples
-        [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation] = ...
+        [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation,timeElapsedEvaluate] = ...
             sso_component_sub_evaluate_sample_points(designEvaluator,designSample,console);
         
         % Label samples according to desired requirement spaces problem type
-        [isAcceptable,isUseful] = sso_component_sub_label_requirement_spaces(...
+        [isAcceptable,isUseful,timeElapsedLabel] = sso_component_sub_label_requirement_spaces(...
             options.RequirementSpacesType,...
             isGoodPerformance,...
             isPhysicallyFeasible,...
             console);
-        [nAcceptable,nUseful,nAccetableUseful] = sso_component_sub_count_acceptable_useful(isAcceptable,isUseful,console);
-            
-        % Solution space may have grown too much + "unlucky sampling" w/ no good
-        % points, go back in this case
+        
+        %% Count labels
+        [nAcceptable,nUseful,nAccetableUseful,timeElapsedCount] = sso_component_sub_count_acceptable_useful(isAcceptable,isUseful,console);
+        
         purity = nAcceptable/nSample;
         if(nAcceptable==0 || nUseful==0 || nAccetableUseful==0 || purity<options.MinimumPurityReset)
             console.warn('SSOOptBox:BadSampling',['Not enough good points found, ',...
                 'rolling back and reducing growth rate...']);
+                
+            timeElapsedIteration = toc(timeStartIteration);
             if(isOutputOptimizationData)
                 console.info('Logging relevant information... ');
-                tic
+                timeStartLog = tic;
                 optimizationData.IterationData(iLog) = struct(... 
                     ... % system data
                     'EvaluatedDesignSamples',designSample,...
@@ -303,12 +308,26 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
                     'CandidateSpacesBeforeTrim',candidateSpaceGrown,...
                     'CandidateSpacesAfterTrim',[],...
                     'ComponentMeasureBeforeTrim',componentMeasureGrown,...
-                    'ComponentMeasureAfterTrim',[]);
-                % Finalizing
+                    'ComponentMeasureAfterTrim',[],...
+                    ... % timing data
+                    'TimeElapsedAdaptGrowthRate',timeElapsedAdaptGrowth,...
+                    'TimeElapsedGrow',timeElapsedGrow,...
+                    'TimeElapsedGenerate',timeElapsedGenerate,...
+                    'TimeElapsedEvaluate',timeElapsedEvaluate,...
+                    'TimeElapsedLabel',timeElapsedLabel,...
+                    'TimeElapsedCount',timeElapsedCount,...
+                    'TimeElapsedShape',0,...
+                    'TimeElapsedPrepare',0,...
+                    'TimeElapsedTrimmingOrder',0,...
+                    'TimeElapsedTrim',0,...
+                    'TimeElapsedLeanness',0,...
+                    'TimeElapsedMeasure',0,...
+                    'TimeElapsedConvergence',0,...
+                    'TimeElapsedIteration',timeElapsedIteration);
                 iLog = iLog + 1;
-                console.info('Elapsed time is %g seconds.\n',toc);
+                timeElapsedLog = toc(timeStartLog);
+                console.info('Elapsed time is %g seconds.\n',timeElapsedLog);
             end
-            % proceed to next iteration
             iExploration = iExploration + 1;
             continue;
         end
@@ -317,9 +336,10 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
         %% Modification Step A - Trimming: Remove Bad Points
         % get shape definition for each candidate space
         shapeSample = [];
+        timeElapsedShape = 0;
         if(candidateSpaceDefined && options.UseShapeSamplesExploration)
             console.info('Finding shape-defining design points... ');
-            tic
+            timeStartShape = tic;
             for i=1:nComponent
                 shapeDefinition{i} = candidateSpaceGrown(i).DesignSampleDefinition(candidateSpaceGrown(i).IsShapeDefinition,:);
             end
@@ -335,11 +355,12 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
                     shapeSample(nShape(i)+1:maxShape,componentIndex{i}) = shapeMissing;
                 end
             end
-            console.info('Elapsed time is %g seconds.\n',toc);
+            timeElapsedShape = toc(timeStartShape);
+            console.info('Elapsed time is %g seconds.\n',timeElapsedShape);
         end
         
         console.info('Preparing sample points used in trimming... ');
-        tic
+        timeStartPrepare = tic;
         isPadding = false(size(designSample,1),1);
         [trimmingSample,trimmingIsAcceptable,trimmingIsUseful,trimmingScore,isPadding] = sso_component_sub_prepare_trimming_samples(...
             designSample,...
@@ -351,35 +372,43 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
             shapeSample,...
             options.UsePaddingSamplesInTrimming,...
             options.ShapeSamplesUsefulExploration);
-        console.info('Elapsed time is %g seconds.\n',toc);
+        timeElapsedPrepare = toc(timeStartPrepare);
+        console.info('Elapsed time is %g seconds.\n',timeElapsedPrepare);
 
         % define order of trimming operation for samples that must be excluded
         console.info('Finding trimming order... ');
-        tic
+        timeStartTrimmingOrder = tic;
         trimmingOrder = options.TrimmingOrderFunction(~trimmingIsAcceptable,trimmingScore,options.TrimmingOrderOptions{:});
-        console.info('Elapsed time is %g seconds.\n',toc);
+        timeElapsedTrimmingOrder = toc(timeStartTrimmingOrder);
+        console.info('Elapsed time is %g seconds.\n',timeElapsedTrimmingOrder);
 
         % trim
         console.info('Performing component trimming operation... ');
-        tic
+        timeStartTrim = tic;
         trimmingLabelViable = trimmingIsAcceptable & trimmingIsUseful;
         candidateSpaceTrimmed = options.TrimmingOperationFunction(trimmingSample,trimmingLabelViable,trimmingOrder,componentIndex,candidateSpaceGrown,trimmingOperationOptions{:});
         candidateSpaceDefined = true;
-        console.info('Elapsed time is %g seconds.\n',toc);
+        timeElapsedTrim = toc(timeStartTrim);
+        console.info('Elapsed time is %g seconds.\n',timeElapsedTrim);
 
+        timeElapsedLeanness = 0;
         if(applyLeannessEachTrim)
             console.info('Applying the leanness condition... ');
+            timeStartLeanness = tic;
+            
             isRemoveLeanness = ~trimmingIsUseful & ~isPadding;
             isKeepLeanness = trimmingIsAcceptable & trimmingIsUseful & ~isPadding;
             trimmingOrder = trimming_order(isRemoveLeanness,trimmingScore,'OrderPreference','score-low-to-high');
             candidateSpaceTrimmed = component_trimming_leanness(trimmingSample,isKeepLeanness,trimmingOrder,componentIndex,candidateSpaceTrimmed,trimmingOperationOptions{:});
-            console.info('Elapsed time is %g seconds.\n',toc);
+            
+            timeElapsedLeanness = toc(timeStartLeanness);
+            console.info('Elapsed time is %g seconds.\n',timeElapsedLeanness);
         end
         
         
         %% Update information around Candidate Spaces
         console.info('Calculating measure... ');
-        tic
+        timeStartMeasure = tic;
         samplingBoxTrimmed = nan(2,nDimension);
         componentMeasureTrimmed = nan(1,nComponent);
         for i=1:nComponent
@@ -388,23 +417,26 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
         end
         measureTrimmed = prod(componentMeasureTrimmed);
         console.info('Elapsed time is %g seconds.\n',toc);
+        timeElapsedMeasure = toc(timeStartMeasure);
         
 
         %% Convergence Criteria
         console.info('Checking convergence... ');
-        tic
+        timeStartConvergence = tic;
         convergenceCriterion = all(abs((samplingBoxTrimmed-samplingBox)./samplingBox)<=options.ToleranceMeasureChangeExploration,'all');
         % Stop phase I if mu doesn't change significantly from step to step
         if(~options.FixIterNumberExploration && convergenceCriterion)
             convergedExploration = true;
         end
-        console.info('Elapsed time is %g seconds.\n',toc);
+        timeElapsedConvergence = toc(timeStartConvergence);
+        console.info('Elapsed time is %g seconds.\n',timeElapsedConvergence);
         
         
         %% Save Data
+        timeElapsedIteration = toc(timeStartIteration);
         if(isOutputOptimizationData)
             console.info('Logging relevant information... ');
-            tic
+            timeStartLog = tic;
             optimizationData.IterationData(iLog) = struct(... 
                 ... % system data
                 'EvaluatedDesignSamples',designSample,...
@@ -426,10 +458,25 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
                 'CandidateSpacesBeforeTrim',candidateSpaceGrown,...
                 'CandidateSpacesAfterTrim',candidateSpaceTrimmed,...
                 'ComponentMeasureBeforeTrim',componentMeasureGrown,...
-                'ComponentMeasureAfterTrim',componentMeasureTrimmed);
-            % Finalizing
+                'ComponentMeasureAfterTrim',componentMeasureTrimmed,...
+                ... % timing data
+                'TimeElapsedAdaptGrowthRate',timeElapsedAdaptGrowth,...
+                'TimeElapsedGrow',timeElapsedGrow,...
+                'TimeElapsedGenerate',timeElapsedGenerate,...
+                'TimeElapsedEvaluate',timeElapsedEvaluate,...
+                'TimeElapsedLabel',timeElapsedLabel,...
+                'TimeElapsedCount',timeElapsedCount,...
+                'TimeElapsedShape',timeElapsedShape,...
+                'TimeElapsedPrepare',timeElapsedPrepare,...
+                'TimeElapsedTrimmingOrder',timeElapsedTrimmingOrder,...
+                'TimeElapsedTrim',timeElapsedTrim,...
+                'TimeElapsedLeanness',timeElapsedLeanness,...
+                'TimeElapsedMeasure',timeElapsedMeasure,...
+                'TimeElapsedConvergence',timeElapsedConvergence,...
+                'TimeElapsedIteration',timeElapsedIteration);
             iLog = iLog + 1;
-            console.info('Elapsed time is %g seconds.\n',toc);
+            timeElapsedLog = toc(timeStartLog);
+            console.info('Elapsed time is %g seconds.\n',timeElapsedLog);
         end
         
         
@@ -458,6 +505,8 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
     iConsolidation = 1;
     convergedConsolidation = false;
     while((~convergedConsolidation) && (iConsolidation<=options.MaxIterConsolidation))
+        timeStartIteration = tic;
+        
         console.info([repelem('=',120),'\n']);
         console.info('Initiating Phase II - Consolidation: Iteration %d\n',iConsolidation);
 
@@ -467,7 +516,7 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
         nSample = get_current_array_entry(options.NumberSamplesPerIterationConsolidation,iConsolidation);
         
         console.info('Generating new sample points in candidate space... ');
-        tic
+        timeStartGenerate = tic;
         [designSample,paddingSample] = options.CandidateSpaceSamplingFunction(...
                 candidateSpace,...
                 componentIndex,...
@@ -483,37 +532,47 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
             extraPadding = options.SamplingMethodFunction(samplingBoxGrown,nPaddingMissing,options.SamplingMethodOptions{:});
             paddingSample = [paddingSample;extraPadding];
         end
-        console.info('Elapsed time is %g seconds.\n',toc);
+        timeElapsedGenerate = toc(timeStartGenerate);
+        console.info('Elapsed time is %g seconds.\n',timeElapsedGenerate);
         console.debug('- Number of samples generated: %g\n',size(designSample,1));
         console.debug('- Number of padding samples: %g\n',size(paddingSample,1));
         
         % Evaluate the samples
-        [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation] = ...
+        [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation,timeElapsedEvaluate] = ...
             sso_component_sub_evaluate_sample_points(designEvaluator,designSample,console);
         
         % Label samples according to desired requirement spaces problem type
-        [isAcceptable,isUseful] = sso_component_sub_label_requirement_spaces(...
+        [isAcceptable,isUseful,timeElapsedLabel] = sso_component_sub_label_requirement_spaces(...
             options.RequirementSpacesType,isGoodPerformance,isPhysicallyFeasible,console);
-        [nAcceptable,nUseful,nAcceptableUseful] = sso_component_sub_count_acceptable_useful(isAcceptable,isUseful,console);
+            
+        [nAcceptable,nUseful,nAcceptableUseful,timeElapsedCount] = sso_component_sub_count_acceptable_useful(isAcceptable,isUseful,console);
 
         
         %% Convergence Criteria - Purity
         console.info('Checking purity and convergence... ');
-        tic
+        timeStartConvergence = tic;
         samplePurity = nAcceptable/nSample;
         puritySatisfied = (samplePurity>=options.TolerancePurityConsolidation);
         if(~options.MaxIterConsolidation && puritySatisfied)
             convergedConsolidation = true;
         end
-        console.info('Elapsed time is %g seconds.\n',toc);
+        timeElapsedConvergence = toc(timeStartConvergence);
+        console.info('Elapsed time is %g seconds.\n',timeElapsedConvergence);
         
 
         %% Trimming: Remove Bad Points
         performTrim = (~convergedConsolidation && nAcceptable<nSample && ~puritySatisfied);
+        timeElapsedShape = 0;
+        timeElapsedPrepare = 0;
+        timeElapsedTrimmingOrder = 0;
+        timeElapsedTrim = 0;
+        timeElapsedLeanness = 0;
+        timeElapsedMeasure = 0;
         if(performTrim)
+            timeStartTrim = tic;
             % get shape definition for each candidate space
             console.info('Finding shape-defining design points... ');
-            tic
+            timeStartShape = tic;
             for i=1:nComponent
                 shapeDefinition{i} = candidateSpace(i).DesignSampleDefinition(candidateSpace(i).IsShapeDefinition,:);
             end
@@ -529,11 +588,12 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
                     shapeSample(nShape(i)+1:maxShape,componentIndex{i}) = shapeMissing;
                 end
             end
-            console.info('Elapsed time is %g seconds.\n',toc);
+            timeElapsedShape = toc(timeStartShape);
+            console.info('Elapsed time is %g seconds.\n',timeElapsedShape);
 
             % bundle together designs
             console.info('Preparing sample points used in trimming... ');
-            tic
+            timeStartPrepare = tic;
             consideredSample = [previousTrimmingSample;designSample];
             consideredisAcceptable = [previousTrimmingIsAcceptable;isAcceptable];
             consideredisUseful = [previousTrimmingIsUseful;isUseful];
@@ -550,42 +610,49 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
                     shapeSample,...
                     options.UsePaddingSamplesInTrimming,...
                     options.ShapeSamplesUsefulConsolidation);
-            console.info('Elapsed time is %g seconds.\n',toc);
+            timeElapsedPrepare = toc(timeStartPrepare);
+            console.info('Elapsed time is %g seconds.\n',timeElapsedPrepare);
 
             % define order of trimming operation for samples that must be excluded
             console.info('Finding trimming order... ');
-            tic
+            timeStartTrimmingOrder = tic;
             trimmingOrder = options.TrimmingOrderFunction(~trimmingIsAcceptable,trimmingScore,options.TrimmingOrderOptions{:});
-            console.info('Elapsed time is %g seconds.\n',toc);
+            timeElapsedTrimmingOrder = toc(timeStartTrimmingOrder);
+            console.info('Elapsed time is %g seconds.\n',timeElapsedTrimmingOrder);
 
             % trim
             console.info('Performing component trimming operation... ');
-            tic
+            timeStartTrim = tic;
             trimmingLabelViable = trimmingIsAcceptable & trimmingIsUseful;
             candidateSpaceTrimmed = options.TrimmingOperationFunction(trimmingSample,trimmingLabelViable,trimmingOrder,componentIndex,candidateSpace,trimmingOperationOptions{:});
-            console.info('Elapsed time is %g seconds.\n',toc);
+            timeElapsedTrim = toc(timeStartTrim);
+            console.info('Elapsed time is %g seconds.\n',timeElapsedTrim);
 
             if(applyLeannessEachTrim)
                 console.info('Applying the leanness condition... ');
+                timeStartLeanness = tic;
 
                 isRemoveLeanness = ~trimmingIsUseful & ~trimmingIsPadding;
                 isKeepLeanness = trimmingIsAcceptable & trimmingIsUseful & ~trimmingIsPadding;
                 trimmingOrder = trimming_order(isRemoveLeanness,trimmingScore,'OrderPreference','score-low-to-high');
                 candidateSpaceTrimmed = component_trimming_leanness(trimmingSample,isKeepLeanness,trimmingOrder,componentIndex,candidateSpaceTrimmed,trimmingOperationOptions{:});
 
-                console.info('Elapsed time is %g seconds.\n',toc);
+                timeElapsedLeanness = toc(timeStartLeanness);
+                console.info('Elapsed time is %g seconds.\n',timeElapsedLeanness);
             end
             
             %% Update information around Candidate Spaces
             console.info('Calculating measure... ');
-            tic
+            timeStartMeasure = tic;
             samplingBoxTrimmed = nan(2,nDimension);
             componentMeasureTrimmed = nan(1,nComponent);
             for i=1:nComponent
                 samplingBoxTrimmed(:,componentIndex{i}) = candidateSpaceTrimmed(i).SamplingBox;
                 componentMeasureTrimmed(i) = candidateSpaceTrimmed(i).Measure;
             end
-            console.info('Elapsed time is %g seconds.\n',toc);
+            measureTrimmed = prod(componentMeasureTrimmed);
+            timeElapsedMeasure = toc(timeStartMeasure);
+            console.info('Elapsed time is %g seconds.\n',timeElapsedMeasure);
 
 
             %% update samples being kept
@@ -612,9 +679,10 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
         
         
         %% Save Data
+        timeElapsedIteration = toc(timeStartIteration);
         if(isOutputOptimizationData)
             console.info('Logging relevant information... ');
-            tic
+            timeStartLog = tic;
             optimizationData.IterationData(iLog) = struct(... 
                 ... % system data
                 'EvaluatedDesignSamples',designSample,...
@@ -636,10 +704,25 @@ function [componentSolutionSpace,optimizationData] = sso_component_stochastic(de
                 'CandidateSpacesBeforeTrim',candidateSpace,...
                 'CandidateSpacesAfterTrim',candidateSpaceTrimmed,...
                 'ComponentMeasureBeforeTrim',previousComponentMeasure,...
-                'ComponentMeasureAfterTrim',componentMeasureTrimmed);
-            % Finalizing
+                'ComponentMeasureAfterTrim',componentMeasureTrimmed,...
+                ... % timing data
+                'TimeElapsedAdaptGrowthRate',0,...
+                'TimeElapsedGrow',0,...
+                'TimeElapsedGenerate',timeElapsedGenerate,...
+                'TimeElapsedEvaluate',timeElapsedEvaluate,...
+                'TimeElapsedLabel',timeElapsedLabel,...
+                'TimeElapsedCount',timeElapsedCount,...
+                'TimeElapsedShape',timeElapsedShape,...
+                'TimeElapsedPrepare',timeElapsedPrepare,...
+                'TimeElapsedTrimmingOrder',timeElapsedTrimmingOrder,...
+                'TimeElapsedTrim',timeElapsedTrim,...
+                'TimeElapsedLeanness',timeElapsedLeanness,...
+                'TimeElapsedMeasure',timeElapsedMeasure,...
+                'TimeElapsedConvergence',timeElapsedConvergence,...
+                'TimeElapsedIteration',timeElapsedIteration);
             iLog = iLog + 1;
-            console.info('Elapsed time is %g seconds.\n',toc);
+            timeElapsedLog = toc(timeStartLog);
+            console.info('Elapsed time is %g seconds.\n',timeElapsedLog);
         end
         
         %% Prepare for next iteration
@@ -668,9 +751,9 @@ end
 
 
 %% Evaluate Samples
-function [isGoodPerformance,isPhysicallyFeasible,performanceScore,outputEvaluation] = sso_component_sub_evaluate_sample_points(designEvaluator,designSample,console)
+function [isGoodPerformance,isPhysicallyFeasible,performanceScore,outputEvaluation,timeElapsedEvaluate] = sso_component_sub_evaluate_sample_points(designEvaluator,designSample,console)
     console.info('Evaluating sample points... ');
-    tic
+    timeStartEvaluate = tic;
     
     [performanceDeficit,physicalFeasibilityDeficit,outputEvaluation] = designEvaluator.evaluate(designSample);
 
@@ -682,7 +765,8 @@ function [isGoodPerformance,isPhysicallyFeasible,performanceScore,outputEvaluati
         isPhysicallyFeasible = true(size(designSample,1),1);
     end
     
-    console.info('Elapsed time is %g seconds.\n',toc);
+    timeElapsedEvaluate = toc(timeStartEvaluate);
+    console.info('Elapsed time is %g seconds.\n',timeElapsedEvaluate);
     console.debug('- Number of good samples: %g (%g%%)\n',sum(isGoodPerformance),100*sum(isGoodPerformance)/size(isGoodPerformance,1));
     console.debug('- Number of bad samples: %g (%g%%)\n',sum(~isGoodPerformance),100*sum(~isGoodPerformance)/size(isGoodPerformance,1));
     console.debug('- Number of physically feasible samples: %g (%g%%)\n',sum(isPhysicallyFeasible),100*sum(isPhysicallyFeasible)/size(isPhysicallyFeasible,1));
@@ -691,20 +775,28 @@ end
 
 
 %% Label Samples
-function [isAcceptable,isUseful] = sso_component_sub_label_requirement_spaces(requirementSpacesType,isGoodPerformance,isPhysicallyFeasible,console)
+function [isAcceptable,isUseful,timeElapsedLabel] = sso_component_sub_label_requirement_spaces(requirementSpacesType,isGoodPerformance,isPhysicallyFeasible,console)
     console.info('Creating labels for each design... ');
-    tic
+    timeStartLabel = tic;
+
     [isAcceptable,isUseful] = design_requirement_spaces_label(requirementSpacesType,isGoodPerformance,isPhysicallyFeasible);
-    console.info('Elapsed time is %g seconds.\n',toc);
+    
+    timeElapsedLabel = toc(timeStartLabel);
+    console.info('Elapsed time is %g seconds.\n',timeElapsedLabel);
 end
 
 
 %% Count Labels
-function [nAcceptable,nUseful,nAcceptableUseful] = sso_component_sub_count_acceptable_useful(isAcceptable,isUseful,console)
+function [nAcceptable,nUseful,nAcceptableUseful,timeElapsedCount] = sso_component_sub_count_acceptable_useful(isAcceptable,isUseful,console)
+    console.info('Counting labels... ');
+    timeStartCount = tic;
+
     nAcceptable = sum(isAcceptable);
     nUseful = sum(isUseful);
     nAcceptableUseful = sum(isAcceptable&isUseful);
-    
+
+    timeElapsedCount = toc(timeStartCount);
+    console.info('Elapsed time is %g seconds.\n',timeElapsedCount);
     console.debug('- Number of accepted samples: %g (%g%%)\n',nAcceptable,100*nAcceptable/size(isAcceptable,1));
     console.debug('- Number of useful samples: %g (%g%%)\n',nUseful,100*nUseful/size(isUseful,1));
     console.debug('- Number of accepted and useful samples: %g (%g%%)\n',nAcceptableUseful,100*nAcceptableUseful/size(isAcceptable,1));

@@ -413,6 +413,23 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
     zlabel('Normalized Volume (V/V_{ds})');
     legend(legendEntry);
 
+    % total time elapsed
+    figureHandle(8) = figure;
+    hold all;
+    legendEntry = {};
+    for i=1:nBox
+        plot(algoDataBox{i}.TotalTimeElapsed,'Color',options.BoxColor(i,:),boxPlotOptions{:});
+        legendEntry{end+1} = ['Box ',char(options.BoxLabel{i})];
+    end
+    for i=1:nComponent
+        plot(algoDataComponent{i}.TotalTimeElapsed,'Color',options.ComponentColor(i,:),componentPlotOptions{:});
+        legendEntry{end+1} = ['Component ',char(options.ComponentLabel{i})];
+    end
+    xlabel('Iteration Step')
+    ylabel('Total Time Elapsed (s)')
+    grid minor;
+    legend(legendEntry);
+
     % save if required
     if(~isempty(options.SaveFolder))
         save_print_figure(figureHandle(1),[options.SaveFolder,'TotalMeasure'],options.SaveFigureOptions{:});
@@ -422,7 +439,8 @@ function plot_sso_comparison_box_component_stochastic_metrics(algoDataBox,algoDa
         save_print_figure(figureHandle(5),[options.SaveFolder,'TotalMeasureRelativeRatio'],options.SaveFigureOptions{:});
         save_print_figure(figureHandle(6),[options.SaveFolder,'NormalizedMeasureSample'],options.SaveFigureOptions{:});
         save_print_figure(figureHandle(7),[options.SaveFolder,'TotalEvaluationsPurityNormalizedMeasure'],options.SaveFigureOptions{:});
-
+        save_print_figure(figureHandle(8),[options.SaveFolder,'TotalTimeElapsed'],options.SaveFigureOptions{:});
+        
         if(options.CloseFigureAfterSaving)
             close(figureHandle);
         end

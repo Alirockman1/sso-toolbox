@@ -188,6 +188,35 @@ function figureHandle = plot_sso_component_stochastic_metrics(algorithmData,vara
     ylabel('Ratio of Padding Samples')
     grid minor;
 
+    % time elapsed
+    figureHandle(10) = figure;
+    plot(algorithmData.TimeElapsedAdaptGrowthRate);
+    hold on;
+    plot(algorithmData.TimeElapsedGrow);
+    plot(algorithmData.TimeElapsedGenerate);
+    plot(algorithmData.TimeElapsedEvaluate);
+    plot(algorithmData.TimeElapsedLabel);
+    plot(algorithmData.TimeElapsedCount);
+    plot(algorithmData.TimeElapsedShape);
+    plot(algorithmData.TimeElapsedPrepare);
+    plot(algorithmData.TimeElapsedTrimmingOrder);
+    plot(algorithmData.TimeElapsedTrim);
+    plot(algorithmData.TimeElapsedLeanness);
+    plot(algorithmData.TimeElapsedMeasure);
+    plot(algorithmData.TimeElapsedConvergence);
+    plot(algorithmData.TimeElapsedIteration);
+    xlabel('Iteration Step')
+    ylabel('Time Elapsed (s)')
+    grid minor;
+    legend({'Adapt Growth Rate','Grow','Generate','Evaluate','Label','Count','Shape','Prepare','Trimming Order','Trim','Leanness','Measure','Convergence','Iteration'});
+
+    % total time elapsed
+    figureHandle(11) = figure;
+    plot(algorithmData.TotalTimeElapsed);
+    xlabel('Iteration Step')
+    ylabel('Total Time Elapsed (s)')
+    grid minor;
+
     % save if required
     if(~isempty(options.SaveFolder))
         save_print_figure(figureHandle(1),[options.SaveFolder,'TotalMeasure'],options.SaveFigureOptions{:});
@@ -199,6 +228,8 @@ function figureHandle = plot_sso_component_stochastic_metrics(algorithmData,vara
         save_print_figure(figureHandle(7),[options.SaveFolder,'NormalizedMeasureSample'],options.SaveFigureOptions{:});
         save_print_figure(figureHandle(8),[options.SaveFolder,'TotalEvaluationsPurityNormalizedMeasure'],options.SaveFigureOptions{:});
         save_print_figure(figureHandle(9),[options.SaveFolder,'PaddingRatio'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(10),[options.SaveFolder,'TimeElapsed'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(11),[options.SaveFolder,'TotalTimeElapsed'],options.SaveFigureOptions{:});
 
         if(options.CloseFigureAfterSaving)
             close(figureHandle);

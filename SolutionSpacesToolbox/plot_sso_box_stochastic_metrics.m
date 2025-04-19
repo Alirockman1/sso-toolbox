@@ -177,6 +177,31 @@ function figureHandle = plot_sso_box_stochastic_metrics(algorithmData,varargin)
     ylabel('Sample Purity');
     zlabel('Normalized Box Volume (V/V_{ds})');
 
+    % time elapsed
+    figureHandle(9) = figure;
+    plot(algorithmData.TimeElapsedAdaptGrowthRate);
+    hold on;
+    plot(algorithmData.TimeElapsedGrow);
+    plot(algorithmData.TimeElapsedGenerate);
+    plot(algorithmData.TimeElapsedEvaluate);
+    plot(algorithmData.TimeElapsedLabel);
+    plot(algorithmData.TimeElapsedCount);
+    plot(algorithmData.TimeElapsedMeasure);
+    plot(algorithmData.TimeElapsedTrim);
+    plot(algorithmData.TimeElapsedConvergence);
+    plot(algorithmData.TimeElapsedIteration);
+    xlabel('Iteration Step')
+    ylabel('Time Elapsed (s)')
+    grid minor;
+    legend({'Adapt Growth Rate','Grow','Generate','Evaluate','Label','Count','Measure','Trim','Convergence','Iteration'});
+
+    % total time elapsed
+    figureHandle(10) = figure;
+    plot(algorithmData.TotalTimeElapsed);
+    xlabel('Iteration Step')
+    ylabel('Total Time Elapsed (s)')
+    grid minor;
+
     % save if required
     if(~isempty(options.SaveFolder))
         save_print_figure(figureHandle(1),[options.SaveFolder,'TotalMeasure'],options.SaveFigureOptions{:});
@@ -187,6 +212,8 @@ function figureHandle = plot_sso_box_stochastic_metrics(algorithmData,varargin)
         save_print_figure(figureHandle(6),[options.SaveFolder,'TotalMeasureRelativeRatio'],options.SaveFigureOptions{:});
         save_print_figure(figureHandle(7),[options.SaveFolder,'NormalizedMeasureSample'],options.SaveFigureOptions{:});
         save_print_figure(figureHandle(8),[options.SaveFolder,'TotalEvaluationsPurityNormalizedMeasure'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(9),[options.SaveFolder,'TimeElapsed'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(10),[options.SaveFolder,'TotalTimeElapsed'],options.SaveFigureOptions{:});
 
         if(options.CloseFigureAfterSaving)
             close(figureHandle);
