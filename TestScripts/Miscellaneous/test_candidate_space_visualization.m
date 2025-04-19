@@ -244,23 +244,27 @@ plot(designSample(~isInside,1),designSample(~isInside,2),optionsPointOutside{:})
 candidateSpace.plot_candidate_space(gcf,'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.1,'EdgeColor',colorCandidateSpaceInside);
 anchorPoints = candidateSpace.AnchorPoint;
 plot(anchorPoints(:,1),anchorPoints(:,2),'linestyle','none','Marker','*','MarkerSize',10,'linewidth',2.0,'color',color_palette_tol('purple'));
+legend({'Remaining Design Points','Removed Design Points', 'Candidate Component Space', 'Anchor Points'},'location','southeast');
+save_print_figure(gcf,[saveFolder,'CornerBoxRemovalExample'],'Size',figureSize*1.25,'PrintFormat',{'png','pdf'});
 
 figure;
 hold all;
 candidateSpace.plot_candidate_space(gcf,'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.0,'EdgeColor',colorCandidateSpaceInside,'Linestyle','--');
 candidateSpaceGrown.plot_candidate_space(gcf,'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.1,'EdgeColor',colorCandidateSpaceInside,'Linestyle','-');
-plot(candidateSpaceGrown.DesignSampleDefinition(candidateSpaceGrown.IsInsideDefinition,1),candidateSpaceGrown.DesignSampleDefinition(candidateSpaceGrown.IsInsideDefinition,2),'*','MarkerSize',6,'color',colorPointInside);
 plot(anchorPoints(:,1),anchorPoints(:,2),'linestyle','none','Marker','*','MarkerSize',10,'linewidth',2.0,'color',color_palette_tol('purple'));
 anchorPointsGrown = candidateSpaceGrown.AnchorPoint;
 plot(anchorPointsGrown(:,1),anchorPointsGrown(:,2),'linestyle','none','Marker','*','MarkerSize',10,'linewidth',2.0,'color',color_palette_tol('purple'));
+plot(candidateSpaceGrown.DesignSampleDefinition(candidateSpaceGrown.IsInsideDefinition,1),candidateSpaceGrown.DesignSampleDefinition(candidateSpaceGrown.IsInsideDefinition,2),'*','MarkerSize',6,'color',colorPointInside);
 growthVectorAnchor = anchorPointsGrown - anchorPoints;
 quiver(anchorPoints(:,1),anchorPoints(:,2),growthVectorAnchor(:,1),growthVectorAnchor(:,2),optionsVector{:});
+legend({'Original Candidate Component Space','Grown Candidate Component Space',...
+    'Original Anchor Points','Grown Anchor Points',...
+    'Expanded Design Points',...
+    'Expansion Vector'},'location','southeast');
+save_print_figure(gcf,[saveFolder,'CornerBoxRemovalGrowth'],'Size',figureSize*1.25,'PrintFormat',{'png','pdf'});
 
 
-
-
-
-%% doksem delete later
+%% impact of different trimming orders 
 isBad = false(nTest,1);
 badIndex = [23,26,11,18,4,5,12,14,2,1,21,24,17];
 isBad(badIndex) = true;
@@ -281,7 +285,6 @@ end
 candidateSpace = CandidateSpaceConvexHull([0,0],[1,1]);
 candidateSpace = component_trimming_operation(designSample,isGood,badIndex,{[1,2]'},candidateSpace,'TrimmingMethodFunction',@component_trimming_method_planar_trimming,'PassesCriterion','full');
 candidateSpace.plot_candidate_space(gcf,'FaceAlpha',0.3,'FaceColor','c');
-
 
 
 

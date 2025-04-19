@@ -125,7 +125,7 @@ axis([0.1 0.8 0.1 0.8]);
 grid off;
 set(gca,'XColor', 'none','YColor','none');
 legend({'Corner Removed at Slack=1','Corner Removed at Slack=0.5','Corner Removed at Slack=0','Removed Design','Remaining Good Designs'},'location','southeast');
-save_print_figure(gcf,[saveFolder,'PlanarTrimming-Slack'],'PrintFormat',{'png','pdf'});
+save_print_figure(gcf,[saveFolder,'CornerBoxRemoval-Slack'],'PrintFormat',{'png','pdf'});
 
 
 %% Save and Stop Transcripting
