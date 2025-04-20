@@ -63,7 +63,7 @@ save_print_figure(gcf,[saveFolder,'MaterialRelationEtoSigmaY'],'PrintFormat',{'p
 
 %%
 trussAnalysisChoice = '6-Bar-2D';
-fixRadius = true;
+fixRadius = false;
 useBoxResultForComponent = false;
 
 computeDisplacement = true;
@@ -105,7 +105,7 @@ switch trussAnalysisChoice
             1 3; ...
             2 3];
     case '4-Bar-2D'
-        nSample = 500;
+        nSample = 700;
         maxIterDisplacement = 150;
         maxIterMass = 20;
         maxIterDisplacementAndMass = 200;
@@ -134,7 +134,7 @@ switch trussAnalysisChoice
             3 4; ...
             2 4];
     case '6-Bar-2D'
-        nSample = 600;
+        nSample = 900;
         maxIterDisplacement = 200;
         maxIterMass = 20;
         maxIterDisplacementAndMass = 30;
@@ -605,8 +605,41 @@ nodeDisplacementInitial = ...
 	    elementCrossSectionArea,...
 	    elementYoungsModulus);
 
+is3dPlot = (size(systemParameter.NodePosition,2) == 3);
+
 figure;
-plot_truss_deformation(gcf,systemParameter.NodePosition,systemParameter.NodeElement,nodeDisplacementInitial);
+
+plot_truss_deformation(gcf,systemParameter.NodePosition,systemParameter.NodeElement,'TrussPlotOptions',{'Color',color_palette_tol('blue')},'MaximumLinewidth',3.0,'ShowBarNumber',true,'BarNumberOptions',{'HorizontalAlignment','right','VerticalAlignment','bottom','FontSize',16});
+
+isTrussTip = (systemParameter.NodeForce~=0);
+positionTip = systemParameter.NodePosition(any(isTrussTip,2),:);
+appliedForceOptions = {'Color',color_palette_tol('red'),'LineWidth',3.0};
+if(is3dPlot)
+    [wallY,wallZ] = meshgrid([-0.5,1.5]);
+    wallX = zeros(size(wallY));
+    wallOptions = {'FaceColor','w','EdgeColor','k','FaceAlpha',0.7};
+    handleWall = surf(wallX,wallY,wallZ,wallOptions{:});
+
+    handleForce = quiver3(positionTip(1),positionTip(2),positionTip(3),0,0,-0.5,appliedForceOptions{:});
+
+    set(gca,'XColor', 'none','YColor','none','ZColor','none');
+
+    axis('tight','equal','vis3d');
+    camproj('perspective');
+    cameratoolbar; % better adjust angle/perspective
+else
+    wallX = [0 0];
+    wallY = [-0.1 1.1];
+    wallOptions = {'Linewidth',8.0,'Color','k'};
+    handleWall = plot(wallX,wallY,wallOptions{:});
+
+    handleForce = quiver(positionTip(1),positionTip(2),0,-0.5,appliedForceOptions{:});
+
+    set(gca,'XColor', 'none','YColor','none');
+
+    axis('tight','equal');
+end
+
 save_print_figure(gcf,[saveFolder,'InitialTrussDeformation'],'PrintFormat',{'png','pdf'},'Size',figureSize);
 
 
@@ -962,7 +995,10 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
     % (14) legend
     parser.addParameter('IncludeLegend',false);
     parser.addParameter('LegendOptions',{});
-    
+    % (15) title
+    parser.addParameter('ShowTitle',true);
+    parser.addParameter('TitleOptions',{});
+
     parser.parse(varargin{:});
     options = parser.Results;
 
@@ -1031,6 +1067,8 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
     % (13) axes
     % (14) legend
     defaultCommonLegendOptions = {'location','west'};
+    % (15) title
+    defaultCommonTitleOptions = {'FontSize',14};
 
     %% merge options
     % (1) box - displacement 
@@ -1086,6 +1124,10 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
     [~,legendOptions] = merge_name_value_pair_argument(...
         defaultCommonLegendOptions,...
         options.LegendOptions);
+    % (15) title
+    [~,titleOptions] = merge_name_value_pair_argument(...
+        defaultCommonTitleOptions,...
+        options.TitleOptions);
 
 
     %% plot each element (where applicable)
@@ -1311,6 +1353,13 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
         legentText = {legendTextAll{~cellfun(@isempty,handleObjectAll)}};
 
         legend(handleObject,legentText,legendOptions{:});
+    end
+
+    if(options.ShowTitle)
+        for i=1:nElement
+            figure(figureHandle(i));
+            title(['Element ',num2str(i)],titleOptions{:});
+        end
     end
 
     if(nargout<1)
