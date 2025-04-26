@@ -66,7 +66,7 @@ function performanceMeasure = bead_slide_time(designSample,systemParameter)
     for i=1:nSample
         % create a base entry with the rough points given
         widthFine = linspace(0,distanceX,nInterpolationPoints);
-        heightFine = [0,designSample{1}(widthFine(2:end-1))-distanceY,-distanceY];
+        heightFine = designSample{i}(widthFine)-distanceY;
 
         % estimate the slope of the curve with finite differences
         slopeFine = finite_differences_derivative(heightFine,widthFine,1,derivativeNeighborPoint);

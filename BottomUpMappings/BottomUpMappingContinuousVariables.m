@@ -74,6 +74,22 @@ classdef BottomUpMappingContinuousVariables < BottomUpMappingBase
             %
             %   See also.
             BaseVariablesStencils
+
+            % FixedPointIndex Index of the fixed points
+            %   FIXEDPOINTINDEX is the index of the fixed points.
+            %
+            %   FIXEDPOINTINDEX : (1,nDesignVariable) cell
+            %
+            %   See also FixedPointValue.
+            FixedPointIndex 
+
+            % FixedPointValue Value of the fixed points
+            %   FIXEDPOINTVALUE is the value of the fixed points.
+            %
+            %   FIXEDPOINTVALUE : (1,nDesignVariable) cell
+            %
+            %   See also FixedPointIndex.
+            FixedPointValue
         end
     
         methods
@@ -145,6 +161,8 @@ classdef BottomUpMappingContinuousVariables < BottomUpMappingBase
                 parser.addParameter('InterpolationMethodFunction',@interp1);
                 parser.addParameter('InterpolationMethodOptions',{'pchip','extrap'});
                 parser.addParameter('NumberOfStencils',1);
+                parser.addParameter('FixedPointsBaseVariables',[]);
+                parser.addParameter('FixedPointsFunctionalValues',[]);
                 parser.parse(varargin{:});
                 options = parser.Results;
     
@@ -179,6 +197,22 @@ classdef BottomUpMappingContinuousVariables < BottomUpMappingBase
 
                     obj.DesignVariableIndexMapping = [obj.DesignVariableIndexMapping,i*ones(1,nStencil(i))];
                     obj.BaseVariablesStencils{i} = linspace(baseVariableDesignSpace(1,i),baseVariableDesignSpace(2,i),nStencil(i));
+                end
+
+                % Adapt fixed points
+                if(~isempty(options.FixedPointsBaseVariables))
+                    obj.FixedPointIndex = cell(1,nDesignVariable);
+                    obj.FixedPointValue = cell(1,nDesignVariable);
+                    for i=1:nDesignVariable
+                        isFixed = ~isnan(options.FixedPointsBaseVariables(:,i));
+                        nFixed = sum(isFixed);
+
+                        [obj.BaseVariablesStencils{i},sortOrder] = unique([obj.BaseVariablesStencils{i},options.FixedPointsBaseVariables(isFixed,i)'],'sorted');
+                        originalOrder = 1:length(obj.BaseVariablesStencils{i});
+
+                        [~,obj.FixedPointIndex{i}] = ismember(originalOrder(originalOrder(end-nFixed+1:end)),sortOrder(:)');
+                        obj.FixedPointValue{i} = options.FixedPointsFunctionalValues(isFixed,i)';
+                    end
                 end
     
                 % Adapt component index
@@ -238,7 +272,16 @@ classdef BottomUpMappingContinuousVariables < BottomUpMappingBase
                         
                         if ~isempty(variableIndices)
                             % Extract the stencil values for this design variable
-                            stencilValues = designSample(i, variableIndices);
+                            stencilValuesSample = designSample(i, variableIndices);
+
+                            % If the design variable is a fixed point, use the fixed point value
+                            if(~isempty(obj.FixedPointIndex{j}))
+                                stencilValues = nan(1,length(obj.BaseVariablesStencils{j}));
+                                stencilValues(obj.FixedPointIndex{j}) = obj.FixedPointValue{j};
+                                stencilValues(isnan(stencilValues)) = stencilValuesSample;
+                            else
+                                stencilValues = stencilValuesSample;
+                            end
                             
                             % Create a function handle that uses the interpolation method
                             % to compute values at any parameter point
