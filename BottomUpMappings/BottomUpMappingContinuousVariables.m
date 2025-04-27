@@ -275,7 +275,7 @@ classdef BottomUpMappingContinuousVariables < BottomUpMappingBase
                             stencilValuesSample = designSample(i, variableIndices);
 
                             % If the design variable is a fixed point, use the fixed point value
-                            if(~isempty(obj.FixedPointIndex{j}))
+                            if(~isempty(obj.FixedPointIndex) && ~isempty(obj.FixedPointIndex{j}))
                                 stencilValues = nan(1,length(obj.BaseVariablesStencils{j}));
                                 stencilValues(obj.FixedPointIndex{j}) = obj.FixedPointValue{j};
                                 stencilValues(isnan(stencilValues)) = stencilValuesSample;

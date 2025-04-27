@@ -1,27 +1,3 @@
-%TEST_COMPONENT_BRACHISTOCHRONE Brachistochrone / Bead Descent problem 
-%   TEST_COMPONENT_BRACHISTOCHRONE uses a discretized version of the bead 
-%   descent problem to test the computation of component solution spaces.
-%   First, the analytical curve of least time (brachistochrone) is computed, 
-%   followed by the box-shaped solution space (with a requirement around the 
-%   time it takes for the slide from A to B happen) and the component solution 
-%   spaces. The results are compared after all computations are done. 
-%
-%   Copyright 2025 Eduardo Rodrigues Della Noce
-%   SPDX-License-Identifier: Apache-2.0
-
-%   Licensed under the Apache License, Version 2.0 (the "License");
-%   you may not use this file except in compliance with the License.
-%   You may obtain a copy of the License at
-%   
-%       http://www.apache.org/licenses/LICENSE-2.0
-%   
-%   Unless required by applicable law or agreed to in writing, software
-%   distributed under the License is distributed on an "AS IS" BASIS,
-%   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-%   See the License for the specific language governing permissions and
-%   limitations under the License.
-
-
 %% cleanup
 close all;
 fclose all;
@@ -44,28 +20,33 @@ figureSize = [goldenRatio 1]*8.5;
 
 %% setup problem parameters
 nDivision = 15; % number of design variables (discretization)
+initialPosition = 1;
+initialVelocity = 0;
+mass = 1;
+timeSpan = 10;
 
-initialDistanceWidth = 4; % distance in longitudinal (x) direction
-initialDistanceHeight = 2; % distance in vertical (y) direction
-nInterpolationPoint = 5000; % number of interpolation points
+dampingCoefficient = 0.01;
+maxStiffnessForce = 10;
 
-
-%% Problem Setup
-systemFunction = @bead_slide_time_continuous;
-systemParameter(1) = initialDistanceWidth; % distance in longitudinal (x) direction
-systemParameter(2) = initialDistanceHeight; % distance in vertical (y) direction
-systemParameter(3) = nInterpolationPoint; % number of interpolation points
-
-discretizationStep = (initialDistanceWidth)/(nDivision+1);
-functionalDesignSpace = [-initialDistanceHeight;initialDistanceHeight];
-baseVariableDesignSpace = [discretizationStep;initialDistanceWidth-discretizationStep];
-initialDesign = initialDistanceHeight/2;
+maximumDisplacement = 1;
 
 
-%% Run Initial Optimization (Find Optimal Time)
-% initial guess - linear interpolation
+
+%% setup design space
+baseVariableDesignSpace = [-initialPosition;initialPosition];
+functionalDesignSpace = [-maxStiffnessForce;maxStiffnessForce];
+initialDesign = maxStiffnessForce;
+
+
+%% setup system function
+systemFunction = @one_mass_oscillator_continuous_stiffness_only;
+systemParameter = [mass,initialPosition,initialVelocity,timeSpan,dampingCoefficient];
+
 continuousMapping = BottomUpMappingFunction(systemFunction,systemParameter);
-[bottomUpMapping,functionalDiscreteBound,discreteInitialDesign,discreteComponentIndex] = BottomUpMappingContinuousVariables(continuousMapping, baseVariableDesignSpace, functionalDesignSpace, initialDesign, {1}, 'NumberOfStencils',nDivision,'FixedPointsBaseVariables',[0;initialDistanceWidth],'FixedPointsFunctionalValues',[initialDistanceHeight;0]);
+[bottomUpMapping,functionalDiscreteBound,discreteInitialDesign,discreteComponentIndex] = BottomUpMappingContinuousVariables(continuousMapping, baseVariableDesignSpace, functionalDesignSpace, initialDesign, {1}, 'NumberOfStencils',nDivision);
+
+% change initial design to be a linear function
+discreteInitialDesign = linspace(-maxStiffnessForce,maxStiffnessForce,length(discreteInitialDesign));
 
 % Split component indices into groups of 3
 nGroups = ceil(nDivision/3);
@@ -77,84 +58,43 @@ end
 componentIndexGroups{nGroups} = discreteComponentIndex{1}((nGroups-1)*3+1:end);
 discreteComponentIndex = componentIndexGroups;
 
-% create slope for initial design
-discreteInitialDesign = linspace(initialDistanceHeight,0,length(discreteInitialDesign)+2);
-discreteInitialDesign = discreteInitialDesign(2:end-1);
 
-
-[designOptimal,timeOptimal,optimizationOutput,systemResponseData] = design_optimize_quantities_of_interest(...
-    bottomUpMapping,...
-    discreteInitialDesign,...
-    functionalDiscreteBound(1,:),...
-    functionalDiscreteBound(2,:),...
-    @(performanceMeasure)performanceMeasure,...
-    'OptimizationMethodOptions',{'Display','iter-detailed'});
-referenceTime = bottomUpMapping.response(discreteInitialDesign);
-
-
-%% Solve  Problem Analytically (Reference)
-radiusAngleOptimal = fsolve(@(rt)brachistochrone_solve_analytical(rt,systemParameter),[1 1]);
-anglePathAnalytical = linspace(0,radiusAngleOptimal(2),nInterpolationPoint);
-pathWidthAnalytical = radiusAngleOptimal(1)*(anglePathAnalytical-sin(anglePathAnalytical));
-pathHeightAnalytical = radiusAngleOptimal(1)*(-1+cos(anglePathAnalytical)) + initialDistanceHeight;
-
-
-%% plot analytical and numerical solution
-figure; 
-hold on;
-handleNumericalOptimal = plot(bottomUpMapping.BaseVariablesStencils{1},[initialDistanceHeight,designOptimal,0]','bo-','linewidth',1);
-plot([0 systemParameter(1)],[0 0],'k--');
-handleBrachistochrone = plot(pathWidthAnalytical,pathHeightAnalytical,'r','linewidth',1);
-grid minor;
-xlim([0 systemParameter(1)])
-title(sprintf('Approximate Optimal Time: %gs',timeOptimal));
-xlabel('Longitudinal Distance [m]');
-ylabel('Vertical Distance [m]');
-legend([handleNumericalOptimal handleBrachistochrone],{'Numerical Optimal Solution','Analytical Optimal Solution'});
-save_print_figure(gcf,[saveFolder,'AnalyticalNumericalOptimalSolution'],'Size',figureSize,'PrintFormat',{'png','pdf'});
+%% setup performance limits
+performanceLowerLimit = -maximumDisplacement;
+performanceUpperLimit = maximumDisplacement;
+designEvaluator = DesignEvaluatorBottomUpMapping(bottomUpMapping,performanceLowerLimit,performanceUpperLimit);
 
 
 %% Perform Solution Space Computation
-performanceLowerLimit = -inf;
-performanceUpperLimit = referenceTime;
-
 optionsBox = sso_stochastic_options('box',...
     'UseAdaptiveGrowthRate',true,...
     'NumberSamplesPerIteration',100,...
     'GrowthRate',0.005,...
-    'MinimumPurityReset',0.0,...
     'FixIterNumberExploration',true,...
     'FixIterNumberConsolidation',true,...
     'MaxIterExploration',200,...
     'MaxIterConsolidation',200,...
-    'TrimmingOperationOptions',{'PassesCriterion','reduced'},...
+    'TrimmingOperationOptions',{'PassesCriterion','single'},...
     'TrimmingOrderOptions',{'OrderPreference','score'},...
     'LoggingLevel','all');
 
 rng(rngState);
-designEvaluator = DesignEvaluatorBottomUpMapping(bottomUpMapping,performanceLowerLimit,performanceUpperLimit);
 [designBoxOptimal,optimizationDataBox] = sso_box_stochastic(designEvaluator,...
-    designOptimal,functionalDiscreteBound(1,:),functionalDiscreteBound(2,:),optionsBox);
+    discreteInitialDesign,functionalDiscreteBound(1,:),functionalDiscreteBound(2,:),optionsBox);
 
 
 %% plot
 figure; 
 hold on;
 for i=1:nDivision
-    handleSolutionSpacePlot = plot([bottomUpMapping.BaseVariablesStencils{1}(1+i) bottomUpMapping.BaseVariablesStencils{1}(1+i)],designBoxOptimal(:,i),'g-','linewidth',12);
+    handleSolutionSpacePlot = plot([bottomUpMapping.BaseVariablesStencils{1}(i) bottomUpMapping.BaseVariablesStencils{1}(i)],designBoxOptimal(:,i),'g-','linewidth',12);
 end
-handleNumericalOptimal = plot(bottomUpMapping.BaseVariablesStencils{1},[initialDistanceHeight,designOptimal,0]','bo-','linewidth',1);
-plot([0 systemParameter(1)],[0 0],'k--');
-handleBrachistochrone = plot(pathWidthAnalytical,pathHeightAnalytical,'r','linewidth',1);
+plot([-initialPosition initialPosition],[0 0],'k--');
 grid minor;
-xlim([0 systemParameter(1)])
-title(sprintf('Approximate Optimal Time: %gs | Time Requirement: %gs',...
-    timeOptimal,performanceUpperLimit));
-xlabel('Longitudinal Distance [m]');
-ylabel('Vertical Distance [m]');
-legend([handleSolutionSpacePlot handleNumericalOptimal handleBrachistochrone],{'Solution Spaces', ...
-    'Numerical Optimal Solution','Analytical Optimal Solution'})
-save_print_figure(gcf,[saveFolder,'BoxShapedSolutionSpaceCurve'],'Size',figureSize,'PrintFormat',{'png','pdf'});
+xlim([-initialPosition initialPosition])
+xlabel('Displacement [m]');
+ylabel('Force Applied by Spring [N]');
+legend(handleSolutionSpacePlot,'Solution Spaces','Location','northwest');
 
 
 %% same problem, component solution spaces - planar trimming
@@ -162,7 +102,6 @@ options = sso_stochastic_options('component',...
     'UseAdaptiveGrowthRate',true,...
     'TargetAcceptedRatioExploration',0.7,...
     'GrowthRate',0.005,...
-    'MinimumPurityReset',0.0,...
     'FixIterNumberExploration',true,...
     'FixIterNumberConsolidation',true,...
     'MaxIterExploration',200,...
@@ -174,12 +113,12 @@ options = sso_stochastic_options('component',...
     'UsePreviousEvaluatedSamplesConsolidation',false,...
     'ApplyLeanness','never',...
     'LoggingLevel','all',...
-    'TrimmingOperationOptions',{'PassesCriterion','reduced'},...
+    'TrimmingOperationOptions',{'PassesCriterion','single'},...
     'TrimmingOrderOptions',{'OrderPreference','score'});
 
 rng(rngState);
 [planarTrimmingSolutionSpace,optimizationDataPlanarTrimming] = sso_component_stochastic(designEvaluator,...
-    designOptimal,functionalDiscreteBound(1,:),functionalDiscreteBound(2,:),discreteComponentIndex,options);
+    discreteInitialDesign,functionalDiscreteBound(1,:),functionalDiscreteBound(2,:),discreteComponentIndex,options);
 
 
 %% same problem, component solution spaces - corner box removal
@@ -187,7 +126,6 @@ options = sso_stochastic_options('component',...
     'UseAdaptiveGrowthRate',true,...
     'TargetAcceptedRatioExploration',0.7,...
     'GrowthRate',0.005,...
-    'MinimumPurityReset',0.0,...
     'FixIterNumberExploration',true,...
     'FixIterNumberConsolidation',true,...
     'MaxIterExploration',200,...
@@ -200,13 +138,13 @@ options = sso_stochastic_options('component',...
     'UsePreviousEvaluatedSamplesConsolidation',false,...
     'ApplyLeanness','never',...
     'LoggingLevel','all',...
-    'TrimmingOperationOptions',{'PassesCriterion','reduced'},...
+    'TrimmingOperationOptions',{'PassesCriterion','single'},...
     'TrimmingOrderOptions',{'OrderPreference','score'},...
     'MaximumGrowthAdaptationFactor',1.0);
 
 rng(rngState);
 [cornerBoxRemovalSolutionSpace,optimizationDataCornerBoxRemoval] = sso_component_stochastic(designEvaluator,...
-    designOptimal,functionalDiscreteBound(1,:),functionalDiscreteBound(2,:),discreteComponentIndex,options);
+    discreteInitialDesign,functionalDiscreteBound(1,:),functionalDiscreteBound(2,:),discreteComponentIndex,options);
 
 
 %% visualization
@@ -232,9 +170,8 @@ for i=1:size(discreteComponentIndex,2)
     muCornerBoxRemoval(i) = cornerBoxRemovalSolutionSpace(i).Measure;
 
     %
-    title(sprintf('Box Volume = %gm^3 ; Planar Trimming Volume = %gm^3 ; Corner Box Removal Volume = %gm^3 ;',...
+    title(sprintf('Box Volume = %g(N/m)^3 ; Planar Trimming Volume = %g(N/m)^3 ; Corner Box Removal Volume = %g(N/m)^3 ;',...
             muBox(i),muComponent(i),muCornerBoxRemoval(i)));
-    save_print_figure(gcf,[saveFolder,sprintf('ComponentSolutionSpace-%d',i)],'Size',figureSize,'PrintFormat',{'png','pdf'});
 end
 
 fprintf('\nTotal Box Volume: %g\nTotal Component Volume (Planar): %g\nTotal Component Volume (Corner): %g\nTotal Increase (Planar): %gx\nTotal Increase (Corner): %gx\n',...
