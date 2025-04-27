@@ -19,7 +19,7 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %% plot results
-nDivisions = 5;
+nDivisions = 7;
 file = sprintf('ContinuousTruss-%d-Division.mat',nDivisions);
 load(file,'algoData');
 
