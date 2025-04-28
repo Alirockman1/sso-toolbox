@@ -1,34 +1,19 @@
-function performanceMeasure = bead_slide_time(designSample,systemParameter)
-%BEAD_SLIDE_TIME Bottom-up Mapping (Brachistochrone Problem)
-%   BEAD_SLIDE_TIME returns the amount of time a bead takes to slide down a 
-%   given curve. A discretized description of the curve is given and points in 
-%   the middle are interpolated using a 'pchip' interpolation strategy. 
-%   The total time is calculated using a simple integration strategy with 
-%   trapezoidal approximations. Gravity has the assumed value of 9.80[m/s^2].
-%   The optimum of this function is a brachistochrone.
+function performanceMeasure = bead_slide_time_continuous(designSample,systemParameter)
+%BEAD_SLIDE_TIME_CONTINUOUS Bottom-Up Mapping (Brachistochrone Problem)
+%   BEAD_SLIDE_TIME_CONTINUOUS calculates the time a bead takes to slide down a
+%   given curve. The curve is described by discrete points that are interpolated
+%   using 'pchip' interpolation. The total time is calculated using trapezoidal
+%   integration, assuming gravity of 9.80[m/s^2]. The optimal solution to this
+%   problem is known as the brachistochrone curve.
 %
-%   PERFORMANCEMEASURE = BEAD_SLIDE_TIME(DESIGNSAMPLE,SYSTEMPARAMETER) 
-%   receives the desired discretized height points of the curve at each division
-%   in DESIGNSAMPLE, the initial horizontal/vertical distances and the number of
-%   interpolation points in SYSTEMPARAMETER, and returns the sliding time for 
-%   each curve / design sample point in PERFORMANCEMEASURE.
-%
-%   Example
-%       Assuming a straight line between the starting and end point with
-%       1m distance in both directions, 5 divisions and 10 
-%       interpolation points:
-%           distanceX = 1;
-%           distanceY = 1;
-%           nInterpolation = 10;
-%           curve = linspace(distanceY,0,7); % straight line from start to finish
-%           designSample = curve(2:6); % remove start/end point
-%           systemParameter = [distanceX,distanceY,nInterpolation];
-%           performanceMeasure = BEAD_SLIDE_TIME(designSample,systemParameter);
-%       This will return the time it takes for a bead to roll this
-%       straight line. 
+%   PERFORMANCEMEASURE = BEAD_SLIDE_TIME_CONTINUOUS(DESIGNSAMPLE,
+%   SYSTEMPARAMETER) receives the functionals used to determine height points of 
+%   the curve in DESIGNSAMPLE and the system configuration in SYSTEMPARAMETER, 
+%   returning the sliding time for each curve in PERFORMANCEMEASURE.
 %
 %   Inputs:
-%       - DESIGNSAMPLE : (nSample,nDivision) double
+%       - DESIGNSAMPLE : (nSample,1) function_handle
+%           -- function handle to the height points of the curve
 %       - SYSTEMPARAMETER : (1,3) double
 %           -- (1) : horizontal distance
 %           -- (2) : vertical distance
@@ -36,6 +21,7 @@ function performanceMeasure = bead_slide_time(designSample,systemParameter)
 %
 %   Outputs:
 %       - PERFORMANCEMEASURE : (nSample,1) double
+%           -- sliding time for each curve
 %
 %   See also interp1, trapz, solve_analytical_brachistochrone.
 %

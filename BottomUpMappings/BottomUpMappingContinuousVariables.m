@@ -1,18 +1,18 @@
 classdef BottomUpMappingContinuousVariables < BottomUpMappingBase
     %BOTTOMUPMAPPINGCONTINUOUSVARIABLES Bottom-Up Mapping with continuous design variables
-    %	BOTTOMUPMAPPINGCONTINUOUSVARIABLES takes another bottom-up mapping and fixes certain
-    %   design variables to predefined values. When the response method is called, it
-    %   completes the design variable array with the fixed values before passing it to
-    %   the base mapping.
+    %   BOTTOMUPMAPPINGCONTINUOUSVARIABLES takes a base bottom-up mapping and converts
+    %   discrete design variables into continuous functions through interpolation.
+    %   It manages the conversion between discrete points and continuous functions,
+    %   handles fixed points in the design space, and provides a consistent interface
+    %   for optimization with continuous variables.
     %
     %   This class is derived from BottomUpMappingBase.
     %
-    %	BOTTOMUPMAPPINGCONTINUOUSVARIABLES methods:
-    %		- response : a function that receives the design sample points, completes them
-    %       with fixed values for specified variables, and returns the system response
-    %       for those variables in terms of performance and physical feasibility.
+    %   BOTTOMUPMAPPINGCONTINUOUSVARIABLES methods:
+    %       - response : receives design sample points as function handles and returns
+    %       the system response in terms of performance and physical feasibility
     %
-    %   See also BottomUpMappingBase, BottomUpMappingFunction, BottomUpMappingPython.
+    %   See also BottomUpMappingBase, BottomUpMappingFunction.
     %
     %   Copyright 2025 Eduardo Rodrigues Della Noce
     %   SPDX-License-Identifier: Apache-2.0
@@ -31,60 +31,66 @@ classdef BottomUpMappingContinuousVariables < BottomUpMappingBase
     
         properties(SetAccess = protected)
             %BASEBOTTOMUPMAPPING Base bottom-up mapping to be used
-            %	BASEBOTTOMUPMAPPING is the underlying bottom-up mapping that will be called after
-            %	completing the design variables with fixed values.
+            %   BASEBOTTOMUPMAPPING is the underlying bottom-up mapping that will be 
+            %   called after converting discrete design points into continuous functions
+            %   through interpolation.
             %
-            %	BASEBOTTOMUPMAPPING : BottomUpMappingBase
+            %   BASEBOTTOMUPMAPPING : BottomUpMappingBase
             %
-            %	See also IsFixedVariable, FixedVariableValues.
+            %   See also InterpolationMethodFunction, InterpolationMethodOptions.
             BaseBottomUpMapping
     
-            %ISFIXEDVARIABLE Logical index of fixed design variables
-            %	ISFIXEDVARIABLE is the logical index which indicates which design
-            %	variables are fixed (true) as opposed to free (false).
-            %	This is used during the response method to reconstruct the complete design
-            %	variable input as expected by the base mapping.
+            %INTERPOLATIONMETHODFUNCTION Function handle for interpolation
+            %   INTERPOLATIONMETHODFUNCTION is the function used to interpolate between
+            %   discrete design points to create continuous functions. By default, this
+            %   is MATLAB's interp1 function.
             %
-            %	ISFIXEDVARIABLE : (1,nDesignVariable) logical
+            %   INTERPOLATIONMETHODFUNCTION : function_handle
             %
-            %	See also BaseBottomUpMapping, FixedVariableValues.
+            %   See also InterpolationMethodOptions.
             InterpolationMethodFunction
     
-            %FIXEDVARIABLEVALUES Values for the fixed design variables
-            %	FIXEDVARIABLEVALUES contains the values to be used for the fixed design
-            %	variables when completing the design sample.
+            %INTERPOLATIONMETHODOPTIONS Options for interpolation method
+            %   INTERPOLATIONMETHODOPTIONS contains the options passed to the
+            %   interpolation function. By default, these are {'pchip','extrap'} for
+            %   piecewise cubic hermite interpolation with extrapolation.
             %
-            %	FIXEDVARIABLEVALUES : (1,nFixedDesignVariable) double
+            %   INTERPOLATIONMETHODOPTIONS : cell
             %
-            %	See also IsFixedVariable.
+            %   See also InterpolationMethodFunction.
             InterpolationMethodOptions
 
-            %DESIGNVARIABLEINDEXMAPPING Mapping of design variables to indices
-            %	DESIGNVARIABLEINDEXMAPPING is the mapping of design variables to indices.
+            %DESIGNVARIABLEINDEXMAPPING Mapping between design variables and indices
+            %   DESIGNVARIABLEINDEXMAPPING maps each discrete point to its corresponding
+            %   design variable index. This is used to reconstruct continuous functions
+            %   from discrete points during interpolation.
             %
-            %	DESIGNVARIABLEINDEXMAPPING : (1,nDesignVariable) double
+            %   DESIGNVARIABLEINDEXMAPPING : (1,nDiscretizedPoints) double
             %
-            %	See also DiscreteLowerBound, DiscreteUpperBound, DiscreteInitialDesign, DiscreteComponentIndex.
+            %   See also BaseVariablesStencils.
             DesignVariableIndexMapping
 
-            % BaseVariablesDomain Domain of the base variables
-            %   BASEVARIABLESDOMAIN is the domain of the base variables.
+            %BASEVARIABLESSTENCILS Stencil points for base variables
+            %   BASEVARIABLESSTENCILS contains the discretization points (stencils) for
+            %   each base variable where the interpolation is performed.
             %
-            %   BASEVARIABLESDOMAIN : (1,nBaseVariable) double
+            %   BASEVARIABLESSTENCILS : (1,nDesignVariable) cell
             %
-            %   See also.
+            %   See also DesignVariableIndexMapping.
             BaseVariablesStencils
 
-            % FixedPointIndex Index of the fixed points
-            %   FIXEDPOINTINDEX is the index of the fixed points.
+            %FIXEDPOINTINDEX Indices of fixed points in design space
+            %   FIXEDPOINTINDEX contains the indices of points in the design space that
+            %   are fixed to specific values and should not be interpolated.
             %
             %   FIXEDPOINTINDEX : (1,nDesignVariable) cell
             %
             %   See also FixedPointValue.
             FixedPointIndex 
 
-            % FixedPointValue Value of the fixed points
-            %   FIXEDPOINTVALUE is the value of the fixed points.
+            %FIXEDPOINTVALUE Values at fixed points
+            %   FIXEDPOINTVALUE contains the values that should be used at fixed points
+            %   in the design space instead of interpolated values.
             %
             %   FIXEDPOINTVALUE : (1,nDesignVariable) cell
             %
@@ -95,65 +101,49 @@ classdef BottomUpMappingContinuousVariables < BottomUpMappingBase
         methods
             function [obj,functionalDiscreteBound,discreteInitialDesign,discreteComponentIndex] = BottomUpMappingContinuousVariables(baseBottomUpMapping, baseVariableDesignSpace, functionalDesignSpace, initialDesign, varargin)
             %BOTTOMUPMAPPINGCONTINUOUSVARIABLES Constructor
-            %   BOTTOMUPMAPPINGCONTINUOUSVARIABLES creates an object that wraps another bottom-up
-            %   mapping and fixes certain design variables to predefined values.
+            %   BOTTOMUPMAPPINGCONTINUOUSVARIABLES creates an object that converts discrete
+            %   design variables into continuous functions through interpolation.
             %
-            %   OBJ = BOTTOMUPMAPPINGCONTINUOUSVARIABLES(BASEBOTTOMUPMAPPING, ISFIXEDVARIABLE, 
-            %   FIXEDVARIABLEVALUES) creates a new BottomUpMappingFixedVariables object
-            %   that uses BASEBOTTOMUPMAPPING as the underlying mapping. ISFIXEDVARIABLE is a
-            %   logical array indicating which design variables are fixed, and 
-            %   FIXEDVARIABLEVALUES contains the values for those fixed variables.
+            %   OBJ = BOTTOMUPMAPPINGCONTINUOUSVARIABLES(BASEBOTTOMUPMAPPING,
+            %   BASEVARIABLEDESIGNSPACE, FUNCTIONALDESIGNSPACE, INITIALDESIGN) creates a
+            %   new object that uses BASEBOTTOMUPMAPPING as the underlying mapping.
+            %   BASEVARIABLEDESIGNSPACE defines the domain for interpolation,
+            %   FUNCTIONALDESIGNSPACE defines the range, and INITIALDESIGN provides
+            %   initial values.
             %
-            %   OBJ = BOTTOMUPMAPPINGFIXEDVARIABLES(BASEBOTTOMUPMAPPING, ISFIXEDVARIABLE, 
-            %   FIXEDVARIABLEVALUES, DESIGNSPACELOWERBOUND, DESIGNSPACEUPPERBOUND) also 
-            %   adapts the design space boundaries DESIGNSPACELOWERBOUND and 
-            %   DESIGNSPACEUPPERBOUND by removing the fixed variables.
+            %   [OBJ,FUNCTIONALDISCRETEBOUND,DISCRETEINITIALDESIGN,DISCRETECOMPONENTINDEX] =
+            %   BOTTOMUPMAPPINGCONTINUOUSVARIABLES(...) additionally returns the discretized
+            %   bounds, initial design, and component indices adapted for the continuous
+            %   representation.
             %
-            %   OBJ = BOTTOMUPMAPPINGFIXEDVARIABLES(BASEBOTTOMUPMAPPING, ISFIXEDVARIABLE, 
-            %   FIXEDVARIABLEVALUES, DESIGNSPACELOWERBOUND, DESIGNSPACEUPPERBOUND, 
-            %   INITIALDESIGN) also adapts the initial design INITIALDESIGN by removing 
-            %   the fixed variables.
-            %
-            %   OBJ = BOTTOMUPMAPPINGFIXEDVARIABLES(BASEBOTTOMUPMAPPING, ISFIXEDVARIABLE, 
-            %   FIXEDVARIABLEVALUES, DESIGNSPACELOWERBOUND, DESIGNSPACEUPPERBOUND, 
-            %   INITIALDESIGN, COMPONENTINDEX) also adapts the component index 
-            %   COMPONENTINDEX by converting indices to account for the removal of fixed 
-            %   variables.
-            %
-            %   [OBJ,FREELOWERBOUND] = BOTTOMUPMAPPINGFIXEDVARIABLES(...) additionally 
-            %   returns the adapted lower bound of the design space with fixed variables 
-            %   removed.
-            %
-            %   [OBJ,FREELOWERBOUND,FREEUPPERBOUND] = BOTTOMUPMAPPINGFIXEDVARIABLES(...) 
-            %   additionally returns the adapted upper bound of the design space with fixed 
-            %   variables removed.
-            %
-            %   [OBJ,FREELOWERBOUND,FREEUPPERBOUND,FREEINITIALDESIGN] = 
-            %   BOTTOMUPMAPPINGFIXEDVARIABLES(...) additionally returns the adapted initial 
-            %   design with fixed variables removed.
-            %
-            %   [OBJ,FREELOWERBOUND,FREEUPPERBOUND,FREEINITIALDESIGN,FREECOMPONENTINDEX] = 
-            %   BOTTOMUPMAPPINGFIXEDVARIABLES(...) additionally returns the adapted 
-            %   component index with indices converted to account for the removal of fixed 
-            %   variables.
+            %   [...] = BOTTOMUPMAPPINGCONTINUOUSVARIABLES(...,NAME,VALUE) specifies
+            %   additional options using name-value pairs:
+            %       - 'InterpolationMethodFunction' : function handle for interpolation
+            %         (default: @interp1)
+            %       - 'InterpolationMethodOptions' : cell array of options for interpolation
+            %         (default: {'pchip','extrap'})
+            %       - 'NumberOfStencils' : number of discretization points
+            %         (default: 1)
+            %       - 'FixedPointsBaseVariables' : points with fixed values
+            %         (default: [])
+            %       - 'FixedPointsFunctionalValues' : values at fixed points
+            %         (default: [])
+            %       - 'ComponentIndex' : indices for component grouping
+            %         (default: {})
             %
             %   Inputs:
             %       - BASEBOTTOMUPMAPPING : BottomUpMappingBase
-            %       - ISFIXEDVARIABLE : (1,nDesignVariable) logical
-            %       - FIXEDVARIABLEVALUES : (1,nFixedVariable) double
-            %       - DESIGNSPACELOWERBOUND : (1,nDesignVariable) double
-            %       - DESIGNSPACEUPPERBOUND : (1,nDesignVariable) double
+            %       - BASEVARIABLEDESIGNSPACE : (2,nDesignVariable) double
+            %       - FUNCTIONALDESIGNSPACE : (2,nDesignVariable) double
             %       - INITIALDESIGN : (1,nDesignVariable) double
-            %       - COMPONENTINDEX : (1,nComponent) cell
             %   
             %   Outputs:
-            %       - OBJ : BottomUpMappingFixedVariables
-            %       - FREELOWERBOUND : (1,nFreeDesignVariable) double
-            %       - FREEUPPERBOUND : (1,nFreeDesignVariable) double
-            %       - FREEINITIALDESIGN : (1,nFreeDesignVariable) double
-            %       - FREECOMPONENTINDEX : (1,nComponent) cell
+            %       - OBJ : BottomUpMappingContinuousVariables
+            %       - FUNCTIONALDISCRETEBOUND : (2,nDiscretizedPoints) double
+            %       - DISCRETEINITIALDESIGN : (1,nDiscretizedPoints) double
+            %       - DISCRETECOMPONENTINDEX : (1,nComponent) cell
             %
-            %	See also response, convert_index_base.
+            %   See also response, interp1.
     
                 % Parse input arguments
                 parser = inputParser;
@@ -229,30 +219,28 @@ classdef BottomUpMappingContinuousVariables < BottomUpMappingBase
     
             function [performanceMeasure, physicalFeasibilityMeasure, systemOutput] = response(obj, designSample)
             %RESPONSE Getting system response based on the design sample points
-            %	RESPONSE completes the design sample with fixed values for specified variables
-            %	before passing it to the base mapping's response method.
+            %   RESPONSE converts discrete design points into continuous functions through
+            %   interpolation before passing them to the base mapping's response method.
             %
             %   PERFORMANCEMEASURE = OBJ.RESPONSE(DESIGNSAMPLE) returns the performance
-            % 	measure of each given design in PERFORMANCEMEASURE. This is returned as an 
-            %	array with each row being correspondent to the respective design.
+            %   measure for each design in PERFORMANCEMEASURE. Each row corresponds to a
+            %   design sample point.
             %
-            %   [PERFORMANCEMEASURE,PHYSICALFEASIBILITYMEASURE] = OBJ.RESPONSE(...) also 
-            %	returns the physical feasibility measure of each given design in 
-            %	PHYSICALFEASIBILITYMEASURE; similar to PERFORMANCEMEASURE, this is given as 
-            %	an array with each row being correspondent to the respective design.
+            %   [PERFORMANCEMEASURE,PHYSICALFEASIBILITYMEASURE] = OBJ.RESPONSE(...)
+            %   additionally returns the physical feasibility measure for each design in
+            %   PHYSICALFEASIBILITYMEASURE.
             %
-            %   [PERFORMANCEMEASURE,PHYSICALFEASIBILITYMEASURE,SYSTEMOUTPUT] = 
-            %	OBJ.RESPONSE(...) also returns any more information from the system response 
-            %	computation in SYSTEMOUTPUT; this is directly passed from the base mapping's
-            %   response method.
+            %   [PERFORMANCEMEASURE,PHYSICALFEASIBILITYMEASURE,SYSTEMOUTPUT] =
+            %   OBJ.RESPONSE(...) additionally returns any extra information from the
+            %   system response computation in SYSTEMOUTPUT.
             %
             %   Inputs:
-            %       - OBJ : BottomUpMappingFixedVariables
-            %       - DESIGNSAMPLE : (nSample,nFreeDesignVariable) double
+            %       - OBJ : BottomUpMappingContinuousVariables
+            %       - DESIGNSAMPLE : (nSample,nDiscretizedPoints) double
             %   
             %   Outputs:
             %       - PERFORMANCEMEASURE : (nSample,nPerformance) double
-            %       - PHYSICALFEASIBILITYDEFICIT : (nSample,nPhysicalFeasibility) double
+            %       - PHYSICALFEASIBILITYMEASURE : (nSample,nPhysicalFeasibility) double
             %       - SYSTEMOUTPUT : class-defined
             %
             %   See also BottomUpMappingBase.

@@ -29,13 +29,13 @@ systemFunction = @truss_two_bar_continuous;
 
 %% design space definition
 systemParameter = [1,1,1000];
-nDivisions = 3;
+nDivisions = 7;
 
 minimumArea = 0.001;
 maximumArea = 1;
 
 nIter = 150;
-nSample = 200;
+nSample = 1000;
 trimmingPasses = 'single';
 trimmingOrder = 'lth';
 
