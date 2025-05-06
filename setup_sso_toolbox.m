@@ -1,10 +1,10 @@
-%setup_sso_toolbox Initial setup for the use of the SSO toolbox
-%   setup_sso_toolbox adds to the MATLAB path all the folders of the SSO 
+%SETUP_SSO_TOOLBOX Initial setup for the use of the SSO toolbox
+%   SETUP_SSO_TOOLBOX adds to the MATLAB path all the folders of the SSO 
 %   Toolbox, allowing the use of the functions in them without any extra steps.
 %   It also adds the Python folder for bottom-up mappings to the Py-specific
 %   path if a compatible Python environment is found.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,6 +28,7 @@ clc;
 more off;
 diary off;
 
+
 %% get folder of setup
 setupFilePath = mfilename('fullpath');
 if contains(setupFilePath,'LiveEditorEvaluationHelper')
@@ -43,7 +44,7 @@ clear setupFilePath
 addDirectory = {...
     ... % public folders
     'BottomUpMappings/',true;...
-    'Data/',false;...
+    'Data/',true;...
     'SolutionSpacesToolbox/',true;...
     'SupportFunctions/',true;...
     'SurrogateModelingToolbox/',true;...

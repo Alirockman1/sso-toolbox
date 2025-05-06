@@ -66,7 +66,7 @@ function [designSample,scorePrediction,labelBoundary] = active_learning_sampling
 %
 %   See also active_learning_model_training, design_select_max_distance.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -118,13 +118,9 @@ function [designSample,scorePrediction,labelBoundary] = active_learning_sampling
     initialPointNegative = initialPoint + stepSizeNegativeMin.*normalizedDirection;
     [stepSizeNegativeMax,~] = region_limit_line_search(regionCriterium,initialPointNegative,normalizedDirection,designSpace,options.MaxLineSearchIterations);
 
-    % processing possible positive boundary candidate
-    candidateBoundaryPositive = options.BoundarySamplingFunction(initialPoint,stepSizePositiveMax,normalizedDirection,options.BoundarySamplingOptions{:});
-    [candidateBoundaryPositive,scoreBoundaryPositive] = select_correct_label_candidates(fastForwardModel,candidateBoundaryPositive,true);
-
-    % processing possible negative boundary candidate
-    candidateBoundaryNegative = options.BoundarySamplingFunction(initialPoint,stepSizeNegativeMin,normalizedDirection,options.BoundarySamplingOptions{:});
-    [candidateBoundaryNegative,scoreBoundaryNegative] = select_correct_label_candidates(fastForwardModel,candidateBoundaryNegative,false);
+    % processing possible boundary candidate
+    candidateBoundary = options.BoundarySamplingFunction(initialPoint,(stepSizePositiveMax+stepSizeNegativeMin)/2,normalizedDirection,options.BoundarySamplingOptions{:});
+    [~,scoreBoundary] = design_deficit_to_label_score(fastForwardModel.predict_designs(candidateBoundary));;
 
     % processing possible positive exploratory candidates
     candidateExploratoryPositive = options.ExploratorySamplingFunction(initialPoint,0,stepSizePositiveMax,normalizedDirection,options.ExploratorySamplingOptions{:});
@@ -134,65 +130,52 @@ function [designSample,scorePrediction,labelBoundary] = active_learning_sampling
     candidateExploratoryNegative = options.ExploratorySamplingFunction(initialPoint,stepSizeNegativeMin,stepSizeNegativeMax,normalizedDirection,options.ExploratorySamplingOptions{:});
     [candidateExploratoryNegative,scoreExploratoryNegative] = select_correct_label_candidates(fastForwardModel,candidateExploratoryNegative,false);
 
-    % process if not enough negative samples - add to positive boundary
-    availableNegativeBoundary = size(candidateBoundaryNegative,1);
-    availableNegativeExploratory = size(candidateExploratoryNegative,1);
-    remainingNegativeBoundary = max(nDesiredSample.NegativeBoundary - availableNegativeBoundary,0);
-    remainingNegativeExploratory = max(nDesiredSample.NegativeExploratory - availableNegativeExploratory,0);
+    % process if not enough samples 
+    nAvailablePositive = size(candidateExploratoryPositive,1);
+    nAvailableNegative = size(candidateExploratoryNegative,1);
+    nSelectPositive = min(nDesiredSample.Positive,nAvailablePositive);
+    nSelectNegative = min(nDesiredSample.Negative,nAvailableNegative);
 
-    nSelect.PositiveBoundary = nDesiredSample.PositiveBoundary + remainingNegativeBoundary + remainingNegativeExploratory;
-    nSelect.PositiveExploratory = nDesiredSample.PositiveExploratory;
-    nSelect.NegativeBoundary = nDesiredSample.NegativeBoundary - remainingNegativeBoundary;
-    nSelect.NegativeExploratory = nDesiredSample.NegativeExploratory - remainingNegativeExploratory;
+    % add points not available to the boundary selection
+    remainingPositive = max(nDesiredSample.Positive - nAvailablePositive,0);
+    remainingNegative = max(nDesiredSample.Negative - nAvailableNegative,0);
+    nSelectBoundary = nDesiredSample.Boundary + remainingPositive + remainingNegative;
 
     % build array with all samples already evaluated
     alreadyEvaluated = [positiveTraining;negativeTraining];
 
-    % select positive boundary designs
-    candidateBoundaryPositive = select_appropriate_boundary_candidates(...
-        candidateBoundaryPositive,scoreBoundaryPositive,nSelect.PositiveBoundary); % remove candidates on design space boundary
+    % select boundary designs
+    candidateBoundary = select_appropriate_boundary_candidates(candidateBoundary,scoreBoundary,nSelectBoundary); % remove candidates on design space boundary
     iSelected = design_select_max_distance(...
-    	alreadyEvaluated,candidateBoundaryPositive,nSelect.PositiveBoundary,options.knnsearchOptions{:});
-    candidateBoundaryPositive = candidateBoundaryPositive(iSelected,:);
-    scoreBoundaryPositive = scoreBoundaryPositive(iSelected);
-    alreadyEvaluated = [alreadyEvaluated;candidateBoundaryPositive];
-
-    % select negative boundary designs
-    candidateBoundaryNegative = select_appropriate_boundary_candidates(...
-        candidateBoundaryNegative,scoreBoundaryNegative,nSelect.NegativeBoundary); % remove candidates on design space boundary
-    iSelected = design_select_max_distance(...
-    	alreadyEvaluated,candidateBoundaryNegative,nSelect.NegativeBoundary,options.knnsearchOptions{:});
-    candidateBoundaryNegative = candidateBoundaryNegative(iSelected,:);
-    scoreBoundaryNegative = scoreBoundaryNegative(iSelected);
-    alreadyEvaluated = [alreadyEvaluated;candidateBoundaryNegative];
+    	alreadyEvaluated,candidateBoundary,nSelectBoundary,options.knnsearchOptions{:});
+    candidateBoundary = candidateBoundary(iSelected,:);
+    scoreBoundary = scoreBoundary(iSelected);
+    alreadyEvaluated = [alreadyEvaluated;candidateBoundary];
 
     % select positive exploratory designs
     iSelected = design_select_max_distance(...
-    	alreadyEvaluated,candidateExploratoryPositive,nSelect.PositiveExploratory,options.knnsearchOptions{:});
+    	alreadyEvaluated,candidateExploratoryPositive,nSelectPositive,options.knnsearchOptions{:});
     candidateExploratoryPositive = candidateExploratoryPositive(iSelected,:);
     scoreExploratoryPositive = scoreExploratoryPositive(iSelected);
     alreadyEvaluated = [alreadyEvaluated;candidateExploratoryPositive];
 
     % select negative exploratory designs
     iSelected = design_select_max_distance(...
-    	alreadyEvaluated,candidateExploratoryNegative,nSelect.NegativeExploratory,options.knnsearchOptions{:});
+    	alreadyEvaluated,candidateExploratoryNegative,nSelectNegative,options.knnsearchOptions{:});
     candidateExploratoryNegative = candidateExploratoryNegative(iSelected,:);
     scoreExploratoryNegative = scoreExploratoryNegative(iSelected);
 
     % concatenate final result
     designSample = [...
-        candidateBoundaryPositive;...
-        candidateBoundaryNegative;...
+        candidateBoundary;...
     	candidateExploratoryPositive;...
         candidateExploratoryNegative];
     scorePrediction = [...
-        scoreBoundaryPositive;...
-        scoreBoundaryNegative;...
+        scoreBoundary;...
         scoreExploratoryPositive;...
         scoreExploratoryNegative];
     labelBoundary = [...
-        true(size(candidateBoundaryPositive,1),1);...
-        true(size(candidateBoundaryNegative,1),1);...
+        true(size(candidateBoundary,1),1);...
         false(size(candidateExploratoryPositive,1),1);...
         false(size(candidateExploratoryNegative,1),1)];
 end

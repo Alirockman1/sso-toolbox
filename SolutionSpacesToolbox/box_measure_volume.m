@@ -1,4 +1,4 @@
-function measure = box_measure_volume(designBox, varargin)
+function measure = box_measure_volume(designBox,varargin)
 %BOX_MEASURE_VOLUME uses the design box area/volume/hypervolume as its measure 
 %   BOX_MEASURE_VOLUME uses as measure for a candidate design box its (useful) 
 %   volume. In an box-optimization algorithm, this will tend to generate 
@@ -34,7 +34,7 @@ function measure = box_measure_volume(designBox, varargin)
 %
 %   See also sso_box_stochastic, box_measure_minimum_length.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,6 +56,11 @@ function measure = box_measure_volume(designBox, varargin)
 
     volumeFactor = conditional_default_value_assignment(parser.Results.FractionUseful,1);
     weight = conditional_default_value_assignment(parser.Results.Weight,ones(1,size(designBox,2)));
+
+    if(isempty(designBox) || size(designBox,1)==1)
+        measure = 0;
+        return;
+    end
     
     % volume
     weightedLengths = (designBox(2,:) - designBox(1,:)).^weight;

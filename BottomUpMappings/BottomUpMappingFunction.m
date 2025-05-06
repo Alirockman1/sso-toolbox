@@ -12,7 +12,7 @@ classdef BottomUpMappingFunction < BottomUpMappingBase
 %
 %   See also BottomUpMappingBase, BottomUpMappingPython.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
     
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,7 +51,7 @@ classdef BottomUpMappingFunction < BottomUpMappingBase
 		%SYSTEMPARAMETER Constant system parameters
 		%	SYSTEMPARAMETER is a generic variable that is used to store constant system 
 		%	parameters, or in other words, values that do not change within the analysis
-		%	of one system.
+		%	of one system and are the same independent of the design sample points.
 		%	SYSTEMPARAMETER can have any variable type. It is given during initilization
 		%	to the constructor.
 		%
@@ -114,15 +114,15 @@ classdef BottomUpMappingFunction < BottomUpMappingBase
         %   the use of constant system parameters when computing with the main function, 
         %	passed in SYSTEMPARAMETER. Default value is empty.
         %
-        %   OBJ = BOTTOMUPMAPPINGFUNCTION(...,NAME1,VALUE1,...) also allows
-        %   for setting custom options for the computation procedure, passed as 
-        %   name-value pair arguments. These are:
+        %   OBJ = BOTTOMUPMAPPINGFUNCTION(...,NAME,VALUE,...) also allows for setting 
+        %   custom options for the computation procedure, passed as name-value pair 
+        %	arguments. These are:
         %       - 'PhysicalFeasibilityDefaultValue' : default value used for the measure
         %		when no information regarding physical feasibility is available.
-        %		Default: -1.
+        %		Default is empty.
         %       - 'PhysicalFeasibilityFunction' : function handle to be used to compute
         %		physical feasibility measures when that is not a part of the main 
-        %		response function. Default: [].
+        %		response function. Default is empty.
         %       - 'PhysicalFeasibilityParameter' : constant system parameters used
         %		exclusively when computing physical feasibility measures with the
         %		correspondent specific function. Default value is the same as 
@@ -143,7 +143,7 @@ classdef BottomUpMappingFunction < BottomUpMappingBase
 
 			parser = inputParser;
 			parser.addOptional('SystemParameter',[]);
-			parser.addParameter('PhysicalFeasibilityDefaultValue',-1);
+			parser.addParameter('PhysicalFeasibilityDefaultValue',[]);
 			parser.addParameter('PhysicalFeasibilityFunction',[]);
 			parser.addParameter('PhysicalFeasibilityParameter',[]);
 			parser.parse(varargin{:});

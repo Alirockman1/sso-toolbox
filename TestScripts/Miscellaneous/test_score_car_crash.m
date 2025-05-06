@@ -1,5 +1,5 @@
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,7 +58,7 @@ designSpaceUpperBound = [   1e6    1e6];
 
 
 %% sample in design space
-designSample = sampling_latin_hypercube([designSpaceLowerBound;designSpaceUpperBound],10000);
+designSample = sampling_latin_hypercube([designSpaceLowerBound;designSpaceUpperBound],100000);
 [performanceDeficit,physicalFeasibilityDeficit,evaluationOuptut] = designEvaluator.evaluate(designSample);
 [~,performanceScore] = design_deficit_to_label_score(performanceDeficit);
 [~,iRobust] = min(performanceScore);

@@ -25,7 +25,7 @@ function plotHandle = plot_candidate_space_2d(figureHandle,candidateSpace,vararg
 %
 %   See also contour, ClassificationSVM, legend.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,10 +43,12 @@ function plotHandle = plot_candidate_space_2d(figureHandle,candidateSpace,vararg
     inputPlotOptions = parser_variable_input_to_structure(varargin{:});
 
     % set step size for fine sampling
-    stepSize = 0.01;
+    stepSize = 0.001;
 
     % make the intervals for each variable
     [~,positiveRegionBox] = design_bounding_box(candidateSpace.DesignSampleDefinition,candidateSpace.IsInsideDefinition);
+    positiveRegionBox(1,:) = max(positiveRegionBox(1,:),candidateSpace.DesignSpaceLowerBound);
+    positiveRegionBox(2,:) = min(positiveRegionBox(2,:),candidateSpace.DesignSpaceUpperBound);
     xInterval = positiveRegionBox(1,1) + (0:stepSize:1)*(positiveRegionBox(2,1)-positiveRegionBox(1,1));
     yInterval = positiveRegionBox(1,2) + (0:stepSize:1)*(positiveRegionBox(2,2)-positiveRegionBox(1,2));
 
@@ -69,10 +71,38 @@ function plotHandle = plot_candidate_space_2d(figureHandle,candidateSpace,vararg
 
     % process data
     countourXY = [];
+    iEntry = 0;
+    startCurve = [];
+    endCurve = [];
     while(~isempty(contourMatrix))
+        iEntry = iEntry + 1;
+
         index = contourMatrix(2)+1;
-        countourXY = [countourXY;contourMatrix(:,2:index)'];
+        countourXY{iEntry} = [contourMatrix(:,2:index)'];
         contourMatrix(:,1:index) = [];
+        
+        startCurve = [startCurve;countourXY{iEntry}(1,:)];
+        endCurve = [endCurve;countourXY{iEntry}(end,:)];
+    end
+
+    % determine the order of entries
+    orderedCurve = countourXY{1};
+    availableQuery = true(iEntry,1);
+    availableQuery(1) = false;
+    for i=1:iEntry-1
+        % find start of next curve closest to end of current curve
+        [iClosestAvailableForward,distanceForward] = knnsearch(startCurve(availableQuery,:),orderedCurve(end,:));
+        [iClosestAvailableBackward,distanceBackward] = knnsearch(endCurve(availableQuery,:),orderedCurve(end,:));
+        
+        if(distanceForward<distanceBackward)
+            iClosest = convert_index_base(availableQuery,iClosestAvailableForward,'backward');
+            xyCoordinate = countourXY{iClosest};
+        else
+            iClosest = convert_index_base(availableQuery,iClosestAvailableBackward,'backward');
+            xyCoordinate = flip(countourXY{iClosest},1);
+        end
+        orderedCurve = [orderedCurve;xyCoordinate];
+        availableQuery(iClosest) = false;
     end
 
     % plot options
@@ -81,7 +111,7 @@ function plotHandle = plot_candidate_space_2d(figureHandle,candidateSpace,vararg
 
     figure(figureHandle);
     hold on
-    plotHandle = patch('XData',countourXY(:,1),'YData',countourXY(:,2),plotOptions{:});
+    plotHandle = patch('XData',orderedCurve(:,1),'YData',orderedCurve(:,2),plotOptions{:});
 
     if(nargout<1)
         clear plotHandle

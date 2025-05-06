@@ -2,7 +2,7 @@
 %   test_surrogate_hollow_sphere creates a surrogate model for the 
 %   hollow sphere problem. This is done using an active set strategy.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,8 +55,8 @@ options = active_learning_model_training_options(...
     'NumberSamplesEvaluation',20,...
     'FixIter',true,...
     'LoggingLevel','all',...
-    'ActiveLearningSamplingFunction',@active_learning_sampling_random,...
-    'ExplorationToBoundaryRatio',0.5,...
+    'ActiveLearningSamplingFunction',@active_learning_sampling_line_search,...
+    'ExplorationToBoundaryRatio',0.0,...
     'FastForwardModelInitial',@DesignFastForwardAnn);
 
 
@@ -100,6 +100,7 @@ xlabel('x_1');
 ylabel('x_2');
 zlabel('x_3');
 title(['Surrogate Modeling - ',methodDescription,'; Training Data']);
+axis('equal','vis3d','square','tight');
 save_print_figure(gcf,[saveFolder,'TrainingSamples']);
 
 
@@ -146,6 +147,7 @@ falsePredictionTitle = sprintf(...
     100*sum(isUncertain)/size(isUncertain,1));
 title(falsePredictionTitle);
 legend('location','southeast');
+axis('equal','vis3d','square','tight');
 save_print_figure(gcf,[saveFolder,'FalsePredictions']);
 
 

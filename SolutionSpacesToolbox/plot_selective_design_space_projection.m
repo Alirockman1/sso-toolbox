@@ -1,4 +1,4 @@
-function [figureElementHandle,problemData,plotData] = plot_selective_design_space_projection(designEvaluator,designBox,designSpaceLowerBound,designSpaceUpperBound,desiredPairs,plotGrid,varargin)
+function [figureElementHandle,outputData] = plot_selective_design_space_projection(varargin)
 %PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION Pair-view of box-shaped solution space
 %   PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION projects the solution space design
 %   box into 2D-planes and allows for the visualization of them together with
@@ -12,6 +12,11 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
 %   points with appropriate colors depending on the result. The plots produced
 %   are pair-wise plots as defined by DESIREDPAIRS, and are on a grid of 
 %   subplots as specified by PLOTGRID.
+%
+%   PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION(DESIGNEVALUATOR,DESIGNBOX,
+%   DESIGNSPACELOWERBOUND,DESIGNSPACEUPPERBOUND,DESIREDPAIRS,PLOTGRID,
+%   FIGUREHANDLE) additionally allows one to specify an existing figure to 
+%   use for the plots, instead of creating a new one.
 %
 %   PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION(...NAME,VALUE,...) allows the 
 %   specification of additional options. These are:
@@ -31,6 +36,9 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
 %       the plots. Default: @sampling_latin_hypercube.
 %       - 'SamplingOptions' : extra options for the sampling method. Default
 %       is empty.
+%       - 'PlotIntervals' : true/false flag indicating whether the dashed 
+%       intervals for the design variables should be printed or not. Default:
+%       true.
 %       - 'PlotOptionsGood' : options for the plotting of design points with 
 %       good performance. Default: {'Linestyle','none','Marker','.','Color','g'}
 %       - 'PlotOptionsBad' : options for the plotting of design points with 
@@ -41,8 +49,9 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
 %       - 'PlotOptionsIntervals' : options for the plotting of the intervals of
 %       the solution space design box. Default: {'LineStyle','--','Color','k',
 %       'Linewidth',1.5}.
-%       - 'PlotOptionsBox' : options for the plotting of the solution box.
-%       Default: {'Linestyle','-','Color','k','Linewidth',2.0}.
+%       - 'PlotOptionsBox' : options for the plotting of the solution box. Uses
+%       the 'plot_design_box_2d' function. Default: {'Linestyle','-',
+%       'EdgeColor','k','Linewidth',2.0}.
 %
 %   FIGUREELEMENTHANDLE = PLOT_SELECTIVE_DESIGN_SPACE_PROJECTION(...) returns 
 %   the handles for the main elements of the figure as a whole. These are:
@@ -102,7 +111,7 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
 %
 %   See also sso_box_stochastic.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -118,12 +127,14 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
 %   limitations under the License.
 
     parser = inputParser;
+    parser.KeepUnmatched = true;
     parser.addRequired('DesignEvaluator',@(x)isa(x,'DesignEvaluatorBase'));
     parser.addRequired('DesignBox',@(x)isnumeric(x)&&size(x,1)==2);
     parser.addRequired('DesignSpaceLowerBound',@(x)isnumeric(x)&&size(x,1)==1);
-    parser.addRequired('DesignSpaceUpperbound',@(x)isnumeric(x)&&size(x,1)==1);
+    parser.addRequired('DesignSpaceUpperBound',@(x)isnumeric(x)&&size(x,1)==1);
     parser.addRequired('DesiredPairs',@(x)(isnumeric(x)&&size(x,2)==2));
     parser.addRequired('PlotGrid',@(x)(isnumeric(x)&&length(x)==2));
+<<<<<<< HEAD
     parser.addParameter('NumberSamplesPerPlot',3000,@(x)isnumeric(x)&&isscalar(x)&&x>0);
     parser.addParameter('AxesLabels',{},@(x)iscell(x));
     parser.addParameter('MarkerColorsViolatedRequirements','r');
@@ -153,15 +164,25 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
 
     defaultPlotOptionsBox = {'Linestyle','-','Color','k','Linewidth',2.0};
     [~,plotOptionBox] = merge_name_value_pair_argument(defaultPlotOptionsBox,options.PlotOptionsBox);
+=======
+    parser.addOptional('CurrentFigure',[],@(x)isa(x,'matlab.ui.Figure')||isempty(x));
+    parser.parse(varargin{:});
+    
+    designEvaluator = parser.Results.DesignEvaluator;
+    designBox = parser.Results.DesignBox;
+    designSpaceLowerBound = parser.Results.DesignSpaceLowerBound;
+    designSpaceUpperBound = parser.Results.DesignSpaceUpperBound;
+    desiredPairs = parser.Results.DesiredPairs;
+    plotGrid = parser.Results.PlotGrid;
+    currentFigure = parser.Results.CurrentFigure;
+    options = parser.Unmatched;
+>>>>>>> f6a30e3627663a9ce0c7714b18eba9603ade2e9e
     
     
     %% Pre-allocate important arrays
-    nDesignVariable = size(designBox,2);
-    nSample = options.NumberSamplesPerPlot;
-    designSample = nan(nSample,nDesignVariable);
-
-    if(nargout>=2)
-        problemData = struct(...
+    isOutputData = (nargout>=2);
+    if(isOutputData)
+        outputData = struct(...
             'DesignEvaluator',designEvaluator,...
             'DesignBox',designBox,...
             'DesignSpaceLowerBound',designSpaceLowerBound,...
@@ -172,48 +193,36 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
             'InitialRNGState',rng);
     end
 
-    isOutputPlotData = (nargout>=3);
-    if(isOutputPlotData)
-        plotData = struct(...
-            'DesignSample',[],...
-            'PerformanceDeficit',[],...
-            'PhysicalFeasibilityDeficit',[],...
-            'EvaluatorOutput',[]);
+    evaluationFields = {'SamplingMethod','SamplingOptions','NumberSamplesPerPlot','MarkerColorsCriterion'};
+    evaluationOptions = namedargs2cell(structure_extract_fields(options,evaluationFields));
+    evaluationInput = [{designEvaluator,designBox,designSpaceLowerBound,designSpaceUpperBound,desiredPairs},evaluationOptions];
+    if(isOutputData)
+        [plotData,outputData.EvaluationData] = evaluate_selective_design_space_projection(evaluationInput{:});
+    else
+        plotData = evaluate_selective_design_space_projection(evaluationInput{:});
     end
-    
-    plotData.DesignSample = [];
-    plotData.PerformanceDeficit = [];
-    plotData.PhysicalFeasibilityDeficit = [];
-    plotData.EvaluatorOutput = [];
 
     
     %% Start Figure
-    figureElementHandle.MainFigure = figure;
+    if(isempty(currentFigure))
+        figureElementHandle.MainFigure = figure;
+    else
+        figureElementHandle.MainFigure = currentFigure;
+    end
+    figure(figureElementHandle.MainFigure);
     hold all; 
     drawnow;
+
+    plotFields = {'MarkerColorsViolatedRequirements','PlotIntervals','PlotOptionsGood','PlotOptionsBad','PlotOptionsPhysicallyInfeasible','PlotOptionsIntervals','PlotOptionsBox'};
+    plotOptionsBase = namedargs2cell(structure_extract_fields(options,plotFields));
     for j=1:size(desiredPairs,1)
         %% Random Sampling for Relevant Scatter Plot
-        currentAxes = [desiredPairs(j,1),desiredPairs(j,2)];
-        otherAxes = ~ismember(1:nDesignVariable,currentAxes);
-        designSample(:,currentAxes) = options.SamplingMethod([designSpaceLowerBound(currentAxes);designSpaceUpperBound(currentAxes)],nSample);
-        designSample(:,otherAxes) = options.SamplingMethod(designBox(:,otherAxes),nSample);
-        
-        %% Evaluate Samples
-        [performanceDeficit,physicalFeasibilityDeficit,evaluatorOutput] = designEvaluator.evaluate(designSample);
-        isGoodPerformance = design_deficit_to_label_score(performanceDeficit);
-        isPhysicallyFeasible = design_deficit_to_label_score(physicalFeasibilityDeficit);
-
-        %% Tag Bad Designs w.r.t. which requirement it violates
-        iBadDesigns = find((~isGoodPerformance) & isPhysicallyFeasible);
-        iRequirementViolated = zeros(nSample,1);
-        if(strcmpi(options.MarkerColorsCriterion,'random'))
-            for i=iBadDesigns
-                currentRequirementViolated = find(performanceDeficit(i,:)>0);
-                iRequirementViolated(i) = currentRequirementViolated(randperm(length(currentRequirementViolated)));
-            end
-        else % 'worst'
-            [~,iWorstDeficit] = max(performanceDeficit(iBadDesigns,:),[],2);
-            iRequirementViolated(iBadDesigns) = iWorstDeficit;
+        currentPair = [desiredPairs(j,1),desiredPairs(j,2)];
+        if(isfield(options,'AxesLabels') && ~isempty(options.AxesLabels))
+            currentPairLabels = options.AxesLabels(currentPair);
+            plotOptions = [plotOptionsBase,{'AxesLabels',currentPairLabels}];
+        else
+            plotOptions = plotOptionsBase;
         end
 
         %% Plot Solution
@@ -221,89 +230,34 @@ function [figureElementHandle,problemData,plotData] = plot_selective_design_spac
         plotTag = sprintf('Plot%d', j);
         set(gca, 'Tag', plotTag); % Tag for identification
         hold all;
-        
-        % physically infeasible designs
-        if(any(~isPhysicallyFeasible))
-            figureElementHandle.PhysicallyInfeasible = plot(...
-                designSample(~isPhysicallyFeasible,desiredPairs(j,1)),...
-                designSample(~isPhysicallyFeasible,desiredPairs(j,2)),...
-                plotOptionsPhysicallyInfeasible{:});
-        end
-        
-        % good designs
-        if(any(isGoodPerformance & isPhysicallyFeasible))
-            figureElementHandle.GoodPerformance = plot(...
-                designSample(isGoodPerformance & isPhysicallyFeasible,desiredPairs(j,1)),...
-                designSample(isGoodPerformance & isPhysicallyFeasible,desiredPairs(j,2)),...
-                plotOptionsGood{:});
-        end
-        
-        % bad designs
-        for k=1:size(performanceDeficit,2)
-            if(iscell(options.MarkerColorsViolatedRequirements))
-                violateColor = options.MarkerColorsViolatedRequirements{k};
-            else
-                violateColor = options.MarkerColorsViolatedRequirements;
+        designTypeHandle = plot_design_space_projection_axis(plotData(j),plotOptions{:});
+
+        % merge handles
+        if(j==1)
+            figureElementHandle.GoodPerformance = designTypeHandle.GoodPerformance;
+            figureElementHandle.PhysicallyInfeasible = designTypeHandle.PhysicallyInfeasible;
+            figureElementHandle.BadPerformance = designTypeHandle.BadPerformance;
+        else
+            if(isa(figureElementHandle.GoodPerformance,'matlab.graphics.GraphicsPlaceholder') && ...
+               ~isa(designTypeHandle.GoodPerformance,'matlab.graphics.GraphicsPlaceholder'))
+                figureElementHandle.GoodPerformance = designTypeHandle.GoodPerformance;
             end
             
-            iViolated = find(iRequirementViolated==k);
-            
-            if(~isempty(iViolated))
-                figureElementHandle.BadPerformance(k) = plot(...
-                    designSample(iViolated,desiredPairs(j,1)),...
-                    designSample(iViolated,desiredPairs(j,2)),...
-                    'Color',violateColor,...
-                    plotOptionsBad{:});
+            if(isa(figureElementHandle.PhysicallyInfeasible,'matlab.graphics.GraphicsPlaceholder') && ...
+               ~isa(designTypeHandle.PhysicallyInfeasible,'matlab.graphics.GraphicsPlaceholder'))
+                figureElementHandle.PhysicallyInfeasible = designTypeHandle.PhysicallyInfeasible;
             end
-        end
-        
-        % dashed box limits
-        plot([designBox(1,desiredPairs(j,1)) designBox(1,desiredPairs(j,1))],...
-            [designSpaceLowerBound(desiredPairs(j,2)) designSpaceUpperBound(desiredPairs(j,2))],...
-            plotOptionsIntervals{:}); % vertical left line
-        plot([designBox(2,desiredPairs(j,1)) designBox(2,desiredPairs(j,1))],...
-            [designSpaceLowerBound(desiredPairs(j,2)) designSpaceUpperBound(desiredPairs(j,2))],...
-            plotOptionsIntervals{:}); % vertical right line
-        plot([designSpaceLowerBound(desiredPairs(j,1)) designSpaceUpperBound(desiredPairs(j,1))],...
-            [designBox(1,desiredPairs(j,2)) designBox(1,desiredPairs(j,2))],...
-            plotOptionsIntervals{:}); % horizontal lower line
-        plot([designSpaceLowerBound(desiredPairs(j,1)) designSpaceUpperBound(desiredPairs(j,1))],...
-            [designBox(2,desiredPairs(j,2)) designBox(2,desiredPairs(j,2))],...
-            plotOptionsIntervals{:}); % horizontal upper line
-        
-        % box contour
-        boxPlotX = [...
-            designBox(1,desiredPairs(j,1)) ... % bottom-left corner
-            designBox(2,desiredPairs(j,1)) ... % bottom-right corner
-            designBox(2,desiredPairs(j,1)) ... % top-right corner
-            designBox(1,desiredPairs(j,1)) ... % top-left corner
-            designBox(1,desiredPairs(j,1))]; % bottom-left corner
-        boxPlotY = [...
-            designBox(1,desiredPairs(j,2)) ... % bottom-left corner
-            designBox(1,desiredPairs(j,2)) ... % bottom-right corner
-            designBox(2,desiredPairs(j,2)) ... % top-right corner
-            designBox(2,desiredPairs(j,2)) ... % top-left corner
-            designBox(1,desiredPairs(j,2))]; % bottom-left corner
-        plot(boxPlotX,boxPlotY,plotOptionBox{:});
-        
-        % axis lengths and labels
-        axis([designSpaceLowerBound(desiredPairs(j,1)) designSpaceUpperBound(desiredPairs(j,1)) ...
-            designSpaceLowerBound(desiredPairs(j,2)) designSpaceUpperBound(desiredPairs(j,2))]);
-        if(~isempty(options.AxesLabels))
-            xlabel(options.AxesLabels{desiredPairs(j,1)});
-            ylabel(options.AxesLabels{desiredPairs(j,2)});
-        end
-        grid('off');
-        drawnow;
-        
-        if(isOutputPlotData)
-            plotData(j) = struct(...
-                'DesignSample',designSample,...
-                'PerformanceDeficit',performanceDeficit,...
-                'PhysicalFeasibilityDeficit',physicalFeasibilityDeficit,...
-                'EvaluatorOutput',evaluatorOutput);
+            
+            for k=1:length(designTypeHandle.BadPerformance)
+                if(k>length(figureElementHandle.BadPerformance) || ...
+                    (isa(figureElementHandle.BadPerformance(k),'matlab.graphics.GraphicsPlaceholder') && ...
+                    ~isa(figureElementHandle.BadPerformance(k),'matlab.graphics.GraphicsPlaceholder')))
+                    figureElementHandle.BadPerformance(k) = designTypeHandle.BadPerformance(k);
+                end
+            end
         end
     end
+
 
     if(nargout<1)
         clear figureElementHandle

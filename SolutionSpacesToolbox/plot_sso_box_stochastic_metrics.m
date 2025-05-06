@@ -42,7 +42,7 @@ function figureHandle = plot_sso_box_stochastic_metrics(algorithmData,varargin)
 %
 %   See also sso_box_stochastic, postprocess_sso_box_stochastic.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -179,14 +179,14 @@ function figureHandle = plot_sso_box_stochastic_metrics(algorithmData,varargin)
 
     % save if required
     if(~isempty(options.SaveFolder))
-        save_print_figure(figureHandle(1),[options.SaveFolder,'Box-Metrics-TotalMeasure'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(2),[options.SaveFolder,'Box-Metrics-TotalMeasureNormalized'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(3),[options.SaveFolder,'Box-Metrics-IntervalSizeNormalized'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(4),[options.SaveFolder,'Box-Metrics-GrowthRate'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(5),[options.SaveFolder,'Box-Metrics-NumberLabelSamplePoints'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(6),[options.SaveFolder,'Box-Metrics-TotalMeasureRelativeRatio'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(7),[options.SaveFolder,'Box-Metrics-NormalizedMeasureSample'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(8),[options.SaveFolder,'Box-Metrics-TotalEvaluationsPurityNormalizedMeasure'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(1),[options.SaveFolder,'TotalMeasure'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(2),[options.SaveFolder,'TotalMeasureNormalized'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(3),[options.SaveFolder,'IntervalSizeNormalized'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(4),[options.SaveFolder,'GrowthRate'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(5),[options.SaveFolder,'NumberLabelSamplePoints'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(6),[options.SaveFolder,'TotalMeasureRelativeRatio'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(7),[options.SaveFolder,'NormalizedMeasureSample'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(8),[options.SaveFolder,'TotalEvaluationsPurityNormalizedMeasure'],options.SaveFigureOptions{:});
 
         if(options.CloseFigureAfterSaving)
             close(figureHandle);

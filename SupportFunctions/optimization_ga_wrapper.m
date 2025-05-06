@@ -49,7 +49,7 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_ga_w
 %   See also ga, optimoptions, design_optimize_quantities_of_interest, 
 %	design_optimize_performance_score.
 %   
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -64,9 +64,9 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_ga_w
 %   See the License for the specific language governing permissions and
 %   limitations under the License.
 
-	options = optimoptions('ga',varargin{:});
+	options = optimoptions('ga','InitialPopulationMatrix',initialDesign,varargin{:});
 
-	nDesignVariable = size(initialDesign,2);
+	nDesignVariable = size(designSpaceLowerBound,2);
 	[designOptimal,objectiveOptimal,exitflag,output,population,scores] = ga(...
 		objectiveFunction,...
 		nDesignVariable,...

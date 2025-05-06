@@ -26,7 +26,7 @@ function plotHandle = plot_candidate_space_3d(fighan,candidateSpace,varargin)
 %
 %   See also patch, ClassificationSVM, legend, isosurface.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -53,6 +53,8 @@ function plotHandle = plot_candidate_space_3d(fighan,candidateSpace,varargin)
     definitionSample = candidateSpace.DesignSampleDefinition;
     definitionLabel = candidateSpace.IsInsideDefinition;
     [~,positiveRegionBox] = design_bounding_box(definitionSample,definitionLabel);
+    positiveRegionBox(1,:) = max(positiveRegionBox(1,:),candidateSpace.DesignSpaceLowerBound);
+    positiveRegionBox(2,:) = min(positiveRegionBox(2,:),candidateSpace.DesignSpaceUpperBound);
     xInterval = positiveRegionBox(1,1) + (0:stepSize:1)*(positiveRegionBox(2,1)-positiveRegionBox(1,1));
     yInterval = positiveRegionBox(1,2) + (0:stepSize:1)*(positiveRegionBox(2,2)-positiveRegionBox(1,2));
     zInterval = positiveRegionBox(1,3) + (0:stepSize:1)*(positiveRegionBox(2,3)-positiveRegionBox(1,3));

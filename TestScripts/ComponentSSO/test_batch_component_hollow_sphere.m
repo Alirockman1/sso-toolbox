@@ -1,9 +1,9 @@
-%test_performance_batch_hollow_sphere Batch performance test for hollow sphere
-%   test_performance_batch_hollow_sphere performs component solution space 
+%TEST_BATCH_COMPONENT_HOLLOW_SPHERE Batch performance test for hollow sphere
+%   TEST_BATCH_COMPONENT_HOLLOW_SPHERE performs component solution space 
 %   optimizations in batch, saving the performance data. Factors can be
 %	attributed according to the corresponding XLSX file.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@ rng(4);
 rngState = rng;
 saveFolder = save_diary_files(mfilename);
 goldenRatio = (1+sqrt(5))/2;
-defaultFigureSize = [goldenRatio 1]*8.5;
+figureSize = [goldenRatio 1]*8.5;
 
 
 %% base 
@@ -56,7 +56,7 @@ componentIndex = {[1,3],[2]};
 
 
 %% run batch analysis
-[solutionSpace,problemData,iterData,algoData,batchOptions] = batch_sso_stochastic_analysis(...
+[solutionSpace,optimizationData,algoData,batchOptions] = batch_sso_stochastic_analysis(...
     'BatchTestHollowSphere.xlsx',...
     designEvaluator,...
     initialPoint,...

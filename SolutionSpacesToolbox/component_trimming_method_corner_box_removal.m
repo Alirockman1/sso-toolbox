@@ -1,4 +1,4 @@
-function removalCandidate = component_trimming_method_corner_box_removal(designSampleComponent,iRemove,varargin)
+function [removalCandidate,removalInformation] = component_trimming_method_corner_box_removal(designSampleComponent,iRemove,isKeep,varargin)
 %COMPONENT_TRIMMING_METHOD_CORNER_BOX_REMOVAL Component SSO Trimming
 %   COMPONENT_TRIMMING_METHOD_CORNER_BOX_REMOVAL uses the corner box removal
 %   method to find the sample points for candidate removal during the trimming 
@@ -24,7 +24,7 @@ function removalCandidate = component_trimming_method_corner_box_removal(designS
 %   See also component_trimming_operation, component_trimming_leanness, 
 %   component_trimming_method_planar_trimming.
 %   
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,19 +39,81 @@ function removalCandidate = component_trimming_method_corner_box_removal(designS
 %   See the License for the specific language governing permissions and
 %   limitations under the License.
 
-    nDesignVariable = size(designSampleComponent,2);
-    combination = logical(round(fullfact(2*ones(nDesignVariable,1)) - 1));
+    parser = inputParser;
+    parser.addParameter('CornersToTest','all');
+    parser.addParameter('TrimmingSlack',0.5);
+    parser.addParameter('ConsiderOnlyKeepInSlack',true);
+    parser.addParameter('NormalizeVariables',false,@islogical);
+    parser.parse(varargin{:});
+    options = parser.Results;
 
-    designLesser = (designSampleComponent-designSampleComponent(iRemove,:)<=0);
-    designGreater = (designSampleComponent-designSampleComponent(iRemove,:)>=0);
+    nDesignVariable = size(designSampleComponent,2);
+
+    % create all combinations of (lesser than / greater than) for each design variable
+    if(strcmpi(options.CornersToTest,'all'))
+        combination = logical(round(fullfact(2*ones(nDesignVariable,1)) - 1));
+    elseif(strcmpi(options.CornersToTest,'away'))
+        center = mean(designSampleComponent(isKeep,:),1);
+        combination = ((designSampleComponent(iRemove,:) - center)>=0);
+    end
+
+    distanceToAnchorBase = designSampleComponent-designSampleComponent(iRemove,:);
 
     nCombination = size(combination,1);
     nSample = size(designSampleComponent,1);
     removalCandidate = false(nSample,nCombination);
+    maximumSlack = nan(1,nDesignVariable);
+    anchorSlack = nan(1,nDesignVariable);
+
     for i=1:nCombination
         % See which points fullfill criteria
-        combinationCandidateLesser = all(designLesser(:,~combination(i,:)),2);
-        combinationCandidateGreater = all(designGreater(:,combination(i,:)),2);
-        removalCandidate(:,i) = combinationCandidateLesser & combinationCandidateGreater;
+        distanceToAnchor = distanceToAnchorBase;
+        distanceToAnchor(:,combination(i,:)) = -distanceToAnchor(:,combination(i,:));
+        removalCandidateCurrent = all(distanceToAnchor<0,2);
+        anchorPoint = designSampleComponent(iRemove,:);
+
+        if(options.TrimmingSlack<1)
+            lowerBound = min(designSampleComponent,[],1);
+            upperBound = max(designSampleComponent,[],1);
+
+            if(options.NormalizeVariables)
+                normalizationFactor = upperBound-lowerBound;
+            else
+                normalizationFactor = ones(1,nDesignVariable);
+            end
+
+            isInsideSlack = ~removalCandidateCurrent;
+            if(options.ConsiderOnlyKeepInSlack)
+                isInsideSlack = isInsideSlack & isKeep;
+            end
+            insideToAnchorDistance = distanceToAnchor(isInsideSlack,:)./normalizationFactor;
+
+            [maximumSlackInside,iDimensionMaximumSlack] = max(insideToAnchorDistance,[],2);
+            for j=1:nDesignVariable
+                allowedSlack = maximumSlackInside(iDimensionMaximumSlack==j).*normalizationFactor(j);
+                
+                if(isempty(allowedSlack))
+                    if(~combination(i,j))
+                        maximumSlack(j) = upperBound(j) - anchorPoint(j);
+                    else
+                        maximumSlack(j) = anchorPoint(j) - lowerBound(j);
+                    end
+                else
+                    maximumSlack(j) = min(allowedSlack);
+                end
+            end
+            anchorSlack(~combination(i,:)) = maximumSlack(~combination(i,:));
+            anchorSlack(combination(i,:)) = -maximumSlack(combination(i,:));
+            anchorPoint = anchorPoint + (1-options.TrimmingSlack)*anchorSlack;
+
+            distanceToAnchor = designSampleComponent - anchorPoint;
+            distanceToAnchor(:,combination(i,:)) = -distanceToAnchor(:,combination(i,:));
+        end
+        
+        removalCandidate(:,i) = all(distanceToAnchor<0,2);
+        if(nargout>1)
+            removalInformation(i).Anchor = anchorPoint;
+            removalInformation(i).CornerDirection = combination(i,:);
+        end
     end
 end

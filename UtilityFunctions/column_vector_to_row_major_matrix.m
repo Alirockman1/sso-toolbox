@@ -31,7 +31,7 @@ function rowMajorMatrix = column_vector_to_row_major_matrix(columnVector,nColumn
 %
 %   See also row_major_matrix_to_column_vector.
 %   
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

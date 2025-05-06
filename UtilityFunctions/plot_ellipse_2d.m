@@ -33,7 +33,7 @@ function handlePatch = plot_ellipse_2d(figureHandle,ellipseCenter,ellipseMajorSe
 %
 %   See also patch.
 %   
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

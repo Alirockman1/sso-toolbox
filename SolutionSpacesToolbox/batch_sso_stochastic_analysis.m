@@ -1,9 +1,9 @@
-function [solutionSpace,problemData,iterData,algoData,batchOptions] = batch_sso_stochastic_analysis(batchOptions,designEvaluator,initialPoint,designSpaceLowerBound,designSpaceUpperBound,varargin)
+function [solutionSpace,optimizationData,algoData,batchOptions] = batch_sso_stochastic_analysis(batchOptions,designEvaluator,initialPoint,designSpaceLowerBound,designSpaceUpperBound,varargin)
 %BATCH_SSO_STOCHASTIC_ANALYSIS Solving same SSO problem with different options
 %   BATCH_SSO_STOCHASTIC_ANALYSIS can be used to procedurally find optimal
 %   solution spaces for a given problem with different options. The results
 %   can then be used to better understand either how different algorithm 
-%   parameters affect the convergence / final solution.
+%   parameters affect the convergence / final result.
 %   
 %   SOLUTIONSPACE = BATCH_SSO_STOCHASTIC_ANALYSIS(BATCHOPTIONS,DESIGNEVALUATOR,
 %   INITIALPOINT,DESIGNSPACELOWERBOUND,DESIGNSPACEUPPERBOUND) takes the options
@@ -65,7 +65,7 @@ function [solutionSpace,problemData,iterData,algoData,batchOptions] = batch_sso_
 %   batch_analysis_read_table, 
 %   plot_batch_sso_stochastic_analysis_component_metrics.
 %   
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -98,8 +98,7 @@ function [solutionSpace,problemData,iterData,algoData,batchOptions] = batch_sso_
     %% run batch tests for component SSO
     nTest = length(batchOptions);
     solutionSpace = cell(nTest,1);
-    problemData = cell(nTest,1);
-    iterData = cell(nTest,1);
+    optimizationData = cell(nTest,1);
     for i=1:nTest
         % create folder to save data    
         testOptions = namedargs2cell(batchOptions(i).Options);
@@ -107,23 +106,23 @@ function [solutionSpace,problemData,iterData,algoData,batchOptions] = batch_sso_
 
         if(isempty(options.ComponentIndex))
             ssoOptions = sso_stochastic_options('box',options.FixedOptions{:},testOptions{:});
-            [solutionSpace{i},problemData{i},iterData{i}] = sso_box_stochastic(...
+            [solutionSpace{i},optimizationData{i}] = sso_box_stochastic(...
                 designEvaluator,...
                 initialPoint,...
                 designSpaceLowerBound,...
                 designSpaceUpperBound,...
                 ssoOptions);
-            algoData(i) = postprocess_sso_box_stochastic(problemData{i},iterData{i});
+            algoData(i) = postprocess_sso_box_stochastic(optimizationData{i});
         else
             ssoOptions = sso_stochastic_options('component',options.FixedOptions{:},testOptions{:});
-            [solutionSpace{i},problemData{i},iterData{i}] = sso_component_stochastic(...
+            [solutionSpace{i},optimizationData{i}] = sso_component_stochastic(...
                 designEvaluator,...
                 initialPoint,...
                 designSpaceLowerBound,...
                 designSpaceUpperBound,...
                 options.ComponentIndex,...
                 ssoOptions);
-            algoData(i) = postprocess_sso_component_stochastic(problemData{i},iterData{i});
+            algoData(i) = postprocess_sso_component_stochastic(optimizationData{i});
         end
     end
 end

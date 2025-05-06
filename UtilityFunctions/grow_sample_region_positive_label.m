@@ -31,7 +31,7 @@ function [designSampleExpanded,labelExpanded] = grow_sample_region_positive_labe
 %
 %   See also: knnsearch, CandidateSpaceSvm, CandidateSpaceDecisionTree.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -68,7 +68,7 @@ function [designSampleExpanded,labelExpanded] = grow_sample_region_positive_labe
     sampleGrowthRate = min(growthRate,maxGrowthRate);
     shrunkSample = designSample + sampleGrowthRate.*designSpaceFactor.*(-directionGrowth);
     
-    % limit new samples to design space
+    % only get unique entries (remove duplicates)
     designSampleExpanded = [designSample;grownSample;shrunkSample];
     designSampleExpanded = max(designSampleExpanded, designSpaceLowerBound); % lower bound limit
     designSampleExpanded = min(designSampleExpanded, designSpaceUpperBound); % upper bound limit

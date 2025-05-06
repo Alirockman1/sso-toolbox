@@ -13,7 +13,7 @@ classdef DesignEvaluatorBottomUpMapping < DesignEvaluatorBase
 %
 %   See also DesignEvaluatorBase, DesignEvaluatorFastForward.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -155,7 +155,8 @@ classdef DesignEvaluatorBottomUpMapping < DesignEvaluatorBase
         %   See also BottomUpMappingBase, evaluate.
 
             parser = inputParser;
-            parser.addRequired('BottomUpMapping', @(x)isa(x,'BottomUpMappingBase'));
+            parser.KeepUnmatched = true;
+            parser.addRequired('BottomUpMapping', @(x)isa(x,'BottomUpMappingBase') || isa(x,'function_handle') || isa(x,'char') || isa(x,'string'));
             parser.addOptional('PerformanceLowerLimit',-inf,@(x)size(x,1)==1);
             parser.addOptional('PerformanceUpperLimit',0,@(x)size(x,1)==1);
             parser.addParameter('PerformanceNormalizationFactor',[],@(x)isnumeric(x)&&(size(x,1)==1 || isempty(x)));
@@ -164,7 +165,15 @@ classdef DesignEvaluatorBottomUpMapping < DesignEvaluatorBase
             parser.addParameter('PhysicalFeasibilityNormalizationFactor',[],@(x)isnumeric(x)&&(size(x,1)==1 || isempty(x)));
             parser.parse(bottomUpMapping,varargin{:});
 
-            obj.BottomUpMapping = parser.Results.BottomUpMapping;
+            bottomUpMapping = parser.Results.BottomUpMapping;
+            bottomUpMappingOptions = namedargs2cell(parser.Unmatched);
+            if(isa(bottomUpMapping,'function_handle'))
+                bottomUpMapping = BottomUpMappingFunction(bottomUpMapping,bottomUpMappingOptions{:});
+            elseif(isa(bottomUpMapping,'string') || isa(bottomUpMapping,'char'))
+                bottomUpMapping = BottomUpMappingPython(bottomUpMapping,bottomUpMappingOptions{:});
+            end
+
+            obj.BottomUpMapping = bottomUpMapping;
             obj.PerformanceLowerLimit = parser.Results.PerformanceLowerLimit;
             obj.PerformanceUpperLimit = parser.Results.PerformanceUpperLimit;
             obj.PerformanceDefaultNormalizationFactor = parser.Results.PerformanceNormalizationFactor;

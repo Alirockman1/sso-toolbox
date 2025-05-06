@@ -16,7 +16,7 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
 %
 %   See also DesignEvaluatorBase, DesignEvaluatorBottomUpMapping.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -264,7 +264,10 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
 
             aspaceComponentIndex = cell(size(options.ComponentIndex));
             for i=1:length(aspaceComponentIndex)
-                aspaceComponentIndex{i} = convert_index_base(compensationAspaceIndex,options.ComponentIndex{i}','forward')';
+                if(~isempty(options.ComponentIndex{i}))
+                    convertedIndex = convert_index_base(compensationAspaceIndex(:),options.ComponentIndex{i}(:),'forward');
+                    aspaceComponentIndex{i} = convertedIndex(~isnan(convertedIndex));
+                end
             end
 
             obj.BaseDesignEvaluator = baseDesignEvaluator;
@@ -273,9 +276,9 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
             obj.BspaceUpperBound = bspaceUpperBound;
             obj.BspaceInitialDesign = bspaceInitialDesign;
             [~,obj.OptimizationOptions] = merge_name_value_pair_argument(...
-                    {'OptimizationMethodOptions',{'Display','none'}},...
-                    parser.Results.OptimizationOptions,...
-                    {'CompensationAspaceIndex',compensationAspaceIndex});
+                {'OptimizationMethodOptions',{'Display','none'}},...
+                parser.Results.OptimizationOptions,...
+                {'CompensationAspaceIndex',compensationAspaceIndex});
             obj.AspaceOrderPasses = options.AspaceOrderPasses;
             obj.AspaceOrderKnnsearchOptions = options.AspaceOrderKnnsearchOptions;
             obj.AcceptFullSpaceSample = options.AcceptFullSpaceSample;
@@ -386,6 +389,16 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
                 % if full sample was given, use that for the initial design of B-space
                 if(isFullSpaceSample)
                     bspaceInitial = bspaceInitialSample(iCurrent,:);
+                elseif(i~=1) % not full sample, and has evaluated at least once
+                    % see which designs have been evaluated
+                    hasBeenEvaluated = ~isnan(scoreOptimal);
+
+                    % see which already evaluated design is closest to design to be evaluated
+                    iLocalClosest = knnsearch(designSample(hasBeenEvaluated,:),designSample(iCurrent,:),obj.AspaceOrderKnnsearchOptions{:});
+
+                    % use that optimum as initial guess
+                    iClosestEvaluated = convert_index_base(hasBeenEvaluated,iLocalClosest,'backward');
+                    bspaceInitial = bspaceOptimal(iClosestEvaluated,:);
                 end
 
                 initialDesign = nan(1,size(obj.CompensationAspaceIndex,2));
@@ -405,12 +418,6 @@ classdef DesignEvaluatorCompensation < DesignEvaluatorBase
                 scoreOptimal(iCurrent) = scoreOptimalCurrent;
                 optimizationOutput{iCurrent} = optimizationOutputCurrent;
                 evaluatorOutput{iCurrent} = evaluatorOutputCurrent;
-
-                % start next iteration already where you are
-                % --> with A-space ordered, this should improve convergence time
-                if(~isFullSpaceSample)
-                    bspaceInitial = bspaceOptimal(iCurrent,:);
-                end
             end
 
             % evaluate optimal designs

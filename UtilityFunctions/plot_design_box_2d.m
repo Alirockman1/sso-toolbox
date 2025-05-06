@@ -26,7 +26,7 @@ function plotHandle = plot_design_box_2d(figureHandle,designBox,varargin)
 %
 %   See also patch, legend, plot_design_box_3d.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -61,7 +61,11 @@ function plotHandle = plot_design_box_2d(figureHandle,designBox,varargin)
 	[~,plotOptions] = merge_name_value_pair_argument(defaultPlotOptions,inputPlotOptions);
 	
 	% make plot
-	figure(figureHandle);
+	if isa(figureHandle, 'matlab.ui.Figure') || isa(figureHandle, 'matlab.ui.container.Figure')
+		figure(figureHandle);
+	elseif isa(figureHandle, 'matlab.graphics.axis.Axes') || isa(figureHandle, 'matlab.ui.control.UIAxes')
+		axes(figureHandle);
+	end
 	plotHandle = patch('Vertices', vertices,'Faces', faces, plotOptions{:});
 
 	if(nargout<1)

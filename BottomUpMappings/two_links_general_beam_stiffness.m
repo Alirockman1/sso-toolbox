@@ -40,11 +40,11 @@ function [performanceMeasure,physicalFeasibilityMeasure] = two_links_general_bea
 %           -- (4) : Stiffness value k11 of component 2
 %			-- (5) : Stiffness value k22 of component 2
 %           -- (6) : Stiffness value k44 of component 2
-%       - SYSTEMPARAMETER : char OR struct OR cell OR (1,2) cell
-%			-- (1) : name of file with estimators OR structure with estimators
-%			in fields named 'PhysicalFeasibilityEstimator' (ClassificationSVM 
-%			or similar) and 'MassEstimator' (network).
-%			-- (2) : logical flag to skip physically infeasible designs
+%       - SYSTEMPARAMETER : (1,4) cell
+%			-- (1) : name of file with estimators
+%			-- (2) : name of physical feasibility field
+%			-- (3) : name of mass estimator field
+%			-- (4) : logical flag to skip physically infeasible designs
 %
 %   Output:
 %       - PERFORMANCEMEASURE : (nSample,2) double
@@ -56,7 +56,7 @@ function [performanceMeasure,physicalFeasibilityMeasure] = two_links_general_bea
 %
 %   See also two_links_ibeams_constant_web_thickness.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

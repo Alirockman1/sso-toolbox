@@ -10,6 +10,10 @@ PrivateTestScripts/
 # Python Cache from Python Loading Module
 __pycache__/
 
+# Cursor / VSCode rules
+.cursor/
+.vscode/
+
 # GENERAL - https://github.com/github/gitignore/blob/main/Global/MATLAB.gitignore
 # Windows default autosave extension
 *.asv

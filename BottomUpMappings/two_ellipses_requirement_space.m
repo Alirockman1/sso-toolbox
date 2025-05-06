@@ -40,11 +40,13 @@ function [performanceMeasure, physicalFeasibilityMeasure] = two_ellipses_require
 %           -- (1) : spatial coordinate 1
 %           -- (2) : spatial coordinate 2
 %       - SYSTEMPARAMETER [optional] : (2,5) double
-%           -- (1) : ellipse center in 1st dimension (vx)
-%           -- (2) : ellipse center in 2nd dimension (vy)
-%           -- (3) : semi-major axis in 1st dimension (a)
-%           -- (4) : semi-major axis in 2nd dimension (b)
-%           -- [optional] (5) : rotation angle around center (theta)
+%           -- (1,:) : performance measure parameters
+%           -- (2,:) : physical feasibility parameters
+%           -- (:,1) : ellipse center in 1st dimension (vx)
+%           -- (:,2) : ellipse center in 2nd dimension (vy)
+%           -- (:,3) : semi-major axis in 1st dimension (a)
+%           -- (:,4) : semi-major axis in 2nd dimension (b)
+%           -- [optional] (:,5) : rotation angle around center (theta)
 %
 %   Output:
 %       - PERFORMANCEMEASURE : (nSample,1) double
@@ -52,7 +54,7 @@ function [performanceMeasure, physicalFeasibilityMeasure] = two_ellipses_require
 %
 %   See also ellipse_2d.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

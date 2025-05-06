@@ -20,9 +20,9 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 %		returned. Default: -inf.
 %		- 'MaxFunctionEvaluations' : maximum number of function evaluations. 
 %		Default value: 1000.
-%		- 'GroupedEvaluations' : if a threshold value for the objective has been
-%		set, then for each iteration, only 'GroupedEvaluations' samples are
-%		evaluated at once. This may allow for better parallelization, while
+%		- 'BatchEvaluationsSize' : if a threshold value for the objective has 
+%		been set, then for each iteration, only 'BatchEvaluationsSize' samples 
+%		are evaluated at once. This may allow for better parallelization, while
 %		still being able to stop the optimization if a suitable design is found.
 %		For example, if the objective function or constraint functions have
 %		an expensive process that can be parallelized for each CPU core, then 
@@ -56,7 +56,7 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 %		- CONSTRAINTFUNCTION : function_handle
 %		- 'ObjectiveFunctionThresholdValue' : double
 %		- 'MaxFunctionEvaluations' : integer
-%		- 'GroupedEvaluations' : integer
+%		- 'BatchEvaluationsSize' : integer
 %		- 'SamplingFunction' : function_handle
 %		- 'SamplingOptions' : (1,nOptions) cell
 %		- 'PointsToEvaluate' : (nSample,nDesignVariable) double
@@ -72,7 +72,7 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 %   See also design_optimize_quantities_of_interest, 
 %	design_optimize_performance_score.
 %   
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -90,7 +90,7 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 	parser = inputParser;
 	parser.addParameter('ObjectiveFunctionThresholdValue',-inf);
 	parser.addParameter('MaxFunctionEvaluations',1000);
-	parser.addParameter('GroupedEvaluations',[]);
+	parser.addParameter('BatchEvaluationsSize',[]);
 	parser.addParameter('SamplingFunction',@sampling_latin_hypercube);
 	parser.addParameter('SamplingOptions',{});
 	parser.addParameter('PointsToEvaluate',[]);
@@ -99,20 +99,22 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
     options = parser.Results;
 
    	if(isempty(options.PointsToEvaluate))
-	   	nSample = options.MaxFunctionEvaluations;
+   		nSample = options.MaxFunctionEvaluations;
+   		nSamplingGenerate = nSample - size(initialDesign,1);
+
 		designSample = [...
 			initialDesign;...
 			options.SamplingFunction(...
 				[designSpaceLowerBound;designSpaceUpperBound],...
-				nSample-1,...
+				nSamplingGenerate,...
 				options.SamplingOptions{:})];
 	else
 		designSample = options.PointsToEvaluate;
 		nSample = size(designSample,1);
 	end
 
-	if(isempty(options.GroupedEvaluations))
-    	options.GroupedEvaluations = ceil(sqrt(nSample));
+	if(isempty(options.BatchEvaluationsSize))
+    	options.BatchEvaluationsSize = ceil(sqrt(nSample));
    	end
 
 	if(isinf(options.ObjectiveFunctionThresholdValue) || ...
@@ -137,7 +139,7 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 		constraintValue = [];
 
 		iStart = 1;
-		iEnd = min([iStart+options.GroupedEvaluations-1,nSample]);
+		iEnd = min([iStart+options.BatchEvaluationsSize-1,nSample]);
 		foundOptimal = false;
 		while(~foundOptimal && iStart<=nSample)
 			iEvaluate = iStart:iEnd;
@@ -171,7 +173,7 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_samp
 				constraintValue(iEvaluate(end)+1:end,:) = [];
 			else
 				iStart = iEnd+1;
-				iEnd = min([iStart+options.GroupedEvaluations-1,nSample]);
+				iEnd = min([iStart+options.BatchEvaluationsSize-1,nSample]);
 			end
 		end
 	end

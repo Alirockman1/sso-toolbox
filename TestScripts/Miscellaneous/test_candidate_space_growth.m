@@ -22,7 +22,7 @@ figureSize = [goldenratio 1]*8.5;
 designSpaceLowerBound = [0 0];
 designSpaceUpperBound = [1 1];
 
-designSample = designSpaceLowerBound + rand(10000,2).*(designSpaceUpperBound-designSpaceLowerBound);
+designSample = designSpaceLowerBound + rand(1000,2).*(designSpaceUpperBound-designSpaceLowerBound);
 
 systemFunction = @distance_to_center;
 systemParameter = [0.5 0.5];
@@ -43,21 +43,22 @@ grid minor;
 
 
 %% train candidate space
-candidateSpace = CandidateSpaceSvm(designSpaceLowerBound,designSpaceUpperBound);
-candidateSpace = candidateSpace.define_candidate_space(designSample,labelSample);
+candidateSpace = CandidateSpaceDelaunay(designSpaceLowerBound,designSpaceUpperBound);
+candidateSpace = candidateSpace.generate_candidate_space(designSample,labelSample);
 isShapeDefinition = candidateSpace.IsShapeDefinition;
 
 figure;
+candidateSpace.plot_candidate_space(gcf,'FaceColor','g','FaceAlpha',0.5,'EdgeColor','k');
+hold all
 plot(designSample(labelSample,1),designSample(labelSample,2),'g.');
-hold all;
 plot(designSample(~labelSample,1),designSample(~labelSample,2),'r.');
-candidateSpace.plot_candidate_space(gcf,'FaceColor','g','FaceAlpha',0.5,'EdgeColor','none');
 plot(designSample(isShapeDefinition,1),designSample(isShapeDefinition,2),'bo');
 grid minor;
+legend({'Inside Points','Outside Points','Candidate Space Inside Region','Shape Points'});
 
 
 %% grow candidate space
-grownCandidateSpace = candidateSpace.grow_candidate_space(0.1);
+grownCandidateSpace = candidateSpace.expand_candidate_space(0.1);
 
 figure;
 plot(designSample(labelSample,1),designSample(labelSample,2),'g.');

@@ -31,9 +31,9 @@ classdef CandidateSpaceBoundingBox < CandidateSpaceBase
 %       designs in its edges. 
 %
 %   CANDIDATESPACEBOUNDINGBOX methods:
-%       - define_candidate_space : create a candidate space based on design 
+%       - generate_candidate_space : create a candidate space based on design 
 %       samples that are labeled as inside/outside.
-%       - grow_candidate_space : expand the candidate space by a given factor.
+%       - expand_candidate_space : expand the candidate space by a given factor.
 %       - is_in_candidate_space : verify if given design samples are inside 
 %       the candidate space.
 %       - plot_candidate_space : visualize 1D/2D/3D candidate spaces in given
@@ -41,7 +41,7 @@ classdef CandidateSpaceBoundingBox < CandidateSpaceBase
 %
 %   See also CandidateSpaceBase.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -65,6 +65,18 @@ classdef CandidateSpaceBoundingBox < CandidateSpaceBase
         %
         %   See also DesignSampleDefinition, IsInsideDefinition.  
         Measure
+
+        %SAMPLINGBOX Bounding box of inside region used to help with sampling
+        %   SAMPLINGBOX is a bounding box formed around the internal region of the
+        %   candidate space. It can be used to facilitate trying to sample inside said
+        %   space.
+        %
+        %   SAMPLINGBOX : (2,nDesignVariable) double
+        %       - (1) : lower boundary of the design box
+        %       - (2) : upper boundary of the design box
+        %
+        %   See also SamplingBoxSlack.
+        SamplingBox
     end
 
     properties (SetAccess = protected)
@@ -109,6 +121,17 @@ classdef CandidateSpaceBoundingBox < CandidateSpaceBase
         %
         %   See also DesignSampleDefinition, IsInsideDefinition.
         BoundingBox
+
+        %SAMPLINGBOXSLACK Slack allowed for for the sampling box
+        %   SAMPLINGBOXSLACK defines where the boundaries of the sampling box will be 
+        %   relative to the strictest bounding box and the most relaxed bounding box. A 
+        %   value of 0 means no slack and therefore the sampling box will be the most 
+        %   strict one possible, and 1 means the sampling box will be the most relaxed.
+        %
+        %   SAMPLINGBOXSLACK : double
+        %
+        %   See also SamplingBox, design_bounding_box.
+        SamplingBoxSlack
     end
     
     methods
@@ -151,18 +174,18 @@ classdef CandidateSpaceBoundingBox < CandidateSpaceBase
             obj.DesignSpaceUpperBound = designSpaceUpperBound;
         end
         
-        function obj = define_candidate_space(obj,designSample,isInside)
-        %DEFINE_CANDIDATE_SPACE Initial definition of the candidate space
-        %   DEFINE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
+        function obj = generate_candidate_space(obj,designSample,isInside)
+        %GENERATE_CANDIDATE_SPACE Initial definition of the candidate space
+        %   GENERATE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
         %   outside regions of the candidate space. For CandidateSpaceBoundingBox, this 
         %   means a bounding box is created around the inside designs, and everything 
         %   inside that box is then labeled as being inside the space as well.
         %
-        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
+        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
         %   points in DESIGNSAMPLE and returns a candidate space object OBJ with the new
         %   definition, assuming all designs are inside the candidate space.
         %
-        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
+        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
         %   receives the inside/outside (true/false) labels of each design point in 
         %   ISINSIDE.
         %
@@ -223,14 +246,14 @@ classdef CandidateSpaceBoundingBox < CandidateSpaceBase
             obj.IsShapeDefinition = ismember((1:nSample)',isShapeDefinitionIndex);
         end
         
-        function obj = grow_candidate_space(obj,growthRate)
-        %GROW_CANDIDATE_SPACE Expansion of candidate space by given factor
-        %   GROW_CANDIDATE_SPACE will grow the region considered inside the current 
+        function obj = expand_candidate_space(obj,growthRate)
+        %EXPAND_CANDIDATE_SPACE Expansion of candidate space by given factor
+        %   EXPAND_CANDIDATE_SPACE will grow the region considered inside the current 
         %   candidate space by the factor given. Said growth is done in a fixed rate 
         %   defined by the input relative to the design space.
         %   This is done by extending the bounding box equally in all dimensions.
         %
-        %   OBJ = OBJ.GROW_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
+        %   OBJ = OBJ.EXPAND_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
         %   defined in OBJ by a factor of GROWTHRATE. This is an isotropic expansion of 
         %   the candidate space by a factor of the growth rate times the size of the 
         %   design space.
@@ -242,7 +265,7 @@ classdef CandidateSpaceBoundingBox < CandidateSpaceBase
         %   Outputs:
         %       - OBJ : CandidateSpaceBoundingBox
         %   
-        %   See also define_candidate_space, design_box_grow_fixed.
+        %   See also generate_candidate_space, design_box_grow_fixed.
 
             % Expand candidate solution box in both sides of each interval isotroply
             obj.BoundingBox = design_box_grow_fixed(obj.BoundingBox,...
@@ -278,6 +301,13 @@ classdef CandidateSpaceBoundingBox < CandidateSpaceBase
         %       - SCORE : (nSample,1) double
         %   
         %   See also is_in_design_box.
+
+            nSample = size(designSample,1);
+            if(isempty(obj.DesignSampleDefinition))
+                isInside = true(nSample,1);
+                score = zeros(nSample,1);
+                return;
+            end
 
             [isInside,score] = is_in_design_box(designSample,obj.BoundingBox);
         end
@@ -316,6 +346,15 @@ classdef CandidateSpaceBoundingBox < CandidateSpaceBase
 
         function isShapeDefinition = get.IsShapeDefinition(obj)
             isShapeDefinition = obj.IsShapeDefinition;
+        end
+
+        function samplingBox = get.SamplingBox(obj)
+            [boundingBoxStrict,boundingBoxRelaxed] = design_bounding_box(...
+                obj.DesignSampleDefinition,obj.IsInsideDefinition);
+            samplingBox = (1-obj.SamplingBoxSlack).*boundingBoxStrict + ...
+                obj.SamplingBoxSlack.*boundingBoxRelaxed;
+            samplingBox(1,:) = max(samplingBox(1,:),obj.DesignSpaceLowerBound);
+            samplingBox(2,:) = min(samplingBox(2,:),obj.DesignSpaceUpperBound);
         end
         
         function measure = get.Measure(obj)

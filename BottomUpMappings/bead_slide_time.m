@@ -39,7 +39,7 @@ function performanceMeasure = bead_slide_time(designSample,systemParameter)
 %
 %   See also interp1, trapz, solve_analytical_brachistochrone.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

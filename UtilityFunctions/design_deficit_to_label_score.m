@@ -33,22 +33,39 @@ function [label,score] = design_deficit_to_label_score(measureDeficit,deficitWei
 %
 %   See also DesignEvaluatorBottomUpMapping.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
     % set default weight
-    nDeficit  = size(measureDeficit,2);
     if(nargin<2 || isempty(deficitWeight))
         deficitWeight = 1;
     end
 
-    % calculate score based on worst-case objective meta function and 
-    % label accordingly
+    % label based on worst-case (if any deficit is positive, design is bad)
     weightedDeficit = deficitWeight.*measureDeficit;
-    score = max(weightedDeficit,[],2);
-    label = (score<=0);
+    worstCase = max(weightedDeficit,[],2);
+    label = (worstCase<=0);
+    
+    if(nargout>1)
+        % ignore -inf entries for score calculation (no limit)
+        weightedDeficit(weightedDeficit==-inf) = nan;
 
-    % for bad designs, use the sum of violated limits instead of worst-case
-    violatedLimit = max(weightedDeficit,0);
-    score(~label) = sqrt(sum(violatedLimit(~label,:).^2,2));
+        % see which limits were violated, if any
+        violatedLimit = max(weightedDeficit,0);
+        score = nan(size(worstCase));
+        
+        % for bad designs, use worst-case
+        % score(~label) = worstCase(~label);
+        % for bad designs, use the sum of violated limits instead of worst-case
+        score(~label) = sqrt(sum(violatedLimit(~label,:).^2,2));
+    
+        % for good designs, use worst-case
+        % score(label) = worstCase(label);
+        % for good designs, use geometric mean of deficits
+        score(label) = -geomean(abs(weightedDeficit(label,:)),2,'omitnan');
+
+        % if any entry is nan, throw it to either extreme of min/max
+        score(label & isnan(score)) = min(score);
+        score(~label & isnan(score)) = max(score);
+    end
 end

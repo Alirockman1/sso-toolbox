@@ -2,7 +2,7 @@
 %   test_bounding_box allows the visualization of the difference between the
 %	variants of the bounding box, namely its strict and relaxed versions.
 %
-% Copyright 2024 Eduardo Rodrigues Della Noce
+% Copyright 2025 Eduardo Rodrigues Della Noce
 % SPDX-License-Identifier: Apache-2.0
 
 % Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,8 +42,8 @@ label = [true(size(designSampleGood,1),1);false(size(designSampleBad,1),1)];
 [boundingBoxStrict,boundingBoxRelaxed] = design_bounding_box(designSample,label);
 
 candidateSpace = CandidateSpaceBoundingBox(designSpaceLowerBound,designSpaceUpperBound);
-candidateSpace = candidateSpace.define_candidate_space(designSample,label);
-shapeDefinition = candidateSpace.DesignSampleDefinition(candidateSpace.ShapeDefinition,:);
+candidateSpace = candidateSpace.generate_candidate_space(designSample,label);
+shapeDefinition = candidateSpace.DesignSampleDefinition(candidateSpace.IsShapeDefinition,:);
 
 labelBoundary = design_find_boundary_samples(designSample,label);
 

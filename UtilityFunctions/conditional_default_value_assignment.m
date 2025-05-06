@@ -25,7 +25,7 @@ function newValue = conditional_default_value_assignment(value,defaultValue,cond
 %
 %   See also: isempty, ternary, ternary_array.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

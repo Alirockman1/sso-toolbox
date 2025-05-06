@@ -1,4 +1,4 @@
-function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEvaluator,initialBox,designSpaceLowerBound,designSpaceUpperBound,varargin)
+function [candidateBox,optimizationData] = sso_box_stochastic(designEvaluator,initialBox,designSpaceLowerBound,designSpaceUpperBound,varargin)
 %SSO_BOX_STOCHASTIC Box-shaped solution spaces optimization (Stochastic method)
 %   SSO_BOX_STOCHASTIC uses a modified version of the stochastic method to 
 %   compute optimal soluton (or requirement) spaces. 
@@ -15,12 +15,8 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
 %   change the options being used through the output of 'sso_stochastic_options'
 %   OPTIONS.
 %
-%   [CANDIDATEBOX,PROBLEMDATA] = SSO_BOX_STOCHASTIC(...) additionally returns
-%   the fixed problem data in PROBLEMDATA.
-%
-%   [CANDIDATEBOX,PROBLEMDATA,ITERATIONDATA] = SSO_BOX_STOCHASTIC(...) 
-%   additionally returns data generated at each iteration of the process
-%   ITERATIONDATA.
+%   [CANDIDATEBOX,OPTIMIZATIONDATA] = SSO_BOX_STOCHASTIC(...) additionally returns
+%   the fixed problem and iteration data in OPTIMIZATIONDATA.
 %
 %
 %   Input:
@@ -32,29 +28,29 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
 %
 %   Output:
 %       - CANDIDATEBOX  : (2,nDesignVariable) double
-%       - PROBLEMDATA : struct
+%       - OPTIMIZATIONDATA : struct
 %           - DesignEvaluator : DesignEvaluatorBase 
 %           - InitialBox : (2,nDesignVariable) double
 %           - DesignSpaceLowerBound : (1,nDesignVariable) double
 %           - DesignSpaceUpperBound : (1,nDesignVariable) double
 %           - Options : struct
 %           - InitialRNGState : struct
-%       - ITERATIONDATA : (nIteration,1) struct
-%           - EvaluatedDesignSamples : (nSample,nDesignVariable) double
-%           - EvaluationOutput : class-dependent
-%           - Phase : integer
-%           - GrowthRate : double
-%           - DesignScore : (nSample,1) double
-%           - IsGoodPerformance : (nSample,1) logical
-%           - IsPhysicallyFeasible : (nSample,1) logical
-%           - IsAcceptable : (nSample,1) logical
-%           - IsUseful : (nSample,1) logical
-%           - CandidateBoxBeforeTrim : (2,nDesignVariable) double
-%           - CandidateBoxAfterTrim : (2,nDesignVariable) double
+%           - IterationData : (nIteration,1) struct
+%               - EvaluatedDesignSamples : (nSample,nDesignVariable) double
+%               - EvaluationOutput : class-dependent
+%               - Phase : integer
+%               - GrowthRate : double
+%               - DesignScore : (nSample,1) double
+%               - IsGoodPerformance : (nSample,1) logical
+%               - IsPhysicallyFeasible : (nSample,1) logical
+%               - IsAcceptable : (nSample,1) logical
+%               - IsUseful : (nSample,1) logical
+%               - CandidateBoxBeforeTrim : (2,nDesignVariable) double
+%               - CandidateBoxAfterTrim : (2,nDesignVariable) double
 %
 %   See also sso_stochastic_options.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -99,65 +95,65 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
     end
     
     % Initial Measure
-    measure = options.MeasureFunction(candidateBox, [], options.MeasureOptions{:});
-    if(isinf(measure) || isnan(measure))
-        measure = 0;
+    measureTrimmed = options.MeasureFunction(candidateBox, [], options.MeasureOptions{:});
+    if(isinf(measureTrimmed) || isnan(measureTrimmed))
+        measureTrimmed = 0;
     end
-    
+    nDimension = size(designSpaceLowerBound,2);
     
     %% Log Initialization
-    if(nargout>=2)
-        problemData = struct(...
+    isOutputOptimizationData = (nargout>=2);
+    if(isOutputOptimizationData)
+        optimizationData = struct(...
             'DesignEvaluator',designEvaluator,...
             'InitialBox',candidateBox,...
             'DesignSpaceLowerBound',designSpaceLowerBound,...
             'DesignSpaceUpperBound',designSpaceUpperBound,...
             'Options',options,...
             'InitialRNGState',rng);
-    end
-
-    isOutputIterationData = (nargout>=3);
-    if(isOutputIterationData)
-        iterationData = struct(... % system data
-        	'EvaluatedDesignSamples',[],...
-            'EvaluationOutput',[],...
-            ... % algorithm data
-            'Phase',[],...
-            'GrowthRate',[],...
-            ... % evaluation data
-            'DesignScore',[],...
-            'IsGoodPerformance',[],...
-            'IsPhysicallyFeasible',[],...
-            'IsAcceptable',[],...
-            'IsUseful',[],...
-            ... % trimming data
-            'CandidateBoxBeforeTrim',[],...
-            'CandidateBoxAfterTrim',[]);
-        logindex = 1;
+        iLog = 1;
     end
 
     %% Phase I - Exploration
     iExploration = 1;
-    hasConvergedExploration = false;
-    measurePrevious = measure;
     growthRate = options.GrowthRate;
+    hasConvergedExploration = false;
     while((~hasConvergedExploration) && (iExploration<=options.MaxIterExploration))
         %% Modification Step B - Growth: Extend Candidate Box
         console.info([repelem('=',120),'\n']);
         console.info('Initiating Phase I - Exploration: Iteration %d\n',iExploration);
-        console.info('Growing candidate box... ');
-        tic
-
+        
         % Change growth rate depending on previous result
         if(iExploration>1 && options.UseAdaptiveGrowthRate)
+            console.info('Adapting growth rate... ');
+            tic
+
+            purity = nAcceptable/nSample;
+            purity = max(min(purity,options.MaximumGrowthPurity),options.MinimumGrowthPurity);
+
+            increaseMeasure = measureGrown - measurePrevious;
+            increaseMeasureAcceptable = max(measureGrown*purity - measurePrevious,0);
+            fractionAcceptableIncreaseMeasure = increaseMeasureAcceptable/increaseMeasure;
+
             % Change step size to a bigger or smaller value depending on whether
-            % there were or weren't enough good design points in the step and repeat step
-            growthRate = (1/options.TargetAcceptedRatioExploration)*(nAcceptable/nSample)*growthRate;
-            growthRate = max(growthRate,options.MinimumGrowthRate);
+            % the achieved purity is smaller or larger than the desired one
+            growthAdaptationFactor = options.GrowthAdaptationFactorFunction(...
+                purity,options.TargetAcceptedRatioExploration,nDimension,fractionAcceptableIncreaseMeasure,...
+                options.GrowthAdaptationFactorOptions{:});
+            growthAdaptationFactor = max(min(growthAdaptationFactor,options.MaximumGrowthAdaptationFactor),options.MinimumGrowthAdaptationFactor);
+
+            growthRate = growthAdaptationFactor * growthRate;
+            growthRate = max(min(growthRate,options.MaximumGrowthRate),options.MinimumGrowthRate);
+
+            console.info('Elapsed time is %g seconds.\n',toc);
         end
+        measurePrevious = measureTrimmed;
         
         % Where design variables aren't fixed, expand candidate solution box 
         %   in both sides of each interval isotroply
+        console.info('Growing candidate box... ');
+        tic
+
         candidateBoxGrown = design_box_grow_fixed(candidateBox,designSpaceLowerBound,designSpaceUpperBound,growthRate);
         
         console.info('Elapsed time is %g seconds.\n',toc);
@@ -168,7 +164,7 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
         nSample = get_current_array_entry(options.NumberSamplesPerIterationExploration,iExploration);
         
         % Generate samples that are to be evaluated
-        designSample = box_sso_generate_new_sample_points(...
+        designSample = sso_box_sub_generate_new_sample_points(...
             candidateBoxGrown,...
             nSample,...
             options.SamplingMethodFunction,...
@@ -176,26 +172,26 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
             console);
         
         % Evaluate the samples
-        [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation] = box_sso_evaluate_sample_points(...
+        [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation] = sso_box_sub_evaluate_sample_points(...
             designEvaluator,...
             designSample,...
             console);
         
         % Label samples according to desired requirement spaces problem type
-        [isAcceptable,isUseful] = box_sso_label_samples_requirement_spaces(...
+        [isAcceptable,isUseful] = sso_box_sub_label_samples_requirement_spaces(...
             requirementSpacesType,...
             isGoodPerformance,...
             isPhysicallyFeasible,...
             console);
         
         % Count number of labels
-        [nAcceptable,nUseful,nAcceptableUseful] = box_sso_count_label_acceptable_useful(...
+        [nAcceptable,nUseful,nAcceptableUseful] = sso_box_sub_count_label_acceptable_useful(...
             isAcceptable,...
             isUseful,...
             console);
         
         % Compute candidate box measure
-        measureGrown = box_sso_compute_candidate_box_measure(...
+        measureGrown = sso_box_sub_compute_candidate_box_measure(...
             candidateBoxGrown,...
             nSample,...
             nUseful,...
@@ -208,7 +204,36 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
         if(nAcceptable==0 || nUseful==0 || nAcceptableUseful==0)
             console.warn('SSOOptBox:BadSampling',['No good/useful points found, ',...
                 'rolling back and reducing growth rate to minimum...']);
-            growthRate = options.MinimumGrowthRate;
+
+            if(isOutputOptimizationData)
+                console.info('Logging relevant information... ');
+                tic
+                
+                optimizationData.IterationData(iLog) = struct(... 
+                    ... % system data
+                    'EvaluatedDesignSamples',designSample,...
+                    'EvaluationOutput',outputEvaluation,...
+                    ... % algorithm data
+                    'Phase',1,...
+                    'GrowthRate',growthRate,...
+                    ... % problem data
+                    'DesignScore',score,...
+                    'IsGoodPerformance',isGoodPerformance,...
+                    'IsPhysicallyFeasible',isPhysicallyFeasible,...
+                    'IsAcceptable',isAcceptable,...
+                    'IsUseful',isUseful,...
+                    ... % trimming data
+                    'CandidateBoxBeforeTrim',candidateBoxGrown,...
+                    'CandidateBoxAfterTrim',candidateBox);
+                
+                % Finalizing
+                iLog = iLog + 1;
+                console.info('Elapsed time is %g seconds.\n',toc);
+            end
+
+            % limit growth rate to this current value
+            %options.MaximumGrowthRate = growthRate;
+
             iExploration = iExploration + 1;
             continue;
         end
@@ -217,7 +242,7 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
         %% Modification Step A - Trimming: Remove Bad Points
         % find trimming order
         orderTrim = options.TrimmingOrderFunction(~isAcceptable,score,options.TrimmingOrderOptions{:});
-        [candidateBoxTrimmed,measureTrimmed] = box_sso_trimming_operation(...
+        [candidateBoxTrimmed,measureTrimmed] = sso_box_sub_trimming_operation(...
             candidateBoxGrown,...
             measureGrown,...
             designSample,...
@@ -233,7 +258,7 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
             candidateBoxTrimmed = box_trimming_leanness(designSample,isUseful,trimmingOrder,candidateBoxTrimmed);
             % get estimate of new measure
             insideBoxNew = is_in_design_box(designSample,candidateBoxTrimmed);
-            measureTrimmed = box_sso_compute_candidate_box_measure(...
+            measureTrimmed = sso_box_sub_compute_candidate_box_measure(...
                 candidateBox,...
                 sum(insideBoxNew),...
                 sum(insideBoxNew & isUseful),...
@@ -255,12 +280,12 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
         
         console.info('Elapsed time is %g seconds.\n',toc);  
         
-        if(isOutputIterationData)
+        if(isOutputOptimizationData)
             %% Save Data
             console.info('Logging relevant information... ');
             tic
 
-            iterationData(logindex) = struct(...
+            optimizationData.IterationData(iLog) = struct(...
                 ... % system data
                 'EvaluatedDesignSamples',designSample,...
                 'EvaluationOutput',outputEvaluation,...
@@ -278,7 +303,7 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
                 'CandidateBoxAfterTrim',candidateBoxTrimmed);
             
             % Finalizing
-            logindex = logindex + 1;
+            iLog = iLog + 1;
             
             console.info('Elapsed time is %g seconds.\n',toc);
         end
@@ -288,7 +313,6 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
         console.info('Done with iteration %d!\n\n',iExploration);
     
         candidateBox = candidateBoxTrimmed;
-        measurePrevious = measureTrimmed;
         iExploration = iExploration + 1;
     end
     console.info('\nDone with Phase I - Exploration in iteration %d!\n\n',iExploration-1);
@@ -316,7 +340,7 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
         nSample = get_current_array_entry(options.NumberSamplesPerIterationConsolidation,iConsolidation);
         
         % Generate samples that are to be evaluated
-        designSample = box_sso_generate_new_sample_points(...
+        designSample = sso_box_sub_generate_new_sample_points(...
             candidateBox,...
             nSample,...
             options.SamplingMethodFunction,...
@@ -324,29 +348,29 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
             console);
 
         % Evaluate the samples
-        [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation] = box_sso_evaluate_sample_points(...
+        [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation] = sso_box_sub_evaluate_sample_points(...
             designEvaluator,...
             designSample,...
             console);
 
         % Label samples according to desired requirement spaces problem type
-        [isAcceptable,isUseful] = box_sso_label_samples_requirement_spaces(...
+        [isAcceptable,isUseful] = sso_box_sub_label_samples_requirement_spaces(...
             options.RequirementSpacesType,...
             isGoodPerformance,...
             isPhysicallyFeasible,...
             console);
 
         % Count number of labels
-        [nAcceptable,nUseful,nAcceptableUseful] = box_sso_count_label_acceptable_useful(isAcceptable,isUseful,console);
+        [nAcceptable,nUseful,nAcceptableUseful] = sso_box_sub_count_label_acceptable_useful(isAcceptable,isUseful,console);
 
         % No viable design found; throw error
         if(nAcceptable==0 || nUseful==0 || nAcceptableUseful==0)
-            console.error('SSOOptBox:BadSampling',['No good/useful points found, ',...
+            console.critical('SSOOptBox:BadSampling',['No good/useful points found, ',...
                 'please retry process with different parameters / looser requirements.']);
         end
 
         % Compute candidate box measure
-        measure = box_sso_compute_candidate_box_measure(...
+        measure = sso_box_sub_compute_candidate_box_measure(...
             candidateBox,...
             nSample,...
             nUseful,...
@@ -364,7 +388,7 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
         %% Modification Step A (Trimming): Remove Bad Points
         if(~convergenceConsolidation)
             orderTrim = options.TrimmingOrderFunction(~isAcceptable,score,options.TrimmingOrderOptions{:});
-            [candidateBoxTrimmed,measureTrimmed] = box_sso_trimming_operation(...
+            [candidateBoxTrimmed,measureTrimmed] = sso_box_sub_trimming_operation(...
                 candidateBox,...
                 measure,...
                 designSample,...
@@ -381,7 +405,7 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
             candidateBoxTrimmed = box_trimming_leanness(designSample,isUseful,trimmingOrder,candidateBoxTrimmed);
             % get estimate of new measure
             insideBoxNew = is_in_design_box(designSample,candidateBoxTrimmed);
-            measureTrimmed = box_sso_compute_candidate_box_measure(...
+            measureTrimmed = sso_box_sub_compute_candidate_box_measure(...
                 candidateBox,...
                 sum(insideBoxNew),...
                 sum(insideBoxNew & isUseful),...
@@ -396,12 +420,12 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
             convergenceConsolidation = true;
         end
         
-        if(isOutputIterationData)
+        if(isOutputOptimizationData)
             %% Save Data
             console.info('Logging relevant information... ');
             tic
 
-            iterationData(logindex) = struct(...
+            optimizationData.IterationData(iLog) = struct(...
                 ... % system data
                 'EvaluatedDesignSamples',designSample,...
                 'EvaluationOutput',outputEvaluation,...
@@ -419,7 +443,7 @@ function [candidateBox,problemData,iterationData] = sso_box_stochastic(designEva
                 'CandidateBoxAfterTrim',candidateBoxTrimmed);
             
             % Finalizing
-            logindex = logindex + 1;
+            iLog = iLog + 1;
             console.info('Elapsed time is %g seconds.\n',toc);
         end
         
@@ -441,7 +465,7 @@ end
 
 
 %% Generate New Samples
-function designSample = box_sso_generate_new_sample_points(candidateBox,nSample,samplingFunction,samplingOptions,console)
+function designSample = sso_box_sub_generate_new_sample_points(candidateBox,nSample,samplingFunction,samplingOptions,console)
     console.info('Generating new sample points in candidate box... ');
     tic
     
@@ -453,13 +477,19 @@ end
 
 
 %% Evaluate Samples
-function [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation] = box_sso_evaluate_sample_points(designEvaluator,designSample,console)
+function [isGoodPerformance,isPhysicallyFeasible,score,outputEvaluation] = sso_box_sub_evaluate_sample_points(designEvaluator,designSample,console)
     console.info('Evaluating sample points... ');
     tic
     
-    [reserveReq,reservePf,outputEvaluation] = designEvaluator.evaluate(designSample);
-    [isGoodPerformance,score] = design_deficit_to_label_score(reserveReq);
-    isPhysicallyFeasible = design_deficit_to_label_score(reservePf);
+    [performanceDeficit,physicalFeasibilityDeficit,outputEvaluation] = designEvaluator.evaluate(designSample);
+    
+    [isGoodPerformance,score] = design_deficit_to_label_score(performanceDeficit);
+    
+    if(~isempty(physicalFeasibilityDeficit))
+        isPhysicallyFeasible = design_deficit_to_label_score(physicalFeasibilityDeficit);
+    else
+        isPhysicallyFeasible = true(size(designSample,1),1);
+    end
 
     console.info('Elapsed time is %g seconds.\n',toc);
     nSamples = size(designSample,1);
@@ -471,7 +501,7 @@ end
 
 
 %% Label Samples
-function [isAcceptable,isUseful] = box_sso_label_samples_requirement_spaces(requirementSpacesType,isGoodPerformance,isPhysicallyFeasible,console)
+function [isAcceptable,isUseful] = sso_box_sub_label_samples_requirement_spaces(requirementSpacesType,isGoodPerformance,isPhysicallyFeasible,console)
     console.info('Creating labels for each design... ');
     tic
     
@@ -487,7 +517,7 @@ end
 
 
 %% Count Labels
-function [nAcceptable,nUseful,nAcceptableUseful] = box_sso_count_label_acceptable_useful(isAcceptable,isUseful,console)
+function [nAcceptable,nUseful,nAcceptableUseful] = sso_box_sub_count_label_acceptable_useful(isAcceptable,isUseful,console)
     nAcceptable = sum(isAcceptable);
     nUseful = sum(isUseful);
     nAcceptableUseful = sum(isAcceptable & isUseful);
@@ -500,7 +530,7 @@ end
 
 
 %% Compute Measure
-function measure = box_sso_compute_candidate_box_measure(candidateBox,nSample,nUseful,measureFunction,measureOptions,console)
+function measure = sso_box_sub_compute_candidate_box_measure(candidateBox,nSample,nUseful,measureFunction,measureOptions,console)
     console.info('Computing candidate box measure... ');
     tic
 
@@ -511,7 +541,7 @@ function measure = box_sso_compute_candidate_box_measure(candidateBox,nSample,nU
 end
 
 %% Trimming Operation
-function [candidateBoxTrimmed,measureTrimmed] = box_sso_trimming_operation(candidateBox,measure,designSample,isAcceptable,isUseful,orderTrim,trimmingMethodFunction,trimmingOperationOptions,console)
+function [candidateBoxTrimmed,measureTrimmed] = sso_box_sub_trimming_operation(candidateBox,measure,designSample,isAcceptable,isUseful,orderTrim,trimmingMethodFunction,trimmingOperationOptions,console)
     console.info('Performing box trimming operation... ');
     tic
     

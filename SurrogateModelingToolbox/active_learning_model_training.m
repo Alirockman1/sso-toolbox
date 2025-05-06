@@ -105,7 +105,7 @@ function [fastForwardModel,problemData,iterData] = active_learning_model_trainin
 %
 %   See also run_bottom_up_mapping, active_learning_model_training_options.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -229,30 +229,27 @@ function [fastForwardModel,problemData,iterData] = active_learning_model_trainin
 
         console.info('Deciding on ratio between expected positive and negative designs...');
         tic
-        if(nSample<=nNegativeTrain-nPositiveTrain) % too many negative designs already in training set
+        nSampleExploratory = round(nSample*options.ExplorationToBoundaryRatio);
+        if(nSampleExploratory<=nNegativeTrain-nPositiveTrain) % too many negative designs already in training set
             nNegativeEvaluate = 0;
-            nPositiveEvaluate = nSample;
-        elseif(nSample<=nPositiveTrain-nNegativeTrain) % too many positive designs already in training set
+            nPositiveEvaluate = nSampleExploratory;
+        elseif(nSampleExploratory<=nPositiveTrain-nNegativeTrain) % too many positive designs already in training set
             nPositiveEvaluate = 0;
-            nNegativeEvaluate = nSample;
+            nNegativeEvaluate = nSampleExploratory;
         else % close balance, try to match numbers
-            nPositiveEvaluate = round((nSample - (nPositiveTrain-nNegativeTrain))/2);
-            nNegativeEvaluate = nSample - nPositiveEvaluate;
+            nPositiveEvaluate = round((nSampleExploratory - (nPositiveTrain-nNegativeTrain))/2);
+            nNegativeEvaluate = nSampleExploratory - nPositiveEvaluate;
         end
-        nPositiveEvaluateExploratory = round(nPositiveEvaluate*options.ExplorationToBoundaryRatio);
-        nNegativeEvaluateExploratory = round(nNegativeEvaluate*options.ExplorationToBoundaryRatio);
-        nPositiveEvaluateBoundary = nPositiveEvaluate - nPositiveEvaluateExploratory;
-        nNegativeEvaluateBoundary = nNegativeEvaluate - nNegativeEvaluateExploratory;
+        nBoundaryEvaluate = max(nSample - nSampleExploratory,0);
         console.info('Elapsed time is %g seconds.\n',toc);
 
         % Sampling region
         console.info('Generating initial candidate starting points and directions... ');
         tic
         nDesiredSample = struct(...
-            'PositiveExploratory',nPositiveEvaluateExploratory,...
-            'NegativeExploratory',nNegativeEvaluateExploratory,...
-            'PositiveBoundary',nPositiveEvaluateBoundary,...
-            'NegativeBoundary',nNegativeEvaluateBoundary);
+            'Positive',nPositiveEvaluate,...
+            'Negative',nNegativeEvaluate,...
+            'Boundary',nBoundaryEvaluate);
         [designSample,scorePrediction,labelBoundary] = options.ActiveLearningSamplingFunction(fastForwardModel,designSpace,nDesiredSample,nCandidate,options.ActiveLearningSamplingOptions{:});
         labelPrediction = (scorePrediction<=0);
         console.info('Elapsed time is %g seconds.\n',toc);

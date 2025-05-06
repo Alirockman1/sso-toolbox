@@ -1,6 +1,6 @@
 function normalizationFactor = design_measure_normalization_factor(measure,lowerLimit,upperLimit)
-%design_measure_normalization_factor Normalization factor for measures
-%   design_measure_normalization_factor calculates an appropriate normalization  
+%DESIGN_MEASURE_NORMALIZATION_FACTOR Normalization factor for measures
+%   DESIGN_MEASURE_NORMALIZATION_FACTOR calculates an appropriate normalization  
 %   factor which may be used for the measures of a design sample; it does so 
 %   based on the given limits and, if necessary, on the measure acquired.
 %   - For values with well-defined limits: upper limit - lower limit;
@@ -9,16 +9,16 @@ function normalizationFactor = design_measure_normalization_factor(measure,lower
 %   - If that result is not suitable: absolute value of the mean of measures; 
 %   - Last case: 1.
 %   
-%   NORMALIZATIONFACTOR = design_measure_normalization_factor(MEASURE) receives
+%   NORMALIZATIONFACTOR = DESIGN_MEASURE_NORMALIZATION_FACTOR(MEASURE) receives
 %   the measures of the design samples in MEASURE and computes the normalization
 %   factor, returning it in NORMALIZATIONFACTOR.
 %
-%   NORMALIZATIONFACTOR = design_measure_normalization_factor(MEASURE,
+%   NORMALIZATIONFACTOR = DESIGN_MEASURE_NORMALIZATION_FACTOR(MEASURE,
 %   LOWERLIMIT) allows for the specification of the desired lower limit for the
 %   measures in LOWERLIMIT. Default value is 'inf'. If any entry is set to 
 %   'nan', that entry will be assumed to be '-inf' as well.
 %
-%   NORMALIZATIONFACTOR = design_measure_normalization_factor(MEASURE,
+%   NORMALIZATIONFACTOR = DESIGN_MEASURE_NORMALIZATION_FACTOR(MEASURE,
 %   LOWERLIMIT,UPPERLIMIT) allows for the specification of the desired upper 
 %   limit for the measures in UPPERLIMIT. Default value is '0'. If any entry  
 %   is set to 'nan', that entry will be assumed to be '+inf'.
@@ -33,7 +33,7 @@ function normalizationFactor = design_measure_normalization_factor(measure,lower
 %
 %   See also design_measure_to_deficit.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

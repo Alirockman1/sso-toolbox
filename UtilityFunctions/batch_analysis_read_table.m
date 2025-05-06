@@ -29,7 +29,7 @@ function batchOptions = batch_analysis_read_table(filename)
 %
 %   See also readtable.
 %   
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -84,6 +84,21 @@ end
 
 
 function d = readNumericEntries(s)
+%READNUMERICENTRIES Convert string to number with comma decimal separator
+%   READNUMERICENTRIES converts a string that uses commas as decimal separators
+%   to a numeric value by replacing commas with periods and then converting.
+%
+%   D = READNUMERICENTRIES(S) converts the string S to a numeric value D,
+%   replacing any commas with periods before conversion.
+%
+%   Input:
+%       - S : string or char array
+%
+%   Output:
+%       - D : double
+%
+%   See also str2double.
+
     commas = (s==',');
     s(commas) = '.';
     d = str2double(s);

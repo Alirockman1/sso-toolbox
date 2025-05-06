@@ -27,7 +27,7 @@ function plotHandle = plot_svm_decision_boundary_3d(fighan,svm,varargin)
 %
 %   See also patch, ClassificationSVM, legend, isosurface.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

@@ -22,7 +22,7 @@ function varargout = convert_logical_index_base_or(varargin)
 %
 %   See also or, varargin, varargout.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 	% find final output logical array

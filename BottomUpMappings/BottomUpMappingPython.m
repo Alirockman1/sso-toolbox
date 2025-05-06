@@ -18,7 +18,7 @@ classdef BottomUpMappingPython < BottomUpMappingBase
 %
 %   See also BottomUpMappingBase.
 %
-%   Copyright 2024 Eduardo Rodrigues Della Noce
+%   Copyright 2025 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
     
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -128,29 +128,29 @@ classdef BottomUpMappingPython < BottomUpMappingBase
 	end
 
 	methods
-        function obj = BottomUpMappingPython(SystemfunctionName,varargin)
+        function obj = BottomUpMappingPython(systemFunctionName,varargin)
 		%BOTTOMUPMAPPINGPYTHON Constructor
 		%   BOTTOMUPMAPPINGPYTHON uses a given Python function (specified with its name
 		%	as a string) and other parameters to create a bottom-up mapping. 
         %
-        %   OBJ = BOTTOMUPMAPPINGPYTHON(SystemFUNCTIONNAME) receives the defined function 
-        %	in SystemFUNCTIONNAME and returns a BottomUpMappingPython object in OBJ. In 
-        %	said case, all other input arguments are assumed to have their default 
-        %	values.
+        %   OBJ = BOTTOMUPMAPPINGPYTHON(SYSTEMFUNCTIONNAME) receives the defined  
+        %	function in SYSTEMFUNCTIONNAME and returns a BottomUpMappingPython object in 
+        %	OBJ. In said case, all other input arguments are assumed to have their  
+        %	default values.
         %
-        %   OBJ = BOTTOMUPMAPPINGPYTHON(SystemFUNCTIONNAME,PARAMETER) also allows the use of 
-        %	constant system parameters when computing with the main function, passed in 
-        %	PARAMETER. Default value is empty.
+        %   OBJ = BOTTOMUPMAPPINGPYTHON(SYSTEMFUNCTIONNAME,PARAMETER) also allows the 
+        %	use of constant system parameters when computing with the main function, 
+        %	passed in PARAMETER. Default value is empty.
         %
-        %   OBJ = BOTTOMUPMAPPINGPYTHON(...,NAME1,VALUE1,...) also allows
-        %   for setting custom options for the computation procedure, passed as 
-        %   name-value pairs. These are:
+        %   OBJ = BOTTOMUPMAPPINGPYTHON(...,NAME,VALUE,...) also allows for setting 
+        %   custom options for the computation procedure, passed as name-value pairs. 
+        %	These are:
         %       - 'PhysicalFeasibilityDefaultValue' : default value used for the measure
         %		when no information regarding physical feasibility is available. 
-        %		Default: -1.
+        %		Default is empty.
         %       - 'PhysicalFeasibilityFunction' : function handle to be used to compute
         %		physical feasibility measures when that is not a part of the main 
-        %		response function. Default: [].
+        %		response function. Default is empty.
         %       - 'PhysicalFeasibilityParameter' : constant system parameters used
         %		exclusively when computing physical feasibility measures with the
         %		correspondent specific function. By default it is given the same value 
@@ -171,12 +171,12 @@ classdef BottomUpMappingPython < BottomUpMappingBase
         
 			parser = inputParser;
 			parser.addOptional('SystemParameter',[]);
-			parser.addParameter('PhysicalFeasibilityDefaultValue',-1);
+			parser.addParameter('PhysicalFeasibilityDefaultValue',[]);
 			parser.addParameter('PhysicalFeasibilityFunction',[]);
 			parser.addParameter('PhysicalFeasibilityParameter',[]);
 			parser.parse(varargin{:});
 
-			obj.SystemFunctionName = erase(SystemfunctionName,'.py');
+			obj.SystemFunctionName = erase(systemFunctionName,'.py');
     		pyMod = py.importlib.import_module(obj.SystemFunctionName);
     		obj.PyModSystem = py.importlib.reload(pyMod);
 
