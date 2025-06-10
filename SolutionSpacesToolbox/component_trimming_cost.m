@@ -62,7 +62,7 @@ function iChoice = component_trimming_cost(designSample,isViable,isExclude,isIns
 %   limitations under the License.
 
     parser = inputParser;
-    parser.addParameter('SelectionCriteria',{'NumberInsideViable','NumberInsideExclude','NumberExclude','NumberViable','NumberInsideNotExclude'});
+    parser.addParameter('SelectionCriteria',{'NumberInsideViable','NumberInsideExclude','NumberInsideNotExclude','NumberExclude','NumberViable'});
     parser.parse(varargin{:});
     options = parser.Results;
     

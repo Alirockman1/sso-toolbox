@@ -43,8 +43,7 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %% setup problem parameters
-nDivision = 15; % number of design variables (discritization)
-componentIndex = {1:3,4:6,7:9,10:12,13:15};
+nDivision = 15; % number of design variables (discretization)
 
 initialDistanceWidth = 4; % distance in longitudinal (x) direction
 initialDistanceHeight = 2; % distance in vertical (y) direction
@@ -52,31 +51,45 @@ nInterpolationPoint = 5000; % number of interpolation points
 
 
 %% Problem Setup
-systemFunction = @bead_slide_time;
+systemFunction = @bead_slide_time_continuous;
 systemParameter(1) = initialDistanceWidth; % distance in longitudinal (x) direction
 systemParameter(2) = initialDistanceHeight; % distance in vertical (y) direction
 systemParameter(3) = nInterpolationPoint; % number of interpolation points
 
-designSpaceLowerBound = -initialDistanceHeight*ones(1,nDivision);
-designSpaceUpperBound = initialDistanceHeight*ones(1,nDivision);
+discretizationStep = (initialDistanceWidth)/(nDivision+1);
+functionalDesignSpace = [-initialDistanceHeight;initialDistanceHeight];
+baseVariableDesignSpace = [discretizationStep;initialDistanceWidth-discretizationStep];
+initialDesign = initialDistanceHeight/2;
 
 
 %% Run Initial Optimization (Find Optimal Time)
 % initial guess - linear interpolation
-initialDesign = linspace(initialDistanceHeight,0,nDivision+2); % in initial interpolation consider end-points... 
-initialDesign = initialDesign(2:end-1); % ... which are then removed
-pathWidthDivision = linspace(0,initialDistanceWidth,nDivision+2);
+continuousMapping = BottomUpMappingFunction(systemFunction,systemParameter);
+[bottomUpMapping,functionalDiscreteBound,discreteInitialDesign,discreteComponentIndex] = BottomUpMappingContinuousVariables(continuousMapping, baseVariableDesignSpace, functionalDesignSpace, initialDesign, {1}, 'NumberOfStencils',nDivision,'FixedPointsBaseVariables',[0;initialDistanceWidth],'FixedPointsFunctionalValues',[initialDistanceHeight;0]);
 
-% run optimization
-bottomUpMapping = BottomUpMappingFunction(systemFunction,systemParameter);
+% Split component indices into groups of 3
+nGroups = ceil(nDivision/3);
+componentIndexGroups = cell(1, nGroups);
+for i = 1:nGroups-1
+    componentIndexGroups{i} = discreteComponentIndex{1}((i-1)*3+1:i*3);
+end
+% Handle last group which may have less than 3 elements
+componentIndexGroups{nGroups} = discreteComponentIndex{1}((nGroups-1)*3+1:end);
+discreteComponentIndex = componentIndexGroups;
+
+% create slope for initial design
+discreteInitialDesign = linspace(initialDistanceHeight,0,length(discreteInitialDesign)+2);
+discreteInitialDesign = discreteInitialDesign(2:end-1);
+
+
 [designOptimal,timeOptimal,optimizationOutput,systemResponseData] = design_optimize_quantities_of_interest(...
     bottomUpMapping,...
-    initialDesign,...
-    designSpaceLowerBound,...
-    designSpaceUpperBound,...
+    discreteInitialDesign,...
+    functionalDiscreteBound(1,:),...
+    functionalDiscreteBound(2,:),...
     @(performanceMeasure)performanceMeasure,...
     'OptimizationMethodOptions',{'Display','iter-detailed'});
-referenceTime = bottomUpMapping.response(initialDesign);
+referenceTime = bottomUpMapping.response(discreteInitialDesign);
 
 
 %% Solve  Problem Analytically (Reference)
@@ -84,6 +97,20 @@ radiusAngleOptimal = fsolve(@(rt)brachistochrone_solve_analytical(rt,systemParam
 anglePathAnalytical = linspace(0,radiusAngleOptimal(2),nInterpolationPoint);
 pathWidthAnalytical = radiusAngleOptimal(1)*(anglePathAnalytical-sin(anglePathAnalytical));
 pathHeightAnalytical = radiusAngleOptimal(1)*(-1+cos(anglePathAnalytical)) + initialDistanceHeight;
+
+
+%% plot analytical and numericalsolution
+figure; 
+hold on;
+handleNumericalOptimal = plot(bottomUpMapping.BaseVariablesStencils{1},[initialDistanceHeight,designOptimal,0]','bo-','linewidth',1);
+plot([0 systemParameter(1)],[0 0],'k--');
+handleBrachistochrone = plot(pathWidthAnalytical,pathHeightAnalytical,'r','linewidth',1);
+grid minor;
+xlim([0 systemParameter(1)])
+title(sprintf('Approximate Optimal Time: %gs',timeOptimal));
+xlabel('Longitudinal Distance [m]');
+ylabel('Vertical Distance [m]');
+legend([handleNumericalOptimal handleBrachistochrone],{'Numerical Optimal Solution','Analytical Optimal Solution'})
 
 
 %% Perform Solution Space Computation
@@ -94,6 +121,7 @@ optionsBox = sso_stochastic_options('box',...
     'UseAdaptiveGrowthRate',true,...
     'NumberSamplesPerIteration',100,...
     'GrowthRate',0.005,...
+    'MinimumPurityReset',0.0,...
     'FixIterNumberExploration',true,...
     'FixIterNumberConsolidation',true,...
     'MaxIterExploration',200,...
@@ -105,16 +133,16 @@ optionsBox = sso_stochastic_options('box',...
 rng(rngState);
 designEvaluator = DesignEvaluatorBottomUpMapping(bottomUpMapping,performanceLowerLimit,performanceUpperLimit);
 [designBoxOptimal,optimizationDataBox] = sso_box_stochastic(designEvaluator,...
-    designOptimal,designSpaceLowerBound,designSpaceUpperBound,optionsBox);
+    designOptimal,functionalDiscreteBound(1,:),functionalDiscreteBound(2,:),optionsBox);
 
 
 %% plot
 figure; 
 hold on;
 for i=1:nDivision
-    handleSolutionSpacePlot = plot([pathWidthDivision(i+1) pathWidthDivision(i+1)],designBoxOptimal(:,i),'g-','linewidth',12);
+    handleSolutionSpacePlot = plot([bottomUpMapping.BaseVariablesStencils{1}(1+i) bottomUpMapping.BaseVariablesStencils{1}(1+i)],designBoxOptimal(:,i),'g-','linewidth',12);
 end
-handleNumericalOptimal = plot(pathWidthDivision,[initialDistanceHeight,designOptimal,0]','bo-','linewidth',1);
+handleNumericalOptimal = plot(bottomUpMapping.BaseVariablesStencils{1},[initialDistanceHeight,designOptimal,0]','bo-','linewidth',1);
 plot([0 systemParameter(1)],[0 0],'k--');
 handleBrachistochrone = plot(pathWidthAnalytical,pathHeightAnalytical,'r','linewidth',1);
 grid minor;
@@ -132,6 +160,7 @@ options = sso_stochastic_options('component',...
     'UseAdaptiveGrowthRate',true,...
     'TargetAcceptedRatioExploration',0.7,...
     'GrowthRate',0.005,...
+    'MinimumPurityReset',0.0,...
     'FixIterNumberExploration',true,...
     'FixIterNumberConsolidation',true,...
     'MaxIterExploration',200,...
@@ -148,7 +177,7 @@ options = sso_stochastic_options('component',...
 
 rng(rngState);
 [planarTrimmingSolutionSpace,optimizationDataPlanarTrimming] = sso_component_stochastic(designEvaluator,...
-    designOptimal,designSpaceLowerBound,designSpaceUpperBound,componentIndex,options);
+    designOptimal,functionalDiscreteBound(1,:),functionalDiscreteBound(2,:),discreteComponentIndex,options);
 
 
 %% same problem, component solution spaces - corner box removal
@@ -156,6 +185,7 @@ options = sso_stochastic_options('component',...
     'UseAdaptiveGrowthRate',true,...
     'TargetAcceptedRatioExploration',0.7,...
     'GrowthRate',0.005,...
+    'MinimumPurityReset',0.0,...
     'FixIterNumberExploration',true,...
     'FixIterNumberConsolidation',true,...
     'MaxIterExploration',200,...
@@ -174,12 +204,12 @@ options = sso_stochastic_options('component',...
 
 rng(rngState);
 [cornerBoxRemovalSolutionSpace,optimizationDataCornerBoxRemoval] = sso_component_stochastic(designEvaluator,...
-    designOptimal,designSpaceLowerBound,designSpaceUpperBound,componentIndex,options);
+    designOptimal,functionalDiscreteBound(1,:),functionalDiscreteBound(2,:),discreteComponentIndex,options);
 
 
 %% visualization
-for i=1:size(componentIndex,2)
-    currentBox = designBoxOptimal(:,componentIndex{i});
+for i=1:size(discreteComponentIndex,2)
+    currentBox = designBoxOptimal(:,discreteComponentIndex{i});
     currentComponentSpace = planarTrimmingSolutionSpace(i);
     
     figure;

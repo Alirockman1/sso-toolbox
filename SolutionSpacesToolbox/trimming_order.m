@@ -50,7 +50,7 @@ function trimmingOrder = trimming_order(isExclude,score,varargin)
 
 	tagScoreLowToHigh = {'score-low-to-high','lth','low-to-high','lowest-first'};
 	tagScoreHighToLow = {'score-high-to-low','htl','high-to-low','highest-first'};
-	tagScoreBoth = {'score-both','score'};
+	tagScoreBoth = {'score-both','score','both'};
 	tagRandom = {'random','rand'};
 
 	parser = inputParser;
@@ -82,8 +82,8 @@ function trimmingOrder = trimming_order(isExclude,score,varargin)
     	orderExclude = nan(nExclude,2);
         [~,orderExclude(:,1)] = sort(scoreExclude,'ascend');
         orderExclude(:,2) = flip(orderExclude(:,1));
-    elseif(strcmpi(orderPreference,'random'))
-        orderExclude = randperm(nExclude);
+    elseif(any(strcmpi(orderPreference,tagRandom)))
+        orderExclude = randperm(nExclude)';
     else
     	orderExclude = (1:nExclude)';
     end

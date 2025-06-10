@@ -214,6 +214,87 @@ save_print_figure(gcf,[saveFolder,'CandidateSpaceSvmExample'],'Size',figureSize*
 % growth
 
 
+
+%% visualize - corner box removal
+nTest = 30;
+designSample = sampling_latin_hypercube([designSpaceLowerBoundSample; designSpaceUpperBoundSample],nTest);
+
+figure;
+hold all;
+plot(designSample(:,1),designSample(:,2),'k.');
+for i = 1:nTest
+    text(designSample(i,1), designSample(i,2), num2str(i), ...
+        'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right');
+end
+isGood = true(nTest,1);
+isGood([22,28,10,30,12]) = false;
+
+candidateSpace = CandidateSpaceCornerBoxRemoval(designSpaceLowerBoundSpace,designSpaceUpperBoundSpace);
+candidateSpace = component_trimming_operation(designSample,isGood,find(~isGood),{[1,2]'},candidateSpace,'TrimmingMethodFunction',@component_trimming_method_corner_box_removal);
+
+isInside = candidateSpace.IsInsideDefinition;
+
+candidateSpaceGrown = candidateSpace.expand_candidate_space(0.05);
+
+
+figure;
+hold all;
+plot(designSample(isInside,1),designSample(isInside,2),optionsPointInside{:});
+plot(designSample(~isInside,1),designSample(~isInside,2),optionsPointOutside{:});
+candidateSpace.plot_candidate_space(gcf,'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.1,'EdgeColor',colorCandidateSpaceInside);
+anchorPoints = candidateSpace.AnchorPoint;
+plot(anchorPoints(:,1),anchorPoints(:,2),'linestyle','none','Marker','*','MarkerSize',10,'linewidth',2.0,'color',color_palette_tol('purple'));
+legend({'Remaining Design Points','Removed Design Points', 'Candidate Component Space', 'Anchor Points'},'location','southeast');
+save_print_figure(gcf,[saveFolder,'CornerBoxRemovalExample'],'Size',figureSize*1.25,'PrintFormat',{'png','pdf'});
+
+figure;
+hold all;
+candidateSpace.plot_candidate_space(gcf,'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.0,'EdgeColor',colorCandidateSpaceInside,'Linestyle','--');
+candidateSpaceGrown.plot_candidate_space(gcf,'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.1,'EdgeColor',colorCandidateSpaceInside,'Linestyle','-');
+plot(anchorPoints(:,1),anchorPoints(:,2),'linestyle','none','Marker','*','MarkerSize',10,'linewidth',2.0,'color',color_palette_tol('purple'));
+anchorPointsGrown = candidateSpaceGrown.AnchorPoint;
+plot(anchorPointsGrown(:,1),anchorPointsGrown(:,2),'linestyle','none','Marker','*','MarkerSize',10,'linewidth',2.0,'color',color_palette_tol('purple'));
+plot(candidateSpaceGrown.DesignSampleDefinition(candidateSpaceGrown.IsInsideDefinition,1),candidateSpaceGrown.DesignSampleDefinition(candidateSpaceGrown.IsInsideDefinition,2),'*','MarkerSize',6,'color',colorPointInside);
+growthVectorAnchor = anchorPointsGrown - anchorPoints;
+quiver(anchorPoints(:,1),anchorPoints(:,2),growthVectorAnchor(:,1),growthVectorAnchor(:,2),optionsVector{:});
+legend({'Original Candidate Component Space','Grown Candidate Component Space',...
+    'Original Anchor Points','Grown Anchor Points',...
+    'Expanded Design Points',...
+    'Expansion Vector'},'location','southeast');
+save_print_figure(gcf,[saveFolder,'CornerBoxRemovalGrowth'],'Size',figureSize*1.25,'PrintFormat',{'png','pdf'});
+
+
+%% impact of different trimming orders 
+isBad = false(nTest,1);
+badIndex = [23,26,11,18,4,5,12,14,2,1,21,24,17];
+isBad(badIndex) = true;
+
+isGood = ~isBad;
+nBad = sum(isBad);
+badIndex = badIndex(randperm(nBad))';
+
+figure;
+hold all;
+plot(designSample(isGood,1),designSample(isGood,2),'g.','MarkerSize',12);
+plot(designSample(~isGood,1),designSample(~isGood,2),'r.','MarkerSize',16);
+for i = 1:nBad
+    text(designSample(badIndex(i),1), designSample(badIndex(i),2), num2str(i), ...
+        'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right');
+end
+
+candidateSpace = CandidateSpaceConvexHull([0,0],[1,1]);
+candidateSpace = component_trimming_operation(designSample,isGood,badIndex,{[1,2]'},candidateSpace,'TrimmingMethodFunction',@component_trimming_method_planar_trimming,'PassesCriterion','full');
+candidateSpace.plot_candidate_space(gcf,'FaceAlpha',0.3,'FaceColor','c');
+
+
+
+
+
+
+
+
+
+
 %% Save and Stop Transcripting
 save([saveFolder,'Data.mat']);
 diary off;

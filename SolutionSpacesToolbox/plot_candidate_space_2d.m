@@ -1,11 +1,11 @@
-function plotHandle = plot_candidate_space_2d(figureHandle,candidateSpace,varargin)
+function plotHandle = plot_candidate_space_2d(graphicsHandle,candidateSpace,varargin)
 %PLOT_CANDIDATE_SPACE_2D Visualize the boundary of a candidate space
 %   PLOT_CANDIDATE_SPACE_2D plots the boundary of a candidate space in the
 %   given figure. It estimates where the boundary is via the scores applied to
 %   a large sample, and using contour to plot where that score is closest to 0.
 %
-%   PLOT_CANDIDATE_SPACE_2D(FIGUREHANDLE,CANDIDATESPACE) plots in figure 
-%   FIGUREHANDLE the boundary of the candidate space CANDIDATESPACE.
+%   PLOT_CANDIDATE_SPACE_2D(GRAPHICSHANDLE,CANDIDATESPACE) plots in 
+%   GRAPHICSHANDLE the boundary of the candidate space CANDIDATESPACE.
 %
 %   PLOT_CANDIDATE_SPACE_2D(...,NAME,VALUE,...) allows for setting
 %   additional options for the plot operation; said options should refer to the
@@ -16,7 +16,7 @@ function plotHandle = plot_candidate_space_2d(figureHandle,candidateSpace,vararg
 %   for 'legend', for example.
 %
 %   Inputs:
-%       - FIGUREHANDLE : Figure
+%       - GRAPHICSHANDLE : Figure
 %       - CANDIDATESPACE : CandidateSpaceBase
 %       - Name-value pair arguments: passed directly to 'contour'.
 %
@@ -40,21 +40,45 @@ function plotHandle = plot_candidate_space_2d(figureHandle,candidateSpace,vararg
 %   See the License for the specific language governing permissions and
 %   limitations under the License.
 
-    inputPlotOptions = parser_variable_input_to_structure(varargin{:});
+    parser = inputParser;
+    parser.KeepUnmatched = true;
+    parser.addParameter('StepSize',0.001);
+    parser.addParameter('FixedVariables',[]);
+    parser.parse(varargin{:});
 
-    % set step size for fine sampling
-    stepSize = 0.001;
+    stepSize = parser.Results.StepSize;
+    fixedVariables = parser.Results.FixedVariables;
+    inputPlotOptions = namedargs2cell(parser.Unmatched);
+
+    activate_graphics_object(graphicsHandle);
+    hold on;
 
     % make the intervals for each variable
     [~,positiveRegionBox] = design_bounding_box(candidateSpace.DesignSampleDefinition,candidateSpace.IsInsideDefinition);
     positiveRegionBox(1,:) = max(positiveRegionBox(1,:),candidateSpace.DesignSpaceLowerBound);
     positiveRegionBox(2,:) = min(positiveRegionBox(2,:),candidateSpace.DesignSpaceUpperBound);
+
+    if(~isempty(fixedVariables))
+        nDimension = size(positiveRegionBox,2);
+        isFixed = ~isnan(fixedVariables);
+        positiveRegionBox = positiveRegionBox(:,~isFixed);
+    end
+
     xInterval = positiveRegionBox(1,1) + (0:stepSize:1)*(positiveRegionBox(2,1)-positiveRegionBox(1,1));
     yInterval = positiveRegionBox(1,2) + (0:stepSize:1)*(positiveRegionBox(2,2)-positiveRegionBox(1,2));
 
     % generate grid for predictions at finer sample rate
     [xGrid, yGrid] = meshgrid(xInterval,yInterval);
     fullGrid = [xGrid(:),yGrid(:)];
+
+    if(~isempty(fixedVariables))
+        nPoints = size(fullGrid,1);
+        fullGridComplete = nan(nPoints,nDimension);
+        fullGridComplete(:,~isFixed) = fullGrid;
+        fullGridComplete(:,isFixed) = repmat(fixedVariables(isFixed),nPoints,1);
+        fullGrid = fullGridComplete;
+        clear fullGridComplete;
+    end
 
     % get scores
     [~,score] = candidateSpace.is_in_candidate_space(fullGrid);
@@ -109,8 +133,8 @@ function plotHandle = plot_candidate_space_2d(figureHandle,candidateSpace,vararg
     defaultPlotOptions = {};
     [~,plotOptions] = merge_name_value_pair_argument(defaultPlotOptions,inputPlotOptions);
 
-    figure(figureHandle);
-    hold on
+    activate_graphics_object(graphicsHandle);
+    hold on;
     plotHandle = patch('XData',orderedCurve(:,1),'YData',orderedCurve(:,2),plotOptions{:});
 
     if(nargout<1)

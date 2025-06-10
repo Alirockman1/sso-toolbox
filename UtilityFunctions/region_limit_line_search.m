@@ -59,24 +59,19 @@ function [stepSizeLimitInside,stepSizeLimitOutside] = region_limit_line_search(r
 
     % initial step size -> see how much would be necessary to get through the diagonal
     % of the design space in maxIter iterations of bracketing
-    stepSizeInitialDesignSpace = vecnorm(designSpace(2,:)-designSpace(1,:))./(vecnorm(direction,2,2)*2^maxIter);
-
-    % search for limit where design is still inside design space
-    designSpaceCriterion = @(stepSize) [is_in_design_box(initialPoint + stepSize.*direction,designSpace)];
-    [stepSizeLowerDesignSpace,stepSizeUpperDesignSpace] = bracketing_line_search(designSpaceCriterion,stepSizeInitialDesignSpace,maxIter);
-    [stepSizeLowerDesignSpace,~] = bissection_line_search(designSpaceCriterion,stepSizeLowerDesignSpace,stepSizeUpperDesignSpace,maxIter);
+    stepSizeLimitDesignSpace = design_space_line_search_limit(initialPoint,direction,designSpace);
 
     if(~isempty(regionCriterion))
         % given the maximum step size for design space, compute the initial one for
         % the given region in an analogous way
-        stepSizeInitialRegion = stepSizeLowerDesignSpace./2^maxIter;
+        stepSizeInitialRegion = stepSizeLimitDesignSpace./2^maxIter;
     
         % find bracketing limits for inside the given region
         regionStepSizeCriterium = @(stepSize) [regionCriterion(initialPoint + stepSize.*direction)];
         [stepSizeLowerRegion,stepSizeUpperRegion] = bracketing_line_search(regionStepSizeCriterium,stepSizeInitialRegion,maxIter); 
         [stepSizeLimitInside,stepSizeLimitOutside] = bissection_line_search(regionStepSizeCriterium,stepSizeLowerRegion,stepSizeUpperRegion,maxIter);
     else
-        stepSizeLimitInside = stepSizeLowerDesignSpace;
+        stepSizeLimitInside = stepSizeLimitDesignSpace;
         stepSizeLimitOutside = [];
     end
 end
@@ -170,4 +165,27 @@ function [stepSizeLower,stepSizeUpper] = bissection_line_search(regionCriterion,
         stepSizeLower(moveLower) = stepSize(moveLower);
         stepSizeUpper(moveUpper) = stepSize(moveUpper);
     end
+end
+
+function maxStepSize = design_space_line_search_limit(initialPoint,direction,designSpace)
+%DESIGN_SPACE_LINE_SEARCH_LIMIT Find maximum step size for design space
+%   DESIGN_SPACE_LINE_SEARCH_LIMIT finds the maximum step size that can be used
+%   for a given initial point and direction such that the new point is still
+%   inside the design space.
+%
+%   Input:
+%       - INITIALPOINT : (nSample,nDesignVariable) double
+%       - DIRECTION : (nSample,nDesignVariable) double
+%       - DESIGNSPACE : (2,nDesignVariable) double
+%
+%   Output:
+%       - MAXSTEPSIZE : (nSample,1) double
+%
+%   See also region_limit_line_search.
+
+    distanceRelevant = initialPoint - designSpace(1,:); % distance to lower left corner
+    distanceToUpperRight = designSpace(2,:) - initialPoint;
+    distanceRelevant(direction>0) = distanceToUpperRight(direction>0);
+
+    maxStepSize = min(distanceRelevant./abs(direction),[],2);
 end

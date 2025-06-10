@@ -88,6 +88,12 @@ function figureHandles = plot_sso_component_evolution(optimizationData, varargin
     parser.addParameter('SaveFigureOptions', {}, @iscell);
     parser.parse(optimizationData, varargin{:});
     options = parser.Results;
+
+    if(isempty(options.IterationIndices) && isempty(options.ComponentIndices))
+        warning('No iteration or component indices provided, returning.');
+        figureHandles = [];
+        return;
+    end
     
     % Get iteration indices
     nIterations = length(optimizationData.IterationData);

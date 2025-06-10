@@ -66,19 +66,35 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_ga_w
 
 	options = optimoptions('ga','InitialPopulationMatrix',initialDesign,varargin{:});
 
+	% initialize logger
+	logger_objective_function(objectiveFunction);
+	logger_constraint_function(constraintFunction);
+
 	nDesignVariable = size(designSpaceLowerBound,2);
 	[designOptimal,objectiveOptimal,exitflag,output,population,scores] = ga(...
-		objectiveFunction,...
+		@logger_objective_function,...
 		nDesignVariable,...
 		[],[],[],[],... % A, b, Aeq, beq
 		designSpaceLowerBound,...
 		designSpaceUpperBound,...
-		constraintFunction,...
+		@logger_constraint_function,...
 		[],... % intcon
 		options);
+
+	[evaluatedDesignObjective,evaluatedObjectiveValue] = logger_objective_function();
+	[evaluatedDesignConstraint,evaluatedInequalityConstraintValue,evaluatedEqualityConstraintValue] = logger_constraint_function();
 
 	optimizationOutput.ExitCondition = exitflag;
 	optimizationOutput.InformationOptimizationProcess = output;
 	optimizationOutput.Population = population;
 	optimizationOutput.GAScores = scores;
+	optimizationOutput.EvaluatedDesignObjective = evaluatedDesignObjective;
+	optimizationOutput.EvaluatedObjectiveValue = evaluatedObjectiveValue;
+	optimizationOutput.EvaluatedDesignConstraint = evaluatedDesignConstraint;
+	optimizationOutput.EvaluatedInequalityConstraintValue = evaluatedInequalityConstraintValue;
+	optimizationOutput.EvaluatedEqualityConstraintValue = evaluatedEqualityConstraintValue;
+
+	% finalize logger
+	clear logger_objective_function;
+	clear logger_constraint_function;
 end

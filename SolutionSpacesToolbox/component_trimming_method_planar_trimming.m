@@ -92,6 +92,19 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
     planeOrientation = (designReference - designSampleComponent(iRemove,:))./normalizationFactor;
     normalizedPlaneOrientation = planeOrientation./vecnorm(planeOrientation,2,2);
 
+    % in 1d case, only two options: -1 or 1
+    nDimension = size(designSampleComponent,2);
+    if(nDimension==1)
+        direction1d = [];
+        if(any(normalizedPlaneOrientation<0))
+            direction1d = [-1];
+        end
+        if(any(normalizedPlaneOrientation>0))
+            direction1d = [direction1d;1];
+        end
+        normalizedPlaneOrientation = direction1d;
+    end
+
     % for each plane, points being removed are all whose dot product between the 
     % distance to the anchor and each normal is non-positive
     % note: full product could be written as a matrix multiplication, but in my

@@ -90,6 +90,60 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
         %
         %   See also AnchorPoint, is_in_candidate_space.
         PlaneOrientationAnchor
+
+        %NORMALIZATIONFACTOR Normalization factors for each plane
+        %   NORMALIZATIONFACTOR contains normalization factors for each plane.
+        %   These factors are used to normalize the distance to the anchor point.
+        %
+        %   NORMALIZATIONFACTOR : (nPlane,1) double
+        %
+        %   See also AnchorPoint, PlaneOrientationAnchor.
+        NormalizationFactor
+
+        %NORMALIZEGROWTHDIRECTION Determine if growth direction should be normalized
+        %   When true, the growth direction is normalized to the design space.
+        %
+        %   NORMALIZEGROWTHDIRECTION : logical
+        NormalizeGrowthDirection
+
+        %CHECKREDUNDANTRIMMING Determine if redundant trimming is checked
+        %   When true, the redundant trimming is checked.
+        %
+        %   CHECKREDUNDANTRIMMING : logical
+        CheckRedundantTrimmingGrowth
+
+        %CHECKREDUNDANTRIMMING Determine if redundant trimming is checked
+        %   When true, the redundant trimming is checked.
+        %
+        %   CHECKREDUNDANTRIMMING : logical
+        CheckRedundantTrimmingUpdate
+
+        %CHECKDUPLICATEPOINTS Determine if duplicate points are checked
+        %   When true, the duplicate points are checked.
+        %
+        %   CHECKDUPLICATEPOINTSGROWTH : logical
+        CheckDuplicatePointsGrowth
+
+        %CHECKDUPLICATEPOINTSUPDATE Determine if duplicate points are checked
+        %   When true, the duplicate points are checked.
+        %
+        %   CHECKDUPLICATEPOINTSUPDATE : logical
+        CheckDuplicatePointsUpdate
+
+        %MEASUREESTIMATIONFACTOR Factor to estimate the measure of the candidate space
+        %   MEASUREESTIMATIONFACTOR is a factor that is used to estimate the measure of the 
+        %   candidate space. This is used to determine the number of samples to use when 
+        %   generating the candidate space.
+        %
+        %   MEASUREESTIMATIONFACTOR : double
+        MeasureEstimationFactor
+
+        %INSIDEDOTPRODUCTTOLERANCE Tolerance for dot product of distance to anchor and plane orientation
+        %   INSIDEDOTPRODUCTTOLERANCE is a tolerance that is used to determine if a point is 
+        %   inside a plane. This is used to determine if a point is inside a plane.
+        %
+        %   INSIDEDOTPRODUCTTOLERANCE : double
+        InsideDotProductTolerance
     end
 
     properties (SetAccess = protected, Dependent)
@@ -163,15 +217,29 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             parser = inputParser;
             parser.addRequired('designSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addRequired('designSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
+            parser.addParameter('NormalizeGrowthDirection',false,@islogical);
+            parser.addParameter('CheckRedundantTrimmingGrowth',true,@islogical);
+            parser.addParameter('CheckRedundantTrimmingUpdate',true,@islogical);
+            parser.addParameter('CheckDuplicatePointsGrowth',true,@islogical);
+            parser.addParameter('CheckDuplicatePointsUpdate',true,@islogical);
+            parser.addParameter('MeasureEstimationFactor',10,@isnumeric);
+            parser.addParameter('InsideDotProductTolerance',1e-10,@isnumeric);
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
-            
-            obj.DesignSpaceLowerBound = parser.Results.designSpaceLowerBound;;
+            obj.DesignSpaceLowerBound = parser.Results.designSpaceLowerBound;
             obj.DesignSpaceUpperBound = parser.Results.designSpaceUpperBound;
+            obj.NormalizeGrowthDirection = parser.Results.NormalizeGrowthDirection;
+            obj.CheckRedundantTrimmingGrowth = parser.Results.CheckRedundantTrimmingGrowth;
+            obj.CheckRedundantTrimmingUpdate = parser.Results.CheckRedundantTrimmingUpdate;
+            obj.CheckDuplicatePointsGrowth = parser.Results.CheckDuplicatePointsGrowth;
+            obj.CheckDuplicatePointsUpdate = parser.Results.CheckDuplicatePointsUpdate;
+            obj.MeasureEstimationFactor = parser.Results.MeasureEstimationFactor;
+            obj.InsideDotProductTolerance = parser.Results.InsideDotProductTolerance;
 
             obj.DesignSampleDefinition = [];
             obj.AnchorPoint = [];
             obj.PlaneOrientationAnchor = [];
+            obj.NormalizationFactor = [];
         end
         
         function obj = generate_candidate_space(obj,designSample,trimmingInformation)
@@ -203,6 +271,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             if(~isempty(trimmingInformation))
                 obj.AnchorPoint = vertcat(trimmingInformation.Anchor);
                 obj.PlaneOrientationAnchor = vertcat(trimmingInformation.PlaneOrientationInside);
+                obj.NormalizationFactor = vertcat(trimmingInformation.NormalizationFactor);
             end
             obj.IsInsideDefinition = obj.is_in_candidate_space(designSample,false);
         end
@@ -232,36 +301,41 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 return;
             end
 
-            if(isempty(trimmingInformation))
-                return;
-            end
-            anchorPointNew = vertcat(trimmingInformation.Anchor);
-            planeOrientationNew = vertcat(trimmingInformation.PlaneOrientationInside);
+            if(~isempty(trimmingInformation))    
+                anchorPointNew = vertcat(trimmingInformation.Anchor);
+                planeOrientationNew = vertcat(trimmingInformation.PlaneOrientationInside);
+                normalizationFactorNew = vertcat(trimmingInformation.NormalizationFactor);
 
-            obj.AnchorPoint = [obj.AnchorPoint;anchorPointNew];
-            obj.PlaneOrientationAnchor = [obj.PlaneOrientationAnchor;planeOrientationNew];
+                obj.AnchorPoint = [obj.AnchorPoint;anchorPointNew];
+                obj.PlaneOrientationAnchor = [obj.PlaneOrientationAnchor;planeOrientationNew];
+                obj.NormalizationFactor = [obj.NormalizationFactor;normalizationFactorNew];
+            end
 
             % project points to planes - if no point is inside, plane is redundant and can be removed
-            nAnchor = size(obj.AnchorPoint,1);
             hullPointMinMax = [];
-            isRedundantAnchor = false(nAnchor,1);
-            for i=1:nAnchor
-                dotProduct = sum((obj.AnchorPoint(i,:) - obj.DesignSampleDefinition).*obj.PlaneOrientationAnchor(i,:),2);
-                distanceToPlane = obj.PlaneOrientationAnchor(i,:).*dotProduct;
-                candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
+            if(obj.CheckRedundantTrimmingUpdate)
+                nAnchor = size(obj.AnchorPoint,1);
+                isRedundantAnchor = false(nAnchor,1);
+                for i=1:nAnchor
+                    distanceToAnchor = (obj.AnchorPoint(i,:) - obj.DesignSampleDefinition)./obj.NormalizationFactor(i,:);
+                    dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor(i,:),2);
+                    distanceToPlane = obj.NormalizationFactor(i,:).*obj.PlaneOrientationAnchor(i,:).*dotProduct;
+                    candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
 
-                isInside = obj.is_in_candidate_space(candidateHullPoint,false);
-                if(~any(isInside))
-                    isRedundantAnchor(i) = true;
+                    isInside = obj.is_in_candidate_space(candidateHullPoint,false);
+                    if(~any(isInside))
+                        isRedundantAnchor(i) = true;
+                    end
+
+                    hullPoint = [hullPointMinMax;candidateHullPoint(isInside,:)];
+                    [~,iHullPointMin] = min(hullPoint,[],1);
+                    [~,iHullPointMax] = max(hullPoint,[],1);
+                    hullPointMinMax = hullPoint([iHullPointMin,iHullPointMax],:);
                 end
-
-                hullPoint = [hullPointMinMax;candidateHullPoint(isInside,:)];
-                [~,iHullPointMin] = min(hullPoint,[],1);
-                [~,iHullPointMax] = max(hullPoint,[],1);
-                hullPointMinMax = hullPoint([iHullPointMin,iHullPointMax],:);
+                obj.AnchorPoint(isRedundantAnchor,:) = [];
+                obj.PlaneOrientationAnchor(isRedundantAnchor,:) = [];
+                obj.NormalizationFactor(isRedundantAnchor,:) = [];
             end
-            obj.AnchorPoint(isRedundantAnchor,:) = [];
-            obj.PlaneOrientationAnchor(isRedundantAnchor,:) = [];
             
             % keep samples in inside/outside
             [~,iLowerBoundaryAll] = min(obj.DesignSampleDefinition,[],1);
@@ -272,11 +346,14 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             [~,iUpperBoundaryInside] = max(obj.DesignSampleDefinition(isInsideDefinition,:),[],1);
             iBoundaryInside = convert_index_base(isInsideDefinition,[iLowerBoundaryInside,iUpperBoundaryInside]','backward');
 
-            obj.DesignSampleDefinition = unique(...
-                [obj.DesignSampleDefinition([iLowerBoundaryAll,iUpperBoundaryAll,iBoundaryInside'],:);...
+            obj.DesignSampleDefinition = [...
+                obj.DesignSampleDefinition([iLowerBoundaryAll,iUpperBoundaryAll,iBoundaryInside'],:);...
                 designSample;...
                 hullPointMinMax;...
-                obj.AnchorPoint],'rows');
+                obj.AnchorPoint];
+            if(obj.CheckDuplicatePointsUpdate)
+                obj.DesignSampleDefinition = unique(obj.DesignSampleDefinition,'rows');
+            end
             obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
         end
         
@@ -304,8 +381,14 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             designSpaceFactor = obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound;
             designSpace = [obj.DesignSpaceLowerBound;obj.DesignSpaceUpperBound];
 
+            if(obj.NormalizeGrowthDirection)
+                designSpaceNormalization = designSpaceFactor;
+            else
+                designSpaceNormalization = ones(size(designSpaceFactor));
+            end
+
             center = mean(obj.DesignSampleDefinition(obj.IsInsideDefinition,:),1);
-            distanceToCenter = obj.DesignSampleDefinition - center;
+            distanceToCenter = (obj.DesignSampleDefinition - center)./designSpaceNormalization;
             directionGrowth = distanceToCenter./vecnorm(distanceToCenter,2,2);
 
             maxGrowthRate = region_limit_line_search([],obj.DesignSampleDefinition,designSpaceFactor.*directionGrowth,designSpace);
@@ -316,42 +399,50 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             
             hullPointMinMax = [];
             if(~isempty(obj.AnchorPoint))
-                %directionGrowth = obj.AnchorPoint - center;
+                %directionGrowth = (obj.AnchorPoint - center)./designSpaceNormalization;
                 directionGrowth = -obj.PlaneOrientationAnchor;
                 
                 directionGrowth = directionGrowth./vecnorm(directionGrowth,2,2);
                 anchorPointNew = obj.AnchorPoint + growthRate.*designSpaceFactor.*directionGrowth;
                 anchorPointNew = min(max(anchorPointNew,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
 
-                isAnchorInLowerBoundary = (anchorPointNew==obj.DesignSpaceLowerBound);
-                isAnchorInUpperBoundary = (anchorPointNew==obj.DesignSpaceUpperBound);
-                isAnchorInCorner = all(isAnchorInLowerBoundary|isAnchorInUpperBoundary,2);
-                obj.AnchorPoint = anchorPointNew(~isAnchorInCorner,:);
-                obj.PlaneOrientationAnchor = obj.PlaneOrientationAnchor(~isAnchorInCorner,:);
-
                 % project points to planes - if no point is inside, plane is redundant and can be removed
-                nAnchor = size(obj.AnchorPoint,1);
-                isRedundantAnchor = false(nAnchor,1);
-                hullPointMinMax = [];
-                for i=1:nAnchor
-                    dotProduct = sum((obj.AnchorPoint(i,:) - obj.DesignSampleDefinition).*obj.PlaneOrientationAnchor(i,:),2);
-                    distanceToPlane = obj.PlaneOrientationAnchor(i,:).*dotProduct;
-                    candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
+                isAnchorInLowerBoundary = (anchorPointNew<=obj.DesignSpaceLowerBound);
+                isAnchorInUpperBoundary = (anchorPointNew>=obj.DesignSpaceUpperBound);
+                isCornerAnchor = all(isAnchorInLowerBoundary|isAnchorInUpperBoundary,2);
 
-                    isInside = obj.is_in_candidate_space(candidateHullPoint,false);
-                    if(~any(isInside))
-                        isRedundantAnchor(i) = true;
+                obj.AnchorPoint = anchorPointNew(~isCornerAnchor,:);
+                obj.PlaneOrientationAnchor = obj.PlaneOrientationAnchor(~isCornerAnchor,:);
+                obj.NormalizationFactor = obj.NormalizationFactor(~isCornerAnchor,:);
+
+                if(obj.CheckRedundantTrimmingGrowth)
+                    nAnchor = size(obj.AnchorPoint,1);
+                    isRedundantAnchor = false(nAnchor,1);
+                    for i=1:nAnchor
+                        distanceToAnchor = (obj.AnchorPoint(i,:) - obj.DesignSampleDefinition)./obj.NormalizationFactor(i,:);
+                        dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor(i,:),2);
+                        distanceToPlane = obj.NormalizationFactor(i,:).*obj.PlaneOrientationAnchor(i,:).*dotProduct;
+                        candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
+
+                        isInside = obj.is_in_candidate_space(candidateHullPoint,false);
+                        if(~any(isInside))
+                            isRedundantAnchor(i) = true;
+                        end
+                        
+                        hullPoint = [hullPointMinMax;candidateHullPoint(isInside,:)];
+                        [~,iHullPointMin] = min(hullPoint,[],1);
+                        [~,iHullPointMax] = max(hullPoint,[],1);
+                        hullPointMinMax = hullPoint([iHullPointMin,iHullPointMax],:);
                     end
-                    
-                    hullPoint = [hullPointMinMax;candidateHullPoint(isInside,:)];
-                    [~,iHullPointMin] = min(hullPoint,[],1);
-                    [~,iHullPointMax] = max(hullPoint,[],1);
-                    hullPointMinMax = hullPoint([iHullPointMin,iHullPointMax],:);
+                    obj.AnchorPoint = obj.AnchorPoint(~isRedundantAnchor,:);
+                    obj.PlaneOrientationAnchor = obj.PlaneOrientationAnchor(~isRedundantAnchor,:);
+                    obj.NormalizationFactor = obj.NormalizationFactor(~isRedundantAnchor,:);
                 end
-                obj.AnchorPoint(isRedundantAnchor,:) = [];
-                obj.PlaneOrientationAnchor(isRedundantAnchor,:) = [];
             end
-            obj.DesignSampleDefinition = unique([obj.DesignSampleDefinition;hullPointMinMax;obj.AnchorPoint],'rows');
+            obj.DesignSampleDefinition = [obj.DesignSampleDefinition;hullPointMinMax;obj.AnchorPoint];
+            if(obj.CheckDuplicatePointsGrowth)
+                obj.DesignSampleDefinition = unique(obj.DesignSampleDefinition,'rows');
+            end
             obj.IsInsideDefinition = obj.is_in_candidate_space(obj.DesignSampleDefinition,false);
         end
         
@@ -396,21 +487,30 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
                 isInside = true(nSample,1);
                 score = nan(nSample,1);
             end
+
+            tolerance = obj.InsideDotProductTolerance;
+            if(isempty(tolerance))
+                tolerance = 0;
+            end
             
             nAnchor = size(obj.AnchorPoint,1);
             if(nAnchor<=nSample)
                 for i=1:nAnchor
-                    dotProduct = sum((obj.AnchorPoint(i,:) - designSample).*obj.PlaneOrientationAnchor(i,:),2);
+                    distanceToAnchor = (obj.AnchorPoint(i,:) - designSample)./obj.NormalizationFactor(i,:);
+                    dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor(i,:),2);
+                    dotProductWithTolerance = dotProduct - tolerance;
 
-                    isInside(dotProduct>0) = false;
-                    score = max(score,dotProduct);
+                    isInside(dotProductWithTolerance>0) = false;
+                    score = max(score,dotProductWithTolerance);
                 end
             else
                 for i=1:nSample
-                    dotProduct = dot(obj.AnchorPoint - designSample(i,:),obj.PlaneOrientationAnchor,2);
+                    distanceToAnchor = (obj.AnchorPoint - designSample(i,:))./obj.NormalizationFactor;
+                    dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor,2);
+                    dotProductWithTolerance = dotProduct - tolerance;
 
-                    isInside(i) = all(dotProduct<=0);
-                    score(i) = max(dotProduct);
+                    isInside(i) = all(dotProductWithTolerance<=0);
+                    score(i) = max(dotProductWithTolerance);
                 end
             end
 
@@ -447,7 +547,16 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
         %
         %   See also plot_convex_hull_2d, plot_convex_hull_3d.
 
-            nDimension = size(obj.DesignSampleDefinition,2);
+            parser = inputParser;
+            parser.KeepUnmatched = true;
+            parser.addParameter('FixedVariables',[]);
+            parser.parse(varargin{:});
+            fixedVariables = parser.Results.FixedVariables;
+            plotOptions = namedargs2cell(parser.Unmatched);
+
+            isFixed = ~isnan(fixedVariables);
+            nFixed = sum(isFixed);
+            nDimension = size(obj.DesignSampleDefinition,2) - nFixed;
             if(nDimension>3)
                 if(nargout>0)
                     plotHandle = [];
@@ -456,16 +565,34 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
             end
 
             hullPoint = [];
-            nAnchor = size(obj.AnchorPoint,1);
-            % project the points into each plane
-            for i=1:nAnchor
-                dotProduct = sum((obj.AnchorPoint(i,:) - obj.DesignSampleDefinition).*obj.PlaneOrientationAnchor(i,:),2);
-                distanceToPlane = obj.PlaneOrientationAnchor(i,:).*dotProduct;
-                candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
-                candidateHullPoint = min(max(candidateHullPoint,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
+            if(~isempty(fixedVariables))
+                % use simpler scheme with direction projection to plane with fixed variables
+                projectedPoints = obj.DesignSampleDefinition;
+                projectedPoints(:,isFixed) = repmat(fixedVariables(isFixed),size(obj.DesignSampleDefinition,1),1);
 
-                isInside = obj.is_in_candidate_space(candidateHullPoint);
-                hullPoint = unique([hullPoint;candidateHullPoint(isInside,:)],'rows');
+                isInside = obj.is_in_candidate_space(projectedPoints);
+                hullPoint = unique([hullPoint;projectedPoints(isInside,:)],'rows');
+                hullPoint = hullPoint(:,~isFixed);
+            else
+                nAnchor = size(obj.AnchorPoint,1);
+                % project the points into each plane and gather the ones inside
+                for i=1:nAnchor
+                    distanceToAnchor = (obj.AnchorPoint(i,:) - obj.DesignSampleDefinition)./obj.NormalizationFactor(i,:);
+                    dotProduct = sum(distanceToAnchor.*obj.PlaneOrientationAnchor(i,:),2);
+                    distanceToPlane = obj.NormalizationFactor(i,:).*obj.PlaneOrientationAnchor(i,:).*dotProduct;
+                    candidateHullPoint = obj.DesignSampleDefinition + distanceToPlane;
+                    candidateHullPoint = min(max(candidateHullPoint,obj.DesignSpaceLowerBound),obj.DesignSpaceUpperBound);
+
+                    isInside = obj.is_in_candidate_space(candidateHullPoint);
+                    hullPoint = unique([hullPoint;candidateHullPoint(isInside,:)],'rows');
+                end
+            end
+
+            if(size(hullPoint,1)<=nDimension)
+                if(nargout>0)
+                    plotHandle = [];
+                end
+                return;
             end
 
             % create a convex hull based on that
@@ -473,11 +600,11 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
 
             % plot convex hull
             if(nDimension==1)
-                plotHandle = plot_convex_hull_1d(figureHandle,hullPoint,convexHullIndex,varargin{:});
+                plotHandle = plot_convex_hull_1d(figureHandle,hullPoint,convexHullIndex,plotOptions{:});
             elseif(nDimension==2)
-                plotHandle = plot_convex_hull_2d(figureHandle,hullPoint,convexHullIndex,varargin{:});
+                plotHandle = plot_convex_hull_2d(figureHandle,hullPoint,convexHullIndex,plotOptions{:});
             elseif(nDimension==3)
-                plotHandle = plot_convex_hull_3d(figureHandle,hullPoint,convexHullIndex,varargin{:});
+                plotHandle = plot_convex_hull_3d(figureHandle,hullPoint,convexHullIndex,plotOptions{:});
             end
         end
 
@@ -508,7 +635,7 @@ classdef CandidateSpacePlanarTrimming < CandidateSpaceBase
         end
 
         function volume = get.Measure(obj)
-            nSample = 10*size(obj.DesignSampleDefinition,1);
+            nSample = obj.MeasureEstimationFactor*size(obj.DesignSampleDefinition,1);
             samplingBox = obj.SamplingBox;
             
             volumeSample = sampling_random(samplingBox,nSample);

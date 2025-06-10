@@ -58,7 +58,7 @@ function iChoice = component_trimming_component_choice(designSample,componentInd
 %   limitations under the License.
 
 	parser = inputParser;
-	parser.addParameter('SelectionCriteria',{'NumberInsideViable','NumberInsideExclude','NumberExclude','NumberViable','NumberInsideNotExclude'});
+	parser.addParameter('SelectionCriteria',{'NumberInsideViable','NumberInsideExclude','NumberInsideNotExclude','NumberExclude','NumberViable'});
 	parser.parse(varargin{:});
 	options = parser.Results;
 
