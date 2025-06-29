@@ -33,7 +33,8 @@ To add these functions to the MATLAB path, run `setup_sso_toolbox`.
 For usage examples and demonstrations, refer to the scripts in the **TestScripts** folder.
 
 ## Authors and Acknowledgment
-**Eduardo Rodrigues Della Noce**  
+**Eduardo Rodrigues Della Noce (Supervisor, Main Author)**
+**Ali Abbas Kapadia (Contributor)**
 From 10.01.2022 to 09.01.2025, the development of this code was funded by the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) – Project Number 454149634.
 
 ## License
