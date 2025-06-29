@@ -1,4 +1,4 @@
-function algorithmData = postprocess_sso_box_stochastic(optimizationData)
+function algorithmData = postprocess_sso_box_stochastic(problemData,iterationData)
 %POSTPROCESS_SSO_BOX_STOCHASTIC Postprocess problem and iteration data for box
 %   POSTPROCESS_SSO_BOX_STOCHASTIC extracts the most important information from 
 %   the data outputs of the SSO stochastic method for boxes and packages it
@@ -55,7 +55,7 @@ function algorithmData = postprocess_sso_box_stochastic(optimizationData)
 %
 %   See also sso_box_stochastic, plot_sso_box_stochastic_metrics, cumsum.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -70,40 +70,30 @@ function algorithmData = postprocess_sso_box_stochastic(optimizationData)
 %   See the License for the specific language governing permissions and
 %   limitations under the License.
 
-    designSpaceBox = [optimizationData.DesignSpaceLowerBound;optimizationData.DesignSpaceUpperBound];
-    dsMeasure = optimizationData.Options.MeasureFunction(...
+    designSpaceBox = [problemData.DesignSpaceLowerBound;problemData.DesignSpaceUpperBound];
+    dsMeasure = problemData.Options.MeasureFunction(...
         designSpaceBox,...
         [],...
-        optimizationData.Options.MeasureOptions{:});
-    designSpaceIntervalSize = optimizationData.DesignSpaceUpperBound - optimizationData.DesignSpaceLowerBound;
+        problemData.Options.MeasureOptions{:});
+    designSpaceIntervalSize = problemData.DesignSpaceUpperBound - problemData.DesignSpaceLowerBound;
     nDesignVariable = size(designSpaceIntervalSize,2);
     
     % algorithm data
     iExplorationStart = 1;
-    iConsolidationStart = find([optimizationData.IterationData.Phase]==2,1,'first');
+    iConsolidationStart = find([iterationData.Phase]==2,1,'first');
     iExplorationEnd = iConsolidationStart-1;
-    iConsolidationEnd = length(optimizationData.IterationData);
+    iConsolidationEnd = length(iterationData);
     
     % requirement spaces plots only necessary if there are useless designs
-    if(all([optimizationData.IterationData.IsUseful],'all'))
+    if(all([iterationData.IsUseful],'all'))
         flagReqSpaces = false;
     else
         flagReqSpaces = true;
     end
     
     % create column arrays
-    growthRate = [optimizationData.IterationData.GrowthRate]';
-    phase = [optimizationData.IterationData.Phase]';
-    timeElapsedAdaptGrowthRate = [optimizationData.IterationData.TimeElapsedAdaptGrowthRate]';
-    timeElapsedGrow = [optimizationData.IterationData.TimeElapsedGrow]';
-    timeElapsedGenerate = [optimizationData.IterationData.TimeElapsedGenerate]';
-    timeElapsedEvaluate = [optimizationData.IterationData.TimeElapsedEvaluate]';
-    timeElapsedLabel = [optimizationData.IterationData.TimeElapsedLabel]';
-    timeElapsedCount = [optimizationData.IterationData.TimeElapsedCount]';
-    timeElapsedMeasure = [optimizationData.IterationData.TimeElapsedMeasure]';
-    timeElapsedTrim = [optimizationData.IterationData.TimeElapsedTrim]';
-    timeElapsedConvergence = [optimizationData.IterationData.TimeElapsedConvergence]';
-    timeElapsedIteration = [optimizationData.IterationData.TimeElapsedIteration]';
+    growthRate = [iterationData.GrowthRate]';
+    phase = [iterationData.Phase]';
     
     % get measures
     nIter = iConsolidationEnd - iExplorationStart + 1;
@@ -119,24 +109,24 @@ function algorithmData = postprocess_sso_box_stochastic(optimizationData)
         designVariableIntervalSizeAfterTrim] = deal(nan(nIter,nDesignVariable));
     for i=iExplorationStart:iConsolidationEnd
         % measures
-        measureBeforeTrim(i) = optimizationData.Options.MeasureFunction(...
-            optimizationData.IterationData(i).CandidateBoxBeforeTrim,[],optimizationData.Options.MeasureOptions{:});
-        measureAfterTrim(i) = optimizationData.Options.MeasureFunction(...
-            optimizationData.IterationData(i).CandidateBoxAfterTrim,[],optimizationData.Options.MeasureOptions{:});
+        measureBeforeTrim(i) = problemData.Options.MeasureFunction(...
+            iterationData(i).CandidateBoxBeforeTrim,[],problemData.Options.MeasureOptions{:});
+        measureAfterTrim(i) = problemData.Options.MeasureFunction(...
+            iterationData(i).CandidateBoxAfterTrim,[],problemData.Options.MeasureOptions{:});
 
         % number of (labeled) samples
-        nSample(i) = size(optimizationData.IterationData(i).EvaluatedDesignSamples,1);
-        nGood(i) = sum(optimizationData.IterationData(i).IsGoodPerformance);
-        nPhysicallyFeasible(i) = sum(optimizationData.IterationData(i).IsPhysicallyFeasible);
-        nAccUse(i) = sum(optimizationData.IterationData(i).IsAcceptable & optimizationData.IterationData(i).IsUseful);
-        nAcc(i) = sum(optimizationData.IterationData(i).IsAcceptable);
-        nUse(i) = sum(optimizationData.IterationData(i).IsUseful);
+        nSample(i) = size(iterationData(i).EvaluatedDesignSamples,1);
+        nGood(i) = sum(iterationData(i).IsGoodPerformance);
+        nPhysicallyFeasible(i) = sum(iterationData(i).IsPhysicallyFeasible);
+        nAccUse(i) = sum(iterationData(i).IsAcceptable & iterationData(i).IsUseful);
+        nAcc(i) = sum(iterationData(i).IsAcceptable);
+        nUse(i) = sum(iterationData(i).IsUseful);
 
         % box interval sizes
         designVariableIntervalSizeBeforeTrim(i,:) = ...
-            optimizationData.IterationData(i).CandidateBoxBeforeTrim(2,:) - optimizationData.IterationData(i).CandidateBoxBeforeTrim(1,:);
+            iterationData(i).CandidateBoxBeforeTrim(2,:) - iterationData(i).CandidateBoxBeforeTrim(1,:);
         designVariableIntervalSizeAfterTrim(i,:) = ...
-            optimizationData.IterationData(i).CandidateBoxAfterTrim(2,:) - optimizationData.IterationData(i).CandidateBoxAfterTrim(1,:);
+            iterationData(i).CandidateBoxAfterTrim(2,:) - iterationData(i).CandidateBoxAfterTrim(1,:);
     end
 
     % iteration number per phase
@@ -158,7 +148,6 @@ function algorithmData = postprocess_sso_box_stochastic(optimizationData)
         [zeros(1,nDesignVariable);designVariableIntervalSizeBeforeTrim(1:end-1,:)];
     ratioDesignVariableIntervalChangeAfterTrim = designVariableIntervalSizeAfterTrim./...
         [zeros(1,nDesignVariable);designVariableIntervalSizeAfterTrim(1:end-1,:)];
-    totalTimeElapsed = cumsum(timeElapsedIteration);
 
     % wrap
     algorithmData = struct(...
@@ -189,16 +178,5 @@ function algorithmData = postprocess_sso_box_stochastic(optimizationData)
     	'RatioMeasureChangeBeforeTrim',ratioMeasureChangeBeforeTrim,...
     	'RatioMeasureChangeAfterTrim',ratioMeasureChangeAfterTrim,...
         'RatioDesignVariableIntervalChangeBeforeTrim',ratioDesignVariableIntervalChangeBeforeTrim,...
-        'RatioDesignVariableIntervalChangeAfterTrim',ratioDesignVariableIntervalChangeAfterTrim,...
-        'TotalTimeElapsed',totalTimeElapsed,...
-        'TimeElapsedAdaptGrowthRate',timeElapsedAdaptGrowthRate,...
-        'TimeElapsedGrow',timeElapsedGrow,...
-        'TimeElapsedGenerate',timeElapsedGenerate,...
-        'TimeElapsedEvaluate',timeElapsedEvaluate,...
-        'TimeElapsedLabel',timeElapsedLabel,...
-        'TimeElapsedCount',timeElapsedCount,...
-        'TimeElapsedMeasure',timeElapsedMeasure,...
-        'TimeElapsedTrim',timeElapsedTrim,...
-        'TimeElapsedConvergence',timeElapsedConvergence,...
-        'TimeElapsedIteration',timeElapsedIteration);
+        'RatioDesignVariableIntervalChangeAfterTrim',ratioDesignVariableIntervalChangeAfterTrim);
 end

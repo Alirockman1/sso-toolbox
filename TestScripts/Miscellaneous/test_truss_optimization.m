@@ -2,7 +2,7 @@
 %   test_component_hollow_sphere computes a component solution spaces with 
 %   for a sphere problem.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,7 +39,7 @@ figureSize = [goldenRatio 1]*8.5;
 
 
 %%
-trussAnalysisChoice = '36-DoF-3D';
+trussAnalysisChoice = '2-DoF-2D';
 
 optimizationFunction = @optimization_ga_wrapper;
 optimizationOptions = {'Display','diagnose'};
@@ -586,7 +586,7 @@ designEvaluatorDisplacementAndMass = DesignEvaluatorBottomUpMapping(...
     performanceUpperLimitDisplacementAndMass);
 
 warning('off');
-[nodePositionOptimalDisplacementAndMass,scoreOptimal] = design_optimize_performance_score(...
+[nodePositionOptimalDisplacementAndMass,massOptimal] = design_optimize_performance_score(...
     designEvaluatorDisplacementAndMass,...
     initialDesign,...
     designSpaceLowerBoundDisplacement,...

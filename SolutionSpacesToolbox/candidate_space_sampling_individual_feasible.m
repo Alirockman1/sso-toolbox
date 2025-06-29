@@ -36,7 +36,7 @@ function [designSample,paddingSample] = candidate_space_sampling_individual_feas
 %
 %   See also sso_component_stochastic, candidate_space_sampling_all_feasible.
 %   
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -74,48 +74,43 @@ function [designSample,paddingSample] = candidate_space_sampling_individual_feas
     paddingSampleComponent = cell(1,nComponent);
     nPadComponent = nan(1,nComponent);
     for i=1:nComponent
-        nDesignVariableComponent = length(componentIndex{i});
-
-        designSampleComponent = nan(nSample,nDesignVariableComponent);
-
+        designSampleComponent = [];
         paddingSampleComponent{i} = [];
-        
         samplingBoxComponent = samplingBox(:,componentIndex{i});
         nGeneratedDesignSample = 0;
 
         % generate samples for each candidate space separately
-        while (nGeneratedDesignSample < nSample)
+        while (nGeneratedDesignSample <= nSample)
             currentSample = options.SamplingMethodFunction(samplingBoxComponent,nSample,options.SamplingMethodOptions{:});
 
             % see which designs are within current candidate spaces -> should be evaluated
             toBeEvaluated = candidateSpace(i).is_in_candidate_space(currentSample);
-            nValid = sum(toBeEvaluated);
+            nGeneratedDesignSample = nGeneratedDesignSample + sum(toBeEvaluated);
 
             % if we don't have enough, loop again;
             % if we do, get only those necessary and be done.
-            if(nGeneratedDesignSample+nValid < nSample)
-                if(nValid>0)
-                    designSampleComponent(nGeneratedDesignSample+1:nGeneratedDesignSample+nValid,:) = currentSample(toBeEvaluated,:);
+            if(nGeneratedDesignSample < nSample)
+                if(sum(toBeEvaluated)>0)
+                    designSampleComponent = [designSampleComponent;currentSample(toBeEvaluated,:)];
                     paddingSampleComponent{i} = [paddingSampleComponent{i};currentSample(~toBeEvaluated,:)];
-
-                    nGeneratedDesignSample = nGeneratedDesignSample + nValid;
                 end
+
+                continue;
             else
                 % find how many extras must be removed and the main index
-                nExtraSample = nGeneratedDesignSample + nValid - nSample;
+                nExtraSample = nGeneratedDesignSample - nSample;
 
                 if(nExtraSample>0)
                     iExtra = find(toBeEvaluated,nExtraSample,'last');
                     iStopConcatenation = iExtra(1)-1;
                 else
-                    iStopConcatenation = nSample;
+                    iStopConcatenation = length(toBeEvaluated);
                 end
 
                 % add everything before that
-                designSampleComponent(nGeneratedDesignSample+1:nSample,:) = currentSample(toBeEvaluated(1:iStopConcatenation),:);
+                designSampleComponent = [designSampleComponent;currentSample(toBeEvaluated(1:iStopConcatenation),:)];
                 paddingSampleComponent{i} = [paddingSampleComponent{i};currentSample(~toBeEvaluated(1:iStopConcatenation),:)];
-
-                nGeneratedDesignSample = nSample;
+                break;
             end
         end
         
@@ -127,6 +122,8 @@ function [designSample,paddingSample] = candidate_space_sampling_individual_feas
     nPadMissingOthers = nPaddingBiggest - nPadComponent;
     paddingSample = nan(nPaddingBiggest,size(samplingBox,2));
     for i=1:nComponent
+        paddingAdditionalSample = [];
+        needsAdditional = (nPadMissingOthers(i)>0);
         samplingBoxComponent = samplingBox(:,componentIndex{i});
         
         % sample inside bounding box with traditional methods

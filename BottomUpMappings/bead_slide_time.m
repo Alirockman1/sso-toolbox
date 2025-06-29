@@ -39,7 +39,7 @@ function performanceMeasure = bead_slide_time(designSample,systemParameter)
 %
 %   See also interp1, trapz, solve_analytical_brachistochrone.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -59,14 +59,19 @@ function performanceMeasure = bead_slide_time(designSample,systemParameter)
     nInterpolationPoints = systemParameter(3);
     
     gravityConstant = 9.80;
+    interpolationMethod = 'pchip';
     derivativeNeighborPoint = 2;
     
     nSample = size(designSample,1);
     performanceMeasure = nan(nSample,1);
     for i=1:nSample
         % create a base entry with the rough points given
+        heightBase = [0,designSample(i,:)-distanceY,-distanceY]; % shift so start point is (0,0)
+        widthBase = linspace(0,distanceX,size(heightBase,2));
+
+        % create a fine mesh with the given interpolation points
         widthFine = linspace(0,distanceX,nInterpolationPoints);
-        heightFine = designSample{i}(widthFine)-distanceY;
+        heightFine = interp1(widthBase,heightBase,widthFine,interpolationMethod);
 
         % estimate the slope of the curve with finite differences
         slopeFine = finite_differences_derivative(heightFine,widthFine,1,derivativeNeighborPoint);
@@ -75,7 +80,7 @@ function performanceMeasure = bead_slide_time(designSample,systemParameter)
         timeDerivative = sqrt((1+slopeFine.^2)./(0-2*gravityConstant*heightFine));
         
         % First point is inf since heightFine(1)=0, approximate instead
-        timeDerivative(1) = interp1(widthFine(2:end),timeDerivative(2:end),0,'pchip','extrap');
+        timeDerivative(1) = timeDerivative(2);
         
         % Integrate to find total time
         performanceMeasure(i) = trapz(widthFine,timeDerivative);

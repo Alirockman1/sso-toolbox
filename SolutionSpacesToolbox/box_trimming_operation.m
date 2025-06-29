@@ -1,58 +1,66 @@
-function [candidateBoxTrimmed,measureTrimmed] = box_trimming_operation(designSample,isViable,trimmingOrder,varargin)
-%BOX_TRIMMING_OPERATION performs the box trimming operation for solution spaces
-%   BOX_TRIMMING_OPERATION performs the trimming operation of the design box 
+function [candidateBoxTrimmed,measureTrimmed] = box_trimming_operation(designSample,labelViable,trimmingOrder,varargin)
+%box_trimming_classic performs the box trimming operation for solution spaces
+%   box_trimming_classic performs the trimming operation of the design box 
 %   candidate, in such a way that the final result only includes good 
 %   (acceptable) designs and has the biggest possible measure.
 %   
-%   CANDIDATEBOXTRIMMED = BOX_TRIMMING_OPERATION(DESIGNSAMPLE,ISVIABLE,
-%   TRIMMINGORDER) receives the design sample points in DESIGNSAMPLE, a label 
-%   indicating if they should be kept ISVIABLE, and the order of designs to 
-%   remove TRIMMINGORDER, and returns the optimal design box with only 
-%   acceptable designs in CANDIDATEBOXTRIMMED.
+%   CANDIDATEBOXTRIMMED = box_trimming_classic(CANDIDATEBOX,DESIGNSAMPLE,
+%   LABELACCEPT,LABELUSE,SCORE) receives the current candidate design box in
+%   CANDIDATEBOX, the design samples in DESIGNSAMPLE, their respective 
+%   requirement spaces labels of acceptance LABELACCEPT and usefulness LABELUSE,
+%   and their design score in SCORE, and returns the optimal design box with
+%   only acceptable designs in CANDIDATEBOXTRIMMED. For LABELUSE and 
+%   LABELACCEPT, 'true' means the design is useful/acceptable, and 'false' means
+%   the opposite. SCORE is used to define the order of trimming.
 %
-%   CANDIDATEBOXTRIMMED = BOX_TRIMMING_OPERATION(DESIGNSAMPLE,ISVIABLE,
-%   TRIMMINGORDER,CANDIDATEBOX) allows the specification of an initial candidate
-%   box. If not given, a bounding box is used around DESIGNSAMPLE.
-%
-%   CANDIDATEBOXTRIMMED = BOX_TRIMMING_OPERATION(...,NAME,VALUE,...) allows for 
-%   the choice of specific optimization parameters, as opposed to the use of
+%   CANDIDATEBOXTRIMMED = box_trimming_classic(CANDIDATEBOX,DESIGNSAMPLE,
+%   LABELACCEPT,LABELUSE,SCORE,OPTIONS) allows for the choice of specific
+%   optimization parameters as described in OPTIONS, as opposed to the use of
 %   the default ones. This options available are:
-%       - 'MeasureFunction' : function to calculate the measure of each 
-%       candidate box. Default: @box_measure_volume.
-%       - 'MeasureOptions' : options to be used in the measure function. Default
-%       is empty.
-%       - 'Slack' : a value between 0 and 1 which specifies where the boundary
+%       - 'BoxMeasureFunction': function to calculate the measure of each 
+%       candidate box.
+%       - 'Weight': weight for each dimension, where dimensions with higher 
+%       weights are given bigger priority.
+%       - 'ApplyLeannss': a boolean flag to determine if the leanness condition
+%       should be applied at each trimming step or not.
+%       - 'MustIncludeReferenceDesign': a boolean flag to determine if the
+%       reference design should always be a part of the candidate design box.
+%       If 'true', design boxes that do not contain the reference design will be
+%       given '-inf' measure, and therefore not be considered.
+%       - 'ReferenceDesign': reference design, which may be required to be 
+%       inside the solution box.
+%       - 'Slack': a value between 0 and 1 which specifies where the boundary
 %       should be relocated to when performing the trimming operation: for 0,
 %       the boundary of the design box gets relocated to the closest acceptable
 %       design; for 1, the boundary gets relocated to the unnaceptable design
 %       being removed; and proportionally in-between for values between 0 and 1.
-%       - 'PassesCriterion' : criterion for what passes to consider in terms
-%       of the good anchors considered; in each pass, the chosen viable point
-%       cannot be removed in the operation, and at the end of the pass, the 
-%       result from that gets compared to the previous optimal trimming. The 
-%       following options are available:
-%           -- 'single' : no viable anchors are considered, and only a single 
-%           pass is done
-%           -- 'reduced' : all viable points must be included inside  at least
-%           one solution.
-%           -- 'full' : one individual solution is generated for each viable 
-%           point.
+%       - 'Order': the criterium for the order of the trimming operation, 
+%       specifically the order which unnacceptable designs must be removed.
+%       Available options are 'score-low-to-high', 'score-high-to-low' and
+%       'random': in the first, designs closest to the boundary are removed 
+%       first; in the second, the designs furthest from the boundary are removed
+%       first; and in the last, the order is randomized.
 %
-%   [CANDIDATEBOXTRIMMED,MEASURETRIMMED] = BOX_TRIMMING_OPERATION(...) also 
+%   [CANDIDATEBOXTRIMMED,MEASURETRIMMED] = box_trimming_classic(...) also 
 %   returns the calcuated measure of the optimal trimmed box.
 %
 %   Inputs:
-%       - DESIGNSAMPLE : (nSample,nDesignVariable) double
-%       - ISVIABLE : (nSample,1) logical
-%       - TRIMMMINGORDER : 
 %       - CANDIDATEBOX : (2,nDesignVariable) double
 %           -- (1) : lower boundary of the design box
 %           -- (2) : upper boundary of the design box
-%       - 'MeasureFunction' : function_handle with interface 
-%       'measure = f(candidateBox,weight,nSample,nUse)'
-%       - 'MeasureOptions' : (1,nOptions) cell
-%       - 'Slack' : double
-%       - 'PassesCriterion' : char OR string
+%       - DESIGNSAMPLE : (nSample,nDesignVariable) double
+%       - LABELACCEPT : (nSample,1) logical
+%       - LABELUSE : (nSample,1) logical 
+%       - SCORE : (nSample,1) double
+%       - OPTIONS : structure OR name-value pair arguments, optional
+%           -- BoxMeasureFunction : function handle with interface 
+%           'measure = f(candidateBox,weight,nSample,nUse)'
+%           -- weight : (1,nDesignVariable) double
+%           -- ApplyLeanness : logical
+%           -- MustIncludeReferenceDesign : logical
+%           -- ReferenceDesign : (1,nDesignVariable) double
+%           -- Slack : double
+%           -- Order : string
 %
 %   Outputs:
 %       - CANDIDATEBOXTRIMMED : (2,nDesignVariable) double
@@ -62,7 +70,7 @@ function [candidateBoxTrimmed,measureTrimmed] = box_trimming_operation(designSam
 %
 %   See also sso_box_stochastic, box_measure_volume.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -80,7 +88,7 @@ function [candidateBoxTrimmed,measureTrimmed] = box_trimming_operation(designSam
     % parse inputs
     parser = inputParser;
     parser.addRequired('designSample',@(x)isnumeric(x));
-    parser.addRequired('isViable',@(x)islogical(x));
+    parser.addRequired('labelViable',@(x)islogical(x));
     parser.addRequired('trimmingOrder',@(x)isnumeric(x));
     parser.addOptional('CandidateBox',[],@(x)isnumeric(x)&&(size(x,1)==2 || isempty(x)));
     parser.addParameter('MeasureFunction',@box_measure_volume,@(x)isa(x,'function_handle'));
@@ -88,7 +96,7 @@ function [candidateBoxTrimmed,measureTrimmed] = box_trimming_operation(designSam
     parser.addParameter('Slack',0.5,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
     parser.addParameter('PassesCriterion','full',@(x)any(strcmpi(x,{'single','reduced','full'})));
     
-    parser.parse(designSample,isViable,trimmingOrder,varargin{:});
+    parser.parse(designSample,labelViable,trimmingOrder,varargin{:});
     options = parser.Results;
 
     % assign conditional default values
@@ -103,10 +111,13 @@ function [candidateBoxTrimmed,measureTrimmed] = box_trimming_operation(designSam
     
     candidateBoxTrimmed = candidateBoxInitial;
     measureTrimmed = -inf;
+    % isInsideBox = is_in_design_box(designSample,candidateBoxTrimmed);
+    % isInsideBoxViable = labelViable & isInsideBox;
+    % measureTrimmed = options.MeasureFunction(candidateBoxTrimmed,sum(isInsideBoxViable),options.MeasureOptions{:});
 
     isInsideBoxInitial = is_in_design_box(designSample,candidateBoxInitial);
     iAnchorViable = [];
-    canBeAnchorViable = isViable & isInsideBoxInitial;
+    canBeAnchorViable = labelViable & isInsideBoxInitial;
     hasBeenAnchorViable = false(1,sum(canBeAnchorViable));
 
     iCurrentPass = 0;
@@ -130,31 +141,15 @@ function [candidateBoxTrimmed,measureTrimmed] = box_trimming_operation(designSam
                     for l=[1,2]
                         candidateBox = candidateBoxCurrent;
 
-                        closestViable = [];
-                        if(options.Slack<1)
-                            isInsideBox = is_in_design_box(designSample,candidateBox);
-                            if(l==1) % lower boundary
-                                remainRegion = (designSample(:,k)>=designSample(iExclude,k));
-                                closestViable = min(designSample(isInsideBox&remainRegion&isViable,k));
-                            else % upper boundary
-                                remainRegion = (designSample(:,k)<=designSample(iExclude,k));
-                                closestViable = max(designSample(isInsideBox&remainRegion&isViable,k));
-                            end
-                        end
-
-                        if(isempty(closestViable))
-                            closestViable = designSample(iExclude,k);
-                        end
-
                         % move lower/upper bound
-                        candidateBox(l,k) = designSample(iExclude,k)*options.Slack + closestViable*(1-options.Slack);
+                        candidateBox(l,k) = designSample(iExclude,k);
                         isInsideBox = is_in_design_box(designSample,candidateBox);
 
                         % if anchor is not included, do not use; otherwise, compute measure
                         if(~isInsideBox(iAnchorViable))
                             measureBox = -inf;
                         else
-                            isInsideBoxViable = isInsideBox & isViable;
+                            isInsideBoxViable = isInsideBox & labelViable;
                             fractionViable = sum(isInsideBoxViable)/sum(isInsideBox);
                             measureBox = options.MeasureFunction(candidateBox,fractionViable,options.MeasureOptions{:});
                         end
@@ -172,15 +167,17 @@ function [candidateBoxTrimmed,measureTrimmed] = box_trimming_operation(designSam
                 isInsideBoxCurrent = isInsideBoxBest;
             end
 
-            % check final measure
-            isInsideBox = is_in_design_box(designSample,candidateBoxCurrent);
-            isInsideBoxViable = isInsideBox & isViable;
+            % use slack
+            strictBox = design_bounding_box(designSample,isInsideBoxCurrent & labelViable);
+            candidateBox = candidateBoxCurrent*options.Slack + strictBox*(1-options.Slack);
+            isInsideBox = is_in_design_box(designSample,candidateBox);
+            isInsideBoxViable = isInsideBox & labelViable;
             fractionViable = sum(isInsideBoxViable)/sum(isInsideBox);
-            measureBox = options.MeasureFunction(candidateBoxCurrent,fractionViable,options.MeasureOptions{:});
+            measureBox = options.MeasureFunction(candidateBox,fractionViable,options.MeasureOptions{:});
 
             % check final measure
             if(measureBox>measureTrimmed)
-                candidateBoxTrimmed = candidateBoxCurrent;
+                candidateBoxTrimmed = candidateBox;
                 measureTrimmed = measureBox;
             end
         end

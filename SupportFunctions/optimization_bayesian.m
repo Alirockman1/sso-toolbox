@@ -129,7 +129,7 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_baye
 %	bayesian_acquisition_gaussian_expected_improvement, 
 %	bayesian_acquisition_gaussian_probability_of_improvement.
 %   
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

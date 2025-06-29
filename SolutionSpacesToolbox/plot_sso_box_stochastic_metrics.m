@@ -42,7 +42,7 @@ function figureHandle = plot_sso_box_stochastic_metrics(algorithmData,varargin)
 %
 %   See also sso_box_stochastic, postprocess_sso_box_stochastic.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -177,43 +177,16 @@ function figureHandle = plot_sso_box_stochastic_metrics(algorithmData,varargin)
     ylabel('Sample Purity');
     zlabel('Normalized Box Volume (V/V_{ds})');
 
-    % time elapsed
-    figureHandle(9) = figure;
-    plot(algorithmData.TimeElapsedAdaptGrowthRate);
-    hold on;
-    plot(algorithmData.TimeElapsedGrow);
-    plot(algorithmData.TimeElapsedGenerate);
-    plot(algorithmData.TimeElapsedEvaluate);
-    plot(algorithmData.TimeElapsedLabel);
-    plot(algorithmData.TimeElapsedCount);
-    plot(algorithmData.TimeElapsedMeasure);
-    plot(algorithmData.TimeElapsedTrim);
-    plot(algorithmData.TimeElapsedConvergence);
-    plot(algorithmData.TimeElapsedIteration);
-    xlabel('Iteration Step')
-    ylabel('Time Elapsed (s)')
-    grid minor;
-    legend({'Adapt Growth Rate','Grow','Generate','Evaluate','Label','Count','Measure','Trim','Convergence','Iteration'});
-
-    % total time elapsed
-    figureHandle(10) = figure;
-    plot(algorithmData.TotalTimeElapsed);
-    xlabel('Iteration Step')
-    ylabel('Total Time Elapsed (s)')
-    grid minor;
-
     % save if required
     if(~isempty(options.SaveFolder))
-        save_print_figure(figureHandle(1),[options.SaveFolder,'TotalMeasure'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(2),[options.SaveFolder,'TotalMeasureNormalized'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(3),[options.SaveFolder,'IntervalSizeNormalized'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(4),[options.SaveFolder,'GrowthRate'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(5),[options.SaveFolder,'NumberLabelSamplePoints'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(6),[options.SaveFolder,'TotalMeasureRelativeRatio'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(7),[options.SaveFolder,'NormalizedMeasureSample'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(8),[options.SaveFolder,'TotalEvaluationsPurityNormalizedMeasure'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(9),[options.SaveFolder,'TimeElapsed'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(10),[options.SaveFolder,'TotalTimeElapsed'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(1),[options.SaveFolder,'Box-Metrics-TotalMeasure'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(2),[options.SaveFolder,'Box-Metrics-TotalMeasureNormalized'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(3),[options.SaveFolder,'Box-Metrics-IntervalSizeNormalized'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(4),[options.SaveFolder,'Box-Metrics-GrowthRate'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(5),[options.SaveFolder,'Box-Metrics-NumberLabelSamplePoints'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(6),[options.SaveFolder,'Box-Metrics-TotalMeasureRelativeRatio'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(7),[options.SaveFolder,'Box-Metrics-NormalizedMeasureSample'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(8),[options.SaveFolder,'Box-Metrics-TotalEvaluationsPurityNormalizedMeasure'],options.SaveFigureOptions{:});
 
         if(options.CloseFigureAfterSaving)
             close(figureHandle);

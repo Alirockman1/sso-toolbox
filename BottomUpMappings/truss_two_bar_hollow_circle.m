@@ -88,7 +88,7 @@ function performanceMeasure = truss_two_bar_hollow_circle(designSample,systemPar
 %
 %   See also truss_six_bar_2d_two_moving_node.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

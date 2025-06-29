@@ -1,4 +1,4 @@
-function h = plot_design_box_3d(graphicsHandle,designBox,varargin)
+function h = plot_design_box_3d(figureHandle,designBox,varargin)
 %PLOT_DESIGN_BOX_3D Visualize a 3-dimensional design box
 %   PLOT_DESIGN_BOX_3D plots in a figure the edges of a design box.
 %
@@ -26,7 +26,7 @@ function h = plot_design_box_3d(graphicsHandle,designBox,varargin)
 %
 %   See also patch, legend, plot_design_box_2d.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -69,7 +69,7 @@ function h = plot_design_box_3d(graphicsHandle,designBox,varargin)
     [~,plotOptions] = merge_name_value_pair_argument(defaultPlotOptions,inputPlotOptions);
 
     % make plot
-    activate_graphics_object(graphicsHandle);
+    figure(figureHandle);
     h = patch('Vertices', vertices, 'Faces', faces, plotOptions{:});
     view(3);
 

@@ -1,9 +1,8 @@
-%TEST_BOX_CAR_CRASH 2D Car Crash example for box-shaped solution spaces
-%   TEST_BOX_CAR_CRASH allows to test the box SSO algorithm with a problem with
-%   a known analytical solution, namely the simplifed 2D car crash problem.
-%   Both solution and algorithm performance metrics are plotted at the end.
+%test_box_car_crash 2D Car Crash example for box-shaped solution spaces
+%   test_box_car_crash allows the visualization of the difference between the
+%   variants of the bounding box, namely its strict and relaxed versions.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +27,7 @@ diary off;
 
 
 %% debugging
-rng(4);
+rng(6);
 
 
 %% Documentation / Archive
@@ -60,11 +59,10 @@ startingPoint         = [4.05e5 4.05e5];
 %% optimization call
 options = sso_stochastic_options('box',...
     'NumberSamplesPerIteration',100,...
-    'GrowthRate',0.2,...
     'FixIterNumberExploration',true,...
     'FixIterNumberConsolidation',true,...
     'UseAdaptiveGrowthRate',false);
-[designBox,optimizationData] = sso_box_stochastic(designEvaluator,startingPoint,...
+[designBox,problemData,iterData] = sso_box_stochastic(designEvaluator,startingPoint,...
     designSpaceLowerBound,designSpaceUpperBound,options);
 
 
@@ -86,7 +84,7 @@ save_print_figure(gcf,[saveFolder,'SolutionBox'],'Size',figureSize);
 
 
 %% Performance Metrics
-algoData = postprocess_sso_box_stochastic(optimizationData);
+algoData = postprocess_sso_box_stochastic(problemData,iterData);
 plot_sso_box_stochastic_metrics(algoData,...
     'SaveFolder',saveFolder,...
     'SaveFigureOptions',{'Size',figureSize});

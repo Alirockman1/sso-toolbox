@@ -38,7 +38,7 @@ anchorPosition3d = [0.3 0.3 0.3];
 
 %% color choice
 colorCandidateSpaceInside = color_palette_tol('cyan');
-colorCandidateSpaceOutside = color_palette_tol('grey');
+colorCandidateSpaceOutside = color_palette_tol('yellow');
 colorPointInside = color_palette_tol('green');
 colorPointOutside = color_palette_tol('red');
 colorGrowthPoint = color_palette_tol('yellow');
@@ -47,12 +47,11 @@ colorVector = color_palette_tol('purple');
 optionsCandidateSpaceInside1d = {'-','color',colorCandidateSpaceInside,'linewidth',3.0};
 optionsCandidateSpaceOutside1d = {'-','color',colorCandidateSpaceOutside,'linewidth',3.0};
 optionsCandidateSpaceInside2d3d = {'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.4,'LineStyle','none'};
-optionsCandidateSpaceOutside2d3d = {'FaceColor',colorCandidateSpaceOutside,'FaceAlpha',0.6,'LineStyle','none'};
+optionsCandidateSpaceOutside2d3d = {'FaceColor',colorCandidateSpaceOutside,'FaceAlpha',0.5,'LineStyle','none'};
 optionsPointOutside = {'x','color',colorPointOutside,'MarkerSize',10,'linewidth',2.0};
-optionsPointInside = {'o','color',colorPointInside,'MarkerSize',10,'linewidth',2.0};
 
 
-%% planar trimming - "pure"
+%% planar trimming
 % 1d
 figure;
 hold all;
@@ -67,7 +66,7 @@ quiver(...
     'AutoScale','off','LineWidth',2.0,'Color',colorVector);
 plot([anchorPosition1d],[1],optionsPointOutside{:},'HandleVisibility','off');
 set(gca,'XColor', 'none','YColor','none');
-grid off;
+grid minor;
 ylim([-2 2]);
 legend({'Removed Region','Kept Region','Normal Vector','Removed Design'},'location','east');
 save_print_figure(gcf,[saveFolder,'PlanarTrimming1D'],'Size',[figureSize(1) figureSize(2)/2],'PrintFormat',{'png','pdf'});
@@ -100,10 +99,10 @@ for i=1:size(trimmingNormalsInside,1)
     pointOutside = [anchorPosition2d;designSpaceIntersection;cornerCoordinate(dotProduct>0,:)];
 
     convexHullInside = CandidateSpaceConvexHull(designSpaceLowerBound2d,designSpaceUpperBound2d);
-    convexHullInside = convexHullInside.generate_candidate_space(pointInside);
+    convexHullInside = convexHullInside.define_candidate_space(pointInside);
 
     convexHullOutside = CandidateSpaceConvexHull(designSpaceLowerBound2d,designSpaceUpperBound2d);
-    convexHullOutside = convexHullOutside.generate_candidate_space(pointOutside);
+    convexHullOutside = convexHullOutside.define_candidate_space(pointOutside);
 
     convexHullOutside.plot_candidate_space(gcf,optionsCandidateSpaceOutside2d3d{:});
     convexHullInside.plot_candidate_space(gcf,optionsCandidateSpaceInside2d3d{:});
@@ -157,10 +156,10 @@ for i=1:size(trimmingNormalsInside,1)
     tolerance = 1e-5;
 
     convexHullInside = CandidateSpaceConvexHull(designSpaceLowerBound3d-tolerance,designSpaceUpperBound3d+tolerance);
-    convexHullInside = convexHullInside.generate_candidate_space(pointInside+tolerance*trimmingNormalsInside(i,:));
+    convexHullInside = convexHullInside.define_candidate_space(pointInside+tolerance*trimmingNormalsInside(i,:));
 
     convexHullOutside = CandidateSpaceConvexHull(designSpaceLowerBound3d-tolerance,designSpaceUpperBound3d+tolerance);
-    convexHullOutside = convexHullOutside.generate_candidate_space(pointOutside-tolerance*trimmingNormalsInside(i,:));
+    convexHullOutside = convexHullOutside.define_candidate_space(pointOutside-tolerance*trimmingNormalsInside(i,:));
 
     convexHullOutside.plot_candidate_space(gcf,optionsCandidateSpaceOutside2d3d{:},'linestyle','none');
     convexHullInside.plot_candidate_space(gcf,optionsCandidateSpaceInside2d3d{:});
@@ -177,168 +176,6 @@ legend({'Removed Region','Kept Region','Normal Vector','Removed Design'});
 save_print_figure(gcf,[saveFolder,'PlanarTrimming3D'],'Size',[figureSize(1) 2*figureSize(2)],'PrintFormat',{'png','pdf'});
 
 
-%% planar trimming - with designs / preferential direction
-designSpaceLowerBound = 0;
-designSpaceUpperBound = +1;
-
-designSample = [0.12 0.22 0.35 0.44 0.52 0.56 0.78 0.91 0.99]';
-isGood = [true false false true true true false true true]';
-trimmingOrder = find(~isGood);
-candidateSpace = CandidateSpacePlanarTrimming(designSpaceLowerBound,designSpaceUpperBound);
-trimmedCandidateSpace = component_trimming_operation(designSample,isGood,trimmingOrder,{[1]},candidateSpace,'TrimmingMethodOptions',{'TrimmingSlack',1});
-
-anchorPoint = trimmedCandidateSpace.AnchorPoint(1,:);
-planeOrientation = trimmedCandidateSpace.PlaneOrientationAnchor(1,:);
-
-figure;
-hold all;
-if(planeOrientation<0)
-    plot([anchorPoint designSpaceUpperBound],[0 0],optionsCandidateSpaceOutside1d{:});
-    plot([designSpaceLowerBound anchorPoint],[0 0],optionsCandidateSpaceInside1d{:});
-else
-    plot([designSpaceLowerBound anchorPoint],[0 0],optionsCandidateSpaceOutside1d{:});
-    plot([anchorPoint designSpaceUpperBound],[0 0],optionsCandidateSpaceInside1d{:},'HandleVisibility','off');
-end
-plot(designSample(isGood),zeros(sum(isGood),1),optionsPointInside{:});
-plot(designSample(~isGood),zeros(sum(~isGood),1),optionsPointOutside{:});
-plot(anchorPoint,0,optionsPointOutside{:},'MarkerSize',12,'linewidth',3.0);
-daspect([13,3,1]);
-pbaspect([13,3,1]);
-arrow3([anchorPoint,0], [anchorPoint+planeOrientation*0.1 0], 'f', 2, 2);
-set(gca,'XColor', 'none','YColor','none');
-grid off;
-% ylim([-1 1]);
-save_print_figure(gcf,[saveFolder,'PlanarTrimming1D-Preferential'],'Size',[13 3],'PrintFormat',{'png','pdf'});
-
-clear designSpaceLowerBound designSpaceUpperBound designSample isGood trimmingOrder
-clear candidateSpace trimmedCandidateSpace anchorPoint planeOrientation
-
-% 2d
-designSpaceLowerBound = [0,0];
-designSpaceUpperBound = [+1,+1];
-designSpace = [designSpaceLowerBound;designSpaceUpperBound];
-
-designSample = [0.45,0.87; 0.91,0.54; 0.36,0.69; 0.31,0.42; 0.44,0.22; 0.62,0.31; 0.81,0.23; 0.12,0.61; 0.84,0.77];
-isGood = [true true false true true true false true false]';
-trimmingOrder = find(~isGood);
-candidateSpace = CandidateSpacePlanarTrimming(designSpaceLowerBound,designSpaceUpperBound);
-trimmedCandidateSpace = component_trimming_operation(designSample,isGood,trimmingOrder,{[1,2]},candidateSpace,'TrimmingMethodOptions',{'TrimmingSlack',1});
-
-anchorPoint = trimmedCandidateSpace.AnchorPoint(1,:);
-planeOrientation = trimmedCandidateSpace.PlaneOrientationAnchor(1,:);
-
-cornerCombination = logical(round(fullfact(2*ones(2,1)) - 1));
-cornerCoordinate = repmat(designSpaceLowerBound,size(cornerCombination,1),1);
-cornerCoordinateUpper = repmat(designSpaceUpperBound,size(cornerCombination,1),1);
-cornerCoordinate(cornerCombination) = cornerCoordinateUpper(cornerCombination);
-distanceCorner = anchorPoint - cornerCoordinate;
-
-planeVector = [planeOrientation(2), -planeOrientation(1)];
-
-designSpaceLimit = region_limit_line_search([],[anchorPoint;anchorPoint],[planeVector;-planeVector],designSpace);
-designSpaceIntersection = anchorPoint + designSpaceLimit.*[planeVector;-planeVector];
-
-dotProduct = sum(planeOrientation.*distanceCorner,2);
-
-pointInside = [anchorPoint;designSpaceIntersection;cornerCoordinate(dotProduct<=0,:)];
-pointOutside = [anchorPoint;designSpaceIntersection;cornerCoordinate(dotProduct>0,:)];
-
-convexHullInside = CandidateSpaceConvexHull(designSpaceLowerBound,designSpaceUpperBound);
-convexHullInside = convexHullInside.generate_candidate_space(pointInside);
-
-convexHullOutside = CandidateSpaceConvexHull(designSpaceLowerBound,designSpaceUpperBound);
-convexHullOutside = convexHullOutside.generate_candidate_space(pointOutside);
-
-figure;
-convexHullOutside.plot_candidate_space(gcf,optionsCandidateSpaceOutside2d3d{:});
-convexHullInside.plot_candidate_space(gcf,optionsCandidateSpaceInside2d3d{:});
-plot(designSample(isGood,1),designSample(isGood,2),optionsPointInside{:});
-plot(designSample(~isGood,1),designSample(~isGood,2),optionsPointOutside{:});
-plot(anchorPoint(1),anchorPoint(2),optionsPointOutside{:},'MarkerSize',12,'linewidth',3.0);
-daspect([1,1,1]);
-pbaspect([1,1,1]);
-arrow3([anchorPoint(1),anchorPoint(2)], [anchorPoint(1)+0.2*planeOrientation(1) anchorPoint(2)+0.2*planeOrientation(2)], 'f', 2, 2);
-set(gca,'XColor', 'none','YColor','none');
-grid off;
-% ylim([-1 1]);
-save_print_figure(gcf,[saveFolder,'PlanarTrimming2D-Preferential'],'Size',[10 10],'PrintFormat',{'png','pdf'});
-
-clear designSpaceLowerBound designSpaceUpperBound designSample isGood trimmingOrder
-clear candidateSpace trimmedCandidateSpace anchorPoint planeOrientation
-clear cornerCombination cornerCoordinate cornerCoordinateUpper distanceCorner
-clear planeVector designSpaceLimit designSpaceIntersection dotProduct
-clear pointInside pointOutside convexHullInside convexHullOutside
-
-
-% 3d
-designSpaceLowerBound = [0,0,0];
-designSpaceUpperBound = [+1,+1,+1];
-designSpace = [designSpaceLowerBound;designSpaceUpperBound];
-
-designSample = sampling_latin_hypercube(designSpace,9);
-isGood = [true true false true true true false true false]';
-trimmingOrder = find(~isGood);
-candidateSpace = CandidateSpacePlanarTrimming(designSpaceLowerBound,designSpaceUpperBound);
-trimmedCandidateSpace = component_trimming_operation(designSample,isGood,trimmingOrder,{[1,2,3]},candidateSpace,'TrimmingMethodOptions',{'TrimmingSlack',1});
-
-anchorPoint = trimmedCandidateSpace.AnchorPoint(1,:);
-planeOrientation = trimmedCandidateSpace.PlaneOrientationAnchor(1,:);
-
-cornerCombination = logical(round(fullfact(2*ones(3,1)) - 1));
-cornerCoordinate = repmat(designSpaceLowerBound,size(cornerCombination,1),1);
-cornerCoordinateUpper = repmat(designSpaceUpperBound,size(cornerCombination,1),1);
-cornerCoordinate(cornerCombination) = cornerCoordinateUpper(cornerCombination);
-distanceCorner = anchorPoint - cornerCoordinate;
-
-% plane vectors
-planeVectorNull = null(planeOrientation)';
-intersectionInterpolation = linspace(0,1,100)';
-planeVector = [...
-    intersectionInterpolation.*planeVectorNull(1,:) + (1-intersectionInterpolation).*planeVectorNull(2,:);...
-    intersectionInterpolation.*(-planeVectorNull(1,:)) + (1-intersectionInterpolation).*planeVectorNull(2,:);...
-    intersectionInterpolation.*(-planeVectorNull(1,:)) + (1-intersectionInterpolation).*(-planeVectorNull(2,:));...
-    intersectionInterpolation.*planeVectorNull(1,:) + (1-intersectionInterpolation).*(-planeVectorNull(2,:))];
-
-designSpaceLimit = region_limit_line_search([],...
-    repmat(anchorPoint,size(planeVector,1),1),...
-    planeVector,...
-    designSpace);
-designSpaceIntersection = anchorPoint + designSpaceLimit.*planeVector;
-
-dotProduct = sum(planeOrientation.*distanceCorner,2);
-
-pointInside = [anchorPoint;designSpaceIntersection;cornerCoordinate(dotProduct<=0,:)];
-pointOutside = [anchorPoint;designSpaceIntersection;cornerCoordinate(dotProduct>0,:)];
-
-tolerance = 1e-5;
-
-convexHullInside = CandidateSpaceConvexHull(designSpaceLowerBound-tolerance,designSpaceUpperBound+tolerance);
-convexHullInside = convexHullInside.generate_candidate_space(pointInside+tolerance*planeOrientation);
-
-convexHullOutside = CandidateSpaceConvexHull(designSpaceLowerBound-tolerance,designSpaceUpperBound+tolerance);
-convexHullOutside = convexHullOutside.generate_candidate_space(pointOutside-tolerance*planeOrientation);
-
-figure;
-convexHullOutside.plot_candidate_space(gcf,optionsCandidateSpaceOutside2d3d{:},'linestyle','none');
-convexHullInside.plot_candidate_space(gcf,optionsCandidateSpaceInside2d3d{:});
-plot3(designSample(isGood,1),designSample(isGood,2),designSample(isGood,3),optionsPointInside{:});
-plot3(designSample(~isGood,1),designSample(~isGood,2),designSample(~isGood,3),optionsPointOutside{:});
-plot3(anchorPoint(1),anchorPoint(2),anchorPoint(3),optionsPointOutside{:},'MarkerSize',12,'linewidth',3.0);
-daspect([1,1,1]);
-pbaspect([1,1,1]);
-arrow3([anchorPoint(1),anchorPoint(2),anchorPoint(3)], [anchorPoint(1)+0.3*planeOrientation(1),anchorPoint(2)+0.3*planeOrientation(2),anchorPoint(3)+0.3*planeOrientation(3)], 'f', 2, 2);
-plot_design_box_3d(gcf,designSpace,'FaceColor','none','EdgeColor','k','linewidth',0.01);
-set(gca,'XColor', 'none','YColor','none','ZColor','none');
-grid off;
-view(3);
-save_print_figure(gcf,[saveFolder,'PlanarTrimming3D-Preferential'],'Size',[10 10],'PrintFormat',{'png','pdf'});
- 
-clear designSpaceLowerBound designSpaceUpperBound designSample isGood trimmingOrder
-clear candidateSpace trimmedCandidateSpace anchorPoint planeOrientation
-clear cornerCombination cornerCoordinate cornerCoordinateUpper distanceCorner
-clear planeVector designSpaceLimit designSpaceIntersection dotProduct
-clear pointInside pointOutside convexHullInside convexHullOutside
-
 
 %% corner box removal
 % 1d
@@ -351,7 +188,7 @@ plot([designSpaceLowerBound1d anchorPosition1d],[1 1],optionsCandidateSpaceOutsi
 plot([anchorPosition1d designSpaceUpperBound1d],[1 1],optionsCandidateSpaceInside1d{:});
 plot([anchorPosition1d],[1],optionsPointOutside{:});
 set(gca,'XColor', 'none','YColor','none');
-grid off;
+grid minor;
 ylim([-2 2])
 legend({'Kept Region','Removed Region','Removed Design'},'location','east');
 save_print_figure(gcf,[saveFolder,'CornerBoxRemoval1D'],'Size',[figureSize(1) figureSize(2)/2],'PrintFormat',{'png','pdf'});
@@ -487,7 +324,7 @@ plot([anchorPosition1d+holeSize designSpaceUpperBound1d],[0 0],optionsCandidateS
 plot([anchorPosition1d-holeSize anchorPosition1d+holeSize],[0 0],optionsCandidateSpaceOutside1d{:});
 plot(anchorPosition1d,0,optionsPointOutside{:});
 set(gca,'XColor', 'none','YColor','none');
-grid off;
+grid minor;
 legend({'Kept Region','Removed Region','Removed Design'},'location','northeast');
 save_print_figure(gcf,[saveFolder,'HolePunching1D'],'Size',[figureSize(1) figureSize(2)/2],'PrintFormat',{'png','pdf'});
 
@@ -513,9 +350,4 @@ grid minor;
 view(3)
 legend({'Kept Region','Removed Region','Removed Design'},'location','east');
 save_print_figure(gcf,[saveFolder,'HolePunching3D'],'Size',[figureSize(1) figureSize(2)],'PrintFormat',{'png','pdf'});
-
-
-%% Save and Stop Transcripting
-save([saveFolder,'Data.mat']);
-diary off;
 

@@ -31,7 +31,7 @@ function saveFolder = save_diary_files(folderName,archiveFiles,additionalSearchF
 %
 %   See also diary, mfilename, mkdir, path, isfile, copyfile, get_date_time.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

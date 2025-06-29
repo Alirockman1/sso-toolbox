@@ -1,4 +1,4 @@
-function handleSurf = plot_ellipsoid_3d(graphicsHandle,ellipsoidCenter,ellipsoidMajorSemiAxis,varargin)
+function handleSurf = plot_ellipsoid_3d(figureHandle,ellipsoidCenter,ellipsoidMajorSemiAxis,varargin)
 %PLOT_ELLIPSOID_3D Visualize ellipsoid (or sphere) in figure
 %	PLOT_ELLIPSOID_3D plots an ellipsoid in the given figure given the 
 %	ellipsoid's center, major semi-axes, and rotation angle. If only one major 
@@ -36,7 +36,7 @@ function handleSurf = plot_ellipsoid_3d(graphicsHandle,ellipsoidCenter,ellipsoid
 %
 %   See also surf, meshgrid.
 %   
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -100,7 +100,7 @@ function handleSurf = plot_ellipsoid_3d(graphicsHandle,ellipsoidCenter,ellipsoid
 	yPointGrid = reshape(yPoint, size(polarAngleGrid));
 	zPointGrid = reshape(zPoint, size(polarAngleGrid));
 
-	activate_graphics_object(graphicsHandle);
+	figure(figureHandle);
 	handleSurf = surf(xPointGrid,yPointGrid,zPointGrid,options.SurfOptions{:});
 
 	if(nargout<1)

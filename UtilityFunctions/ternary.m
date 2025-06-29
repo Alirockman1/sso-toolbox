@@ -16,7 +16,7 @@ function output = ternary(condition,outputTrue,outputFalse)
 %
 %   See also ternary_array, conditional_default_value_assignment.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

@@ -60,7 +60,7 @@ function [designSample,scorePrediction,labelBoundary] = active_learning_sampling
 %
 %   See also active_learning_model_training.
 %   
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -93,8 +93,8 @@ function [designSample,scorePrediction,labelBoundary] = active_learning_sampling
     candidateSample = [];
     label = false(0,1); % empty logical array
     score = [];
-    nDesiredPositive = nDesiredSample.Positive+nDesiredSample.Boundary;
-    nDesiredNegative = nDesiredSample.Negative+nDesiredSample.Boundary;
+    nTotalDesiredPositive = nDesiredSample.PositiveExploratory+nDesiredSample.PositiveBoundary;
+    nTotalDesiredNegative = nDesiredSample.NegativeExploratory+nDesiredSample.NegativeBoundary;
     notEnoughPositive = true;
     notEnoughNegative = true;
     nGeneratedSample = 0;
@@ -120,72 +120,77 @@ function [designSample,scorePrediction,labelBoundary] = active_learning_sampling
 
 		% check convergence
 		availablePositive = sum(label);
-		notEnoughPositive = (availablePositive<nDesiredPositive);
+		notEnoughPositive = (availablePositive<nTotalDesiredPositive);
 
 		availableNegative = sum(~label);
-		notEnoughNegative = (availableNegative<nDesiredNegative);
+		notEnoughNegative = (availableNegative<nTotalDesiredNegative);
 
 		nGeneratedSample = size(candidateSample,1);
     end
 
-    % process if not enough samples 
-    nAvailablePositive = sum(label);
-    nAvailableNegative = sum(~label);
-    nSelectPositive = min(nDesiredSample.Positive,nAvailablePositive);
-    nSelectNegative = min(nDesiredSample.Negative,nAvailableNegative);
-
-    % add points not available to the boundary selection
-    remainingPositive = max(nDesiredSample.Positive - nAvailablePositive,0);
-    remainingNegative = max(nDesiredSample.Negative - nAvailableNegative,0);
-    nSelectBoundary = nDesiredSample.Boundary + remainingPositive + remainingNegative;
-
-    % select boundary candidates
-    [candidateBoundary,scoreBoundary,iSelectBoundary] = select_boundary_designs(candidateSample,score,nSelectBoundary);
-
-    % remove boundary from available selection
-    candidateSample(iSelectBoundary,:) = [];
-    score(iSelectBoundary) = [];
-    label(iSelectBoundary) = [];
+    % change desired numbers if not enough samples
+    %	-> pass the remaining evaluations to boundary of the other type
+    nSelect = nDesiredSample;
+    if(notEnoughPositive)
+    	[nSelect.PositiveBoundary,nSelect.PositiveExploratory,remainderPositive] = ...
+    		correct_availability_desired_samples(nDesiredSample.PositiveBoundary,nTotalDesiredPositive,availablePositive);
+    	nSelect.NegativeBoundary = nSelect.NegativeBoundary + remainderPositive;
+	elseif(notEnoughNegative)
+		[nSelect.NegativeBoundary,nSelect.NegativeExploratory,remainderNegative] = ...
+    		correct_availability_desired_samples(nDesiredSample.NegativeBoundary,nTotalDesiredNegative,availableNegative);
+    	nSelect.PositiveBoundary = nSelect.PositiveBoundary + remainderNegative;
+    end
 
     % select positive candidates
-	[candidateExploratoryPositive,scoreExploratoryPositive] = ...
-		select_exploratory_designs(candidateSample,score,label,nSelectPositive);
+	[candidateBoundaryPositive,candidateExploratoryPositive,scoreBoundaryPositive,scoreExploratoryPositive] = ...
+		select_boundary_exploratory_designs(candidateSample,score,label,nSelect.PositiveBoundary,nSelect.PositiveExploratory);
 
 	% select negative candidates
-	[candidateExploratoryNegative,scoreExploratoryNegative] = ...
-		select_exploratory_designs(candidateSample,score,~label,nSelectNegative);
+	[candidateBoundaryNegative,candidateExploratoryNegative,scoreBoundaryNegative,scoreExploratoryNegative] = ...
+		select_boundary_exploratory_designs(candidateSample,score,~label,nSelect.NegativeBoundary,nSelect.NegativeExploratory);
 
 	% concatenate final result
     designSample = [...
-        candidateBoundary;...
+        candidateBoundaryPositive;...
+        candidateBoundaryNegative;...
     	candidateExploratoryPositive;...
         candidateExploratoryNegative];
     scorePrediction = [...
-        scoreBoundary;...
+        scoreBoundaryPositive;...
+        scoreBoundaryNegative;...
         scoreExploratoryPositive;...
         scoreExploratoryNegative];
     labelBoundary = [...
-        true(size(candidateBoundary,1),1);...
+        true(size(candidateBoundaryPositive,1),1);...
+        true(size(candidateBoundaryNegative,1),1);...
         false(size(candidateExploratoryPositive,1),1);...
         false(size(candidateExploratoryNegative,1),1)];
 end
 
-function [candidateBoundary,scoreBoundary,iSelect] = select_boundary_designs(candidateSample,score,nSelect)
+function [candidateBoundary,candidateExploratory,scoreBoundary,scoreExploratory] = select_boundary_exploratory_designs(candidateSample,score,label,nSelectBoundary,nSelectExploratory)
+	score = score(label);
 	[~,order] = sort(abs(score));
 	score = score(order);
-	candidateSample = candidateSample(order,:);
+	candidateSample = candidateSample(convert_index_base(label,order,'backward'),:);
 
-	candidateBoundary = candidateSample(1:nSelect,:);
-	scoreBoundary = score(1:nSelect);
-	iSelect = order(1:nSelect);
+	candidateBoundary = candidateSample(1:nSelectBoundary,:);
+	scoreBoundary = score(1:nSelectBoundary);
+
+	nRemainingCandidate = size(candidateSample,1) - nSelectBoundary;
+
+	permutationRemaining = randperm(nRemainingCandidate);
+	iSelectExploratory = nSelectBoundary + permutationRemaining(1:nSelectExploratory);
+	candidateExploratory = candidateSample(iSelectExploratory,:);
+	scoreExploratory = score(iSelectExploratory);
 end
 
-function [candidateExploratory,scoreExploratory] = select_exploratory_designs(candidateSample,score,label,nSelect)
-    availableSample = candidateSample(label,:);
-    availableScore = score(label);
+function [nSelectBoundary,nSelectExploratory,remainder] = correct_availability_desired_samples(nDesiredBoundary,nDesiredTotal,available)
+	if(nDesiredBoundary>available)
+		nSelectBoundary = available;
+		nSelectExploratory = 0;
+	else
+		nSelectExploratory = available - nSelectBoundary;
+	end
 
-	permutationAvailable = randperm(size(availableSample,1));
-    iSelect = permutationAvailable(1:nSelect);
-	candidateExploratory = availableSample(iSelect,:);
-	scoreExploratory = availableScore(iSelect);
+	remainder = nDesiredTotal - available;
 end

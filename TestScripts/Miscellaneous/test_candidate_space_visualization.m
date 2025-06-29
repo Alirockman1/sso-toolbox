@@ -44,16 +44,16 @@ designSample = sampling_random([designSpaceLowerBoundSample; designSpaceUpperBou
 
 nSampleInside = 8;
 candidateSpace = CandidateSpaceConvexHull(designSpaceLowerBoundSpace,designSpaceUpperBoundSpace);
-candidateSpace = candidateSpace.generate_candidate_space(designSample(1:nSampleInside,:));
+candidateSpace = candidateSpace.define_candidate_space(designSample(1:nSampleInside,:));
 inCandidateSpace = candidateSpace.is_in_candidate_space(designSample);
-candidateSpace = candidateSpace.generate_candidate_space(designSample(inCandidateSpace,:));
+candidateSpace = candidateSpace.define_candidate_space(designSample(inCandidateSpace,:));
 
 figure;
 hold all;
 plot(designSample(inCandidateSpace,1),designSample(inCandidateSpace,2),optionsPointInside{:});
 plot(designSample(~inCandidateSpace,1),designSample(~inCandidateSpace,2),optionsPointOutside{:});
 candidateSpace.plot_candidate_space(gcf,'EdgeColor',colorCandidateSpaceInside,'linewidth',4);
-legend({'Remaining Design Points','Removed Design Points','Convex Hull Boundary'},'location','south');
+legend({'Inside Candidate Space','Outside Candidate Space','Convex Hull Boundary'},'location','south');
 grid minor;
 set(gca,'XColor', 'none','YColor','none');
 h = get(gca,'Children');
@@ -72,15 +72,16 @@ designSpaceFactor = designSpaceUpperBoundSpace - designSpaceLowerBoundSpace;
 growthVector = growthRate.*designSpaceFactor.*directionGrowth;
 
 insideSampleGrown = insideSample + growthVector;
-candidateSpaceGrown = candidateSpace.expand_candidate_space(growthRate);
+candidateSpaceGrown = candidateSpace.grow_candidate_space(growthRate);
 figure;
 hold all;
 plot(convexHullCenter(1),convexHullCenter(2),'b.','MarkerSize',20);
-candidateSpace.plot_candidate_space(gcf,'EdgeColor',colorCandidateSpaceInside,'LineStyle','--','linewidth',2);
+candidateSpace.plot_candidate_space(gcf,'EdgeColor',colorCandidateSpaceInside,'LineStyle','--','linewidth',4);
 plot(insideSample(:,1),insideSample(:,2),optionsPointInside{:});
 quiver(insideSample(:,1),insideSample(:,2),growthVector(:,1),growthVector(:,2),optionsVector{:});
 candidateSpaceGrown.plot_candidate_space(gcf,'EdgeColor',colorCandidateSpaceInside,'linewidth',4);
-legend({'Convex Hull Center','Original Convex Hull','Design Points Inside','Expansion Vector','Expanded Convex Hull'},'location','northwest')
+plot(insideSampleGrown(:,1),insideSampleGrown(:,2),optionsPointInside{:},'color',colorGrowthPoint);
+legend({'Convex Hull Center','Original Convex Hull','Inside Points','Growth Vector','Grown Convex Hull','New Inside Points'},'location','northwest')
 grid minor;
 set(gca,'XColor', 'none','YColor','none');
 save_print_figure(gcf,[saveFolder,'CandidateSpaceConvexHullGrowth'],'Size',figureSize*1.25,'PrintFormat',{'png','pdf'});
@@ -90,7 +91,7 @@ save_print_figure(gcf,[saveFolder,'CandidateSpaceConvexHullGrowth'],'Size',figur
 % boundaryGrowth = growthVector(isShapeDefinition,:);
 % newBoundarySample = boundarySample + boundaryGrowth;
 % candidateSpaceGrown = CandidateSpaceConvexHull(designSpaceLowerBoundSpace,designSpaceUpperBoundSpace);
-% candidateSpaceGrown = candidateSpaceGrown.generate_candidate_space(newBoundarySample);
+% candidateSpaceGrown = candidateSpaceGrown.define_candidate_space(newBoundarySample);
 % figure;
 % hold all;
 % plot(convexHullCenter(1),convexHullCenter(2),'b.','MarkerSize',20);
@@ -113,7 +114,7 @@ nSampleInside = 6;
 
 isInside = [true(nSampleInside,1);false(nTest-nSampleInside,1)];
 candidateSpace = CandidateSpaceDelaunay(designSpaceLowerBoundSpace,designSpaceUpperBoundSpace);
-candidateSpace = candidateSpace.generate_candidate_space(designSample,isInside);
+candidateSpace = candidateSpace.define_candidate_space(designSample,isInside);
 
 % find the simplices that were removed to plot those too for visualization
 insideSample = designSample(1:nSampleInside,:);
@@ -163,7 +164,7 @@ for i=1:size(candidateSpace.DelaunaySimplex,2)
     newVertices = [newVertices;insideSampleGrown];
 end
 
-candidateSpaceGrown = candidateSpace.expand_candidate_space(growthRate);
+candidateSpaceGrown = candidateSpace.grow_candidate_space(growthRate);
 
 
 figure;
@@ -196,7 +197,7 @@ labelSample = design_deficit_to_label_score(designEvaluator.evaluate(designSampl
 
 % train candidate space
 candidateSpace = CandidateSpaceSvm(designSpaceLowerBoundSpace,designSpaceUpperBoundSpace);
-candidateSpace = candidateSpace.generate_candidate_space(designSample,labelSample);
+candidateSpace = candidateSpace.define_candidate_space(designSample,labelSample);
 isShapeDefinition = candidateSpace.IsShapeDefinition;
 
 figure;
@@ -212,90 +213,3 @@ set(gca,'Children',[h(3) h(2) h(1)]);
 save_print_figure(gcf,[saveFolder,'CandidateSpaceSvmExample'],'Size',figureSize*1.25,'PrintFormat',{'png','pdf'});
 
 % growth
-
-
-
-%% visualize - corner box removal
-nTest = 30;
-designSample = sampling_latin_hypercube([designSpaceLowerBoundSample; designSpaceUpperBoundSample],nTest);
-
-figure;
-hold all;
-plot(designSample(:,1),designSample(:,2),'k.');
-for i = 1:nTest
-    text(designSample(i,1), designSample(i,2), num2str(i), ...
-        'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right');
-end
-isGood = true(nTest,1);
-isGood([22,28,10,30,12]) = false;
-
-candidateSpace = CandidateSpaceCornerBoxRemoval(designSpaceLowerBoundSpace,designSpaceUpperBoundSpace);
-candidateSpace = component_trimming_operation(designSample,isGood,find(~isGood),{[1,2]'},candidateSpace,'TrimmingMethodFunction',@component_trimming_method_corner_box_removal);
-
-isInside = candidateSpace.IsInsideDefinition;
-
-candidateSpaceGrown = candidateSpace.expand_candidate_space(0.05);
-
-
-figure;
-hold all;
-plot(designSample(isInside,1),designSample(isInside,2),optionsPointInside{:});
-plot(designSample(~isInside,1),designSample(~isInside,2),optionsPointOutside{:});
-candidateSpace.plot_candidate_space(gcf,'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.1,'EdgeColor',colorCandidateSpaceInside);
-anchorPoints = candidateSpace.AnchorPoint;
-plot(anchorPoints(:,1),anchorPoints(:,2),'linestyle','none','Marker','*','MarkerSize',10,'linewidth',2.0,'color',color_palette_tol('purple'));
-legend({'Remaining Design Points','Removed Design Points', 'Candidate Component Space', 'Anchor Points'},'location','southeast');
-save_print_figure(gcf,[saveFolder,'CornerBoxRemovalExample'],'Size',figureSize*1.25,'PrintFormat',{'png','pdf'});
-
-figure;
-hold all;
-candidateSpace.plot_candidate_space(gcf,'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.0,'EdgeColor',colorCandidateSpaceInside,'Linestyle','--');
-candidateSpaceGrown.plot_candidate_space(gcf,'FaceColor',colorCandidateSpaceInside,'FaceAlpha',0.1,'EdgeColor',colorCandidateSpaceInside,'Linestyle','-');
-plot(anchorPoints(:,1),anchorPoints(:,2),'linestyle','none','Marker','*','MarkerSize',10,'linewidth',2.0,'color',color_palette_tol('purple'));
-anchorPointsGrown = candidateSpaceGrown.AnchorPoint;
-plot(anchorPointsGrown(:,1),anchorPointsGrown(:,2),'linestyle','none','Marker','*','MarkerSize',10,'linewidth',2.0,'color',color_palette_tol('purple'));
-plot(candidateSpaceGrown.DesignSampleDefinition(candidateSpaceGrown.IsInsideDefinition,1),candidateSpaceGrown.DesignSampleDefinition(candidateSpaceGrown.IsInsideDefinition,2),'*','MarkerSize',6,'color',colorPointInside);
-growthVectorAnchor = anchorPointsGrown - anchorPoints;
-quiver(anchorPoints(:,1),anchorPoints(:,2),growthVectorAnchor(:,1),growthVectorAnchor(:,2),optionsVector{:});
-legend({'Original Candidate Component Space','Grown Candidate Component Space',...
-    'Original Anchor Points','Grown Anchor Points',...
-    'Expanded Design Points',...
-    'Expansion Vector'},'location','southeast');
-save_print_figure(gcf,[saveFolder,'CornerBoxRemovalGrowth'],'Size',figureSize*1.25,'PrintFormat',{'png','pdf'});
-
-
-%% impact of different trimming orders 
-isBad = false(nTest,1);
-badIndex = [23,26,11,18,4,5,12,14,2,1,21,24,17];
-isBad(badIndex) = true;
-
-isGood = ~isBad;
-nBad = sum(isBad);
-badIndex = badIndex(randperm(nBad))';
-
-figure;
-hold all;
-plot(designSample(isGood,1),designSample(isGood,2),'g.','MarkerSize',12);
-plot(designSample(~isGood,1),designSample(~isGood,2),'r.','MarkerSize',16);
-for i = 1:nBad
-    text(designSample(badIndex(i),1), designSample(badIndex(i),2), num2str(i), ...
-        'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right');
-end
-
-candidateSpace = CandidateSpaceConvexHull([0,0],[1,1]);
-candidateSpace = component_trimming_operation(designSample,isGood,badIndex,{[1,2]'},candidateSpace,'TrimmingMethodFunction',@component_trimming_method_planar_trimming,'PassesCriterion','full');
-candidateSpace.plot_candidate_space(gcf,'FaceAlpha',0.3,'FaceColor','c');
-
-
-
-
-
-
-
-
-
-
-%% Save and Stop Transcripting
-save([saveFolder,'Data.mat']);
-diary off;
-

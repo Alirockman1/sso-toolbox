@@ -1,5 +1,5 @@
 function color = color_palette_ibm(index)
-%COLOR_PALETTE_IBM Color Blind Accessible color palette from IBM Design Library
+%COLOR_PALETTE_IBM Colorblind-friendly color palette from IBM Design Library
 %	COLOR_PALETTE_IBM returns a color palette developed by IBM which is supposed
 %	which is more accessible to colorblind people.
 %	<a href="https://davidmathlogic.com/colorblind/#%23648FFF-%23785EF0-%23DC267F-%23FE6100-%23FFB000">Testing the colorblind appearance</a>
@@ -26,7 +26,7 @@ function color = color_palette_ibm(index)
 %   See also color_palette_okabe_ito, color_palette_tol, orderedcolors, 
 %	colororder.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

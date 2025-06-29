@@ -29,17 +29,11 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
 %       internal region and a larger bounding box which may contain negative
 %       designs in its edges. 
 %       - ConvexHullIndex : indexing for the definition of the convex hull.
-%       - ConvexHullFacePoint : points on each facet of the convex hull
-%       - ConvexHullFaceNormal : plane orientation of each facet (pointing 
-%       inwards)
-%       - NormalizeVariables : flag to enable design space normalization
-%       - ScalingFactor : scaling factor for design variable normalization
 %
 %   CANDIDATESPACECONVEXHULL methods:
-%       - generate_candidate_space : create a candidate space based on design 
+%       - define_candidate_space : create a candidate space based on design 
 %       samples that are labeled as inside/outside.
-%       - update_candidate_space : re-generate it with new data.
-%       - expand_candidate_space : expand the candidate space by a given factor.
+%       - grow_candidate_space : expand the candidate space by a given factor.
 %       - is_in_candidate_space : verify if given design samples are inside 
 %       the candidate space.
 %       - plot_candidate_space : visualize 1D/2D/3D candidate spaces in given
@@ -47,7 +41,7 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
 %
 %   See also CandidateSpaceBase.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -132,44 +126,6 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         %
         %   See also convex_hull_plane, is_in_convex_hull_with_plane.   
         ConvexHullFaceNormal
-
-        %SAMPLINGBOXSLACK Slack allowed for for the sampling box
-        %   SAMPLINGBOXSLACK defines where the boundaries of the sampling box will be 
-        %   relative to the strictest bounding box and the most relaxed bounding box. A 
-        %   value of 0 means no slack and therefore the sampling box will be the most 
-        %   strict one possible, and 1 means the sampling box will be the most relaxed.
-        %
-        %   SAMPLINGBOXSLACK : double
-        %
-        %   See also SamplingBox, design_bounding_box.
-        SamplingBoxSlack
-
-        %NORMALIZEVARIABLES Flag to enable design space normalization
-        %   When true, all computations are performed in normalized design space
-        %   where variables range [0,1] based on DesignSpaceLowerBound/UpperBound
-        %
-        %   NORMALIZEVARIABLES : logical
-        NormalizeVariables
-
-        %NORMALIZEGROWTHDIRECTION Determine if growth direction should be normalized
-        %   When true, the growth direction is normalized to the design space.
-        %
-        %   NORMALIZEGROWTHDIRECTION : logical
-        NormalizeGrowthDirection
-    end
-
-    properties (SetAccess=protected, Dependent)
-        %SAMPLINGBOX Bounding box of inside region used to help with sampling
-        %   SAMPLINGBOX is a bounding box formed around the internal region of the
-        %   candidate space. It can be used to facilitate trying to sample inside said
-        %   space.
-        %
-        %   SAMPLINGBOX : (2,nDesignVariable) double
-        %       - (1) : lower boundary of the design box
-        %       - (2) : upper boundary of the design box
-        %
-        %   See also SamplingBoxSlack.
-        SamplingBox
     end
     
     methods
@@ -191,13 +147,11 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         %       bounding box. A value of 0 means no slack and therefore the sampling
         %       box will be the most strict one possible, and 1 means the sampling
         %       box will be the most relaxed.
-        %       - 'NormalizeVariables' : flag to enable design space normalization
         %
         %   Inputs:
         %       - DESIGNSPACELOWERBOUND : (1,nDesignVariable) double
         %       - DESIGNSPACEUPPERBOUND : (1,nDesignVariable) double
         %       - 'SamplingBoxSlack' : double
-        %       - 'NormalizeVariables' : logical
         %
         %   Outputs:
         %       - OBJ : CandidateSpaceConvexHull
@@ -208,18 +162,14 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             parser = inputParser;
             parser.addRequired('designSpaceLowerBound',@(x)isnumeric(x)&&(size(x,1)==1));
             parser.addRequired('designSpaceUpperBound',@(x)isnumeric(x)&&(size(x,1)==1));
-            parser.addParameter('SamplingBoxSlack',0.0,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
-            parser.addParameter('NormalizeVariables',false,@islogical);
-            parser.addParameter('NormalizeGrowthDirection',false,@islogical);
+            parser.addParameter('SamplingBoxSlack',0.5,@(x)isnumeric(x)&&isscalar(x)&&(x>=0)&&(x<=1));
             parser.parse(designSpaceLowerBound,designSpaceUpperBound,varargin{:});
 
             
-            obj.DesignSpaceLowerBound = parser.Results.designSpaceLowerBound;
+            obj.DesignSpaceLowerBound = parser.Results.designSpaceLowerBound;;
             obj.DesignSpaceUpperBound = parser.Results.designSpaceUpperBound;
             obj.SamplingBoxSlack = parser.Results.SamplingBoxSlack;
-            obj.NormalizeVariables = parser.Results.NormalizeVariables;
-            obj.NormalizeGrowthDirection = parser.Results.NormalizeGrowthDirection;
-            
+
             obj.ConvexHullIndex = [];
             obj.ConvexHullFacePoint = [];
             obj.ConvexHullFaceNormal = [];
@@ -228,17 +178,17 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             obj.IsInsideDefinition = [];
         end
         
-        function obj = generate_candidate_space(obj,designSample,isInside)
-        %GENERATE_CANDIDATE_SPACE Initial definition of the candidate space
-        %   GENERATE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
+        function obj = define_candidate_space(obj,designSample,isInside)
+        %DEFINE_CANDIDATE_SPACE Initial definition of the candidate space
+        %   DEFINE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
         %   outside regions of the candidate space. For CandidateSpaceConvexHull, this
         %   means a convex hull is created around the inside designs.
         %
-        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
+        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
         %   points in DESIGNSAMPLE and returns a candidate space object OBJ with the new
         %   definition, assuming all designs are inside the candidate space.
         %
-        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
+        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
         %   receives the inside/outside (true/false) labels of each design point in 
         %   ISINSIDE.
         %
@@ -265,21 +215,11 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             % Convex Hull Definition
             obj.DesignSampleDefinition = designSample;
             obj.IsInsideDefinition = isInside;
-            nSample = size(designSample,1);
-            convexHullPoint = obj.DesignSampleDefinition(obj.IsInsideDefinition,:);
-            
-            % normalize convex hull points if needed
-            if obj.NormalizeVariables
-                convexHullPoint = (convexHullPoint - obj.DesignSpaceLowerBound) ./ (obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound);
-            end
+            convexHullPoint = designSample(isInside,:);
             
             % compute convex hull and find reference points / normals to each facet
             [obj.ConvexHullIndex,obj.Measure] = compute_convex_hull(convexHullPoint);
             [obj.ConvexHullFacePoint,obj.ConvexHullFaceNormal] = find_facet_reference_point_normal(convexHullPoint,obj.ConvexHullIndex);
-
-            if obj.NormalizeVariables
-                obj.Measure = obj.Measure * prod(obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound);
-            end
 
             % make sure normal vectors are pointing inside
             convexHullCenter = mean(convexHullPoint,1);
@@ -289,19 +229,20 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
             obj.ConvexHullFaceNormal(wrongOrientation,:) = -obj.ConvexHullFaceNormal(wrongOrientation,:);
 
             % label designs which contribute to shape definition
-            globalConvexHullIndex = convert_index_base(obj.IsInsideDefinition,obj.ConvexHullIndex(:),'backward');
+            nSample = size(designSample,1);
+            globalConvexHullIndex = convert_index_base(isInside,obj.ConvexHullIndex(:),'backward');
             obj.IsShapeDefinition = ismember((1:nSample)',globalConvexHullIndex);
         end
         
-        function obj = expand_candidate_space(obj,growthRate)
-        %EXPAND_CANDIDATE_SPACE Expansion of candidate space by given factor
-        %   EXPAND_CANDIDATE_SPACE will grow the region considered inside the current 
+        function obj = grow_candidate_space(obj,growthRate)
+        %GROW_CANDIDATE_SPACE Expansion of candidate space by given factor
+        %   GROW_CANDIDATE_SPACE will grow the region considered inside the current 
         %   candidate space by the factor given. Said growth is done in a fixed rate 
         %   defined by the input relative to the design space.
         %   This is done by finding the center of the convex hull and then making all 
         %   inside designs move opposite to that direction. 
         %
-        %   OBJ = OBJ.EXPAND_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
+        %   OBJ = OBJ.GROW_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
         %   defined in OBJ by a factor of GROWTHRATE. This is an isotropic expansion of 
         %   the candidate space by a factor of the growth rate times the size of the 
         %   design space.
@@ -313,30 +254,27 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         %   Outputs:
         %       - OBJ : CandidateSpaceConvexHull
         %   
-        %   See also generate_candidate_space, is_in_candidate_space.
+        %   See also define_candidate_space, is_in_candidate_space.
 
             center = mean(obj.ActiveDesign,1);
+            
+            distances = obj.ActiveDesign - center;
+            directionGrowth = distances./vecnorm(distances,2,2);
             designSpaceFactor = obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound;
             designSpace = [obj.DesignSpaceLowerBound;obj.DesignSpaceUpperBound];
-            
-            distanceToCenter = obj.ActiveDesign - center;
-            if(obj.NormalizeGrowthDirection)
-                distanceToCenter = distanceToCenter./(designSpaceFactor);
-            end
-            normalizedDirectionGrowth = distanceToCenter./vecnorm(distanceToCenter,2,2);
 
             % find maximum growth rate not to escape design space
-            directionGrowth = designSpaceFactor.*normalizedDirectionGrowth;
-            maxGrowthRate = region_limit_line_search([],obj.ActiveDesign,directionGrowth,designSpace);
+            maxGrowthRate = region_limit_line_search([],obj.ActiveDesign,designSpaceFactor.*directionGrowth,designSpace);
             sampleGrowthRate = min(growthRate,maxGrowthRate);
 
-            newSamples = obj.ActiveDesign + sampleGrowthRate.*directionGrowth;
-            newSamples = min(max(newSamples, obj.DesignSpaceLowerBound), obj.DesignSpaceUpperBound); % bound limit
+            newSamples = obj.ActiveDesign + sampleGrowthRate.*designSpaceFactor.*directionGrowth;
+            newSamples = max(newSamples, obj.DesignSpaceLowerBound); % lower bound limit
+            newSamples = min(newSamples, obj.DesignSpaceUpperBound); % upper bound limit
             newSamples = unique([obj.ActiveDesign;newSamples],'rows');
-            obj = obj.generate_candidate_space(newSamples);
+            obj = obj.define_candidate_space(newSamples);
         end
         
-        function [isInside, score] = is_in_candidate_space(obj,designSample)
+        function [label, score] = is_in_candidate_space(obj,designSample)
         %IS_IN_CANDIDATE_SPACE Verification if given design samples are inside
         %   IS_IN_CANDIDATE_SPACE uses the currently defined candidate space to 
         %   determine if given design sample points are inside or outside the candidate 
@@ -364,26 +302,14 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         %   
         %   See also is_in_convex_hull_with_plane.
 
-            nSample = size(designSample,1);
-            if(isempty(obj.DesignSampleDefinition))
-                isInside = true(nSample,1);
-                score = zeros(nSample,1);
-                return;
-            end
-
-            % normalize input samples if needed
-            if obj.NormalizeVariables
-                designSample = (designSample  - obj.DesignSpaceLowerBound) ./ (obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound);
-            end
-
-            [isInside,score] = is_in_convex_hull_with_facet_normal(obj.ConvexHullFacePoint,obj.ConvexHullFaceNormal,designSample);
+            [label,score] = is_in_convex_hull_with_facet_normal(obj.ConvexHullFacePoint,obj.ConvexHullFaceNormal,designSample);
             isInBoundary = ismember(designSample,obj.ActiveDesign,'rows');
-            isInside = isInside | isInBoundary;
+            label = label | isInBoundary;
             score(isInBoundary) = -abs(score(isInBoundary));
         end
 
         function plotHandle = plot_candidate_space(obj,figureHandle,varargin)
-        %PLOT_CANDIDATE_SPACE Visualization of the boundary of the canidate space 1D/2D/3D
+        %PLOT_CANDIDATE_SPACE Visualization of the boundary of the canidate space 2D/3D
         %   PLOT_CANDIDATE_SPACE allows for the visualization of the boundary of the
         %   candidate space in the given figure. 
         %
@@ -392,9 +318,9 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         %   object plot PLOTHANDLE.
         %
         %   PLOTHANDLE = OBJ.PLOT_CANDIDATE_SPACE(...,NAME,VALUE) allows the 
-        %   specification for additional options in the process. For 1D candidate spaces,
-        %   these options should refer to 'line', for 2D they should refer to 'plot', 
-        %   and for 3D spaces, they should refer to 'trisurf'.
+        %   specification for additional options in the process. For 2D candidate 
+        %   spaces, these options should refer to 'plot', and for 3D spaces, they
+        %   should refer to 'trisurf'.
         %
         %   Input:
         %       - OBJ : CandidateSpaceConvexHull
@@ -403,27 +329,16 @@ classdef CandidateSpaceConvexHull < CandidateSpaceBase
         %   Output:
         %       - PLOTHANDLE : line OR trisurf-object
         %
-        %   See also plot_convex_hull_1d, plot_convex_hull_2d, plot_convex_hull_3d.
+        %   See also plot_convex_hull_2d, plot_convex_hull_3d.
 
             nDimension = size(obj.ActiveDesign,2);
-            if(nDimension==1)
-                plotHandle = plot_convex_hull_1d(figureHandle,obj.ActiveDesign,obj.ConvexHullIndex,varargin{:});
-            elseif(nDimension==2)
+            if(nDimension==2)
                 plotHandle = plot_convex_hull_2d(figureHandle,obj.ActiveDesign,obj.ConvexHullIndex,varargin{:});
             elseif(nDimension==3)
                 plotHandle = plot_convex_hull_3d(figureHandle,obj.ActiveDesign,obj.ConvexHullIndex,varargin{:});
             else
                 plotHandle = [];
             end
-        end
-
-        function samplingBox = get.SamplingBox(obj)
-            [boundingBoxStrict,boundingBoxRelaxed] = design_bounding_box(...
-                obj.DesignSampleDefinition,obj.IsInsideDefinition);
-            samplingBox = (1-obj.SamplingBoxSlack).*boundingBoxStrict + ...
-                obj.SamplingBoxSlack.*boundingBoxRelaxed;
-            samplingBox(1,:) = max(samplingBox(1,:),obj.DesignSpaceLowerBound);
-            samplingBox(2,:) = min(samplingBox(2,:),obj.DesignSpaceUpperBound);
         end
     end
 end

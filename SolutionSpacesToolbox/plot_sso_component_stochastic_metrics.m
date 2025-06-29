@@ -44,7 +44,7 @@ function figureHandle = plot_sso_component_stochastic_metrics(algorithmData,vara
 %   See also sso_component_stochastic, postprocess_component_stochastic, 
 %   save_print_figure.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -188,48 +188,17 @@ function figureHandle = plot_sso_component_stochastic_metrics(algorithmData,vara
     ylabel('Ratio of Padding Samples')
     grid minor;
 
-    % time elapsed
-    figureHandle(10) = figure;
-    plot(algorithmData.TimeElapsedAdaptGrowthRate);
-    hold on;
-    plot(algorithmData.TimeElapsedGrow);
-    plot(algorithmData.TimeElapsedGenerate);
-    plot(algorithmData.TimeElapsedEvaluate);
-    plot(algorithmData.TimeElapsedLabel);
-    plot(algorithmData.TimeElapsedCount);
-    plot(algorithmData.TimeElapsedShape);
-    plot(algorithmData.TimeElapsedPrepare);
-    plot(algorithmData.TimeElapsedTrimmingOrder);
-    plot(algorithmData.TimeElapsedTrim);
-    plot(algorithmData.TimeElapsedLeanness);
-    plot(algorithmData.TimeElapsedMeasure);
-    plot(algorithmData.TimeElapsedConvergence);
-    plot(algorithmData.TimeElapsedIteration);
-    xlabel('Iteration Step')
-    ylabel('Time Elapsed (s)')
-    grid minor;
-    legend({'Adapt Growth Rate','Grow','Generate','Evaluate','Label','Count','Shape','Prepare','Trimming Order','Trim','Leanness','Measure','Convergence','Iteration'});
-
-    % total time elapsed
-    figureHandle(11) = figure;
-    plot(algorithmData.TotalTimeElapsed);
-    xlabel('Iteration Step')
-    ylabel('Total Time Elapsed (s)')
-    grid minor;
-
     % save if required
     if(~isempty(options.SaveFolder))
-        save_print_figure(figureHandle(1),[options.SaveFolder,'TotalMeasure'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(2),[options.SaveFolder,'TotalMeasureNormalized'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(3),[options.SaveFolder,'ComponentMeasures'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(4),[options.SaveFolder,'GrowthRate'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(5),[options.SaveFolder,'NumberLabelSamplePoints'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(6),[options.SaveFolder,'TotalMeasureRelativeRatio'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(7),[options.SaveFolder,'NormalizedMeasureSample'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(8),[options.SaveFolder,'TotalEvaluationsPurityNormalizedMeasure'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(9),[options.SaveFolder,'PaddingRatio'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(10),[options.SaveFolder,'TimeElapsed'],options.SaveFigureOptions{:});
-        save_print_figure(figureHandle(11),[options.SaveFolder,'TotalTimeElapsed'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(1),[options.SaveFolder,'Component-Metrics-TotalMeasure'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(2),[options.SaveFolder,'Component-Metrics-TotalMeasureNormalized'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(3),[options.SaveFolder,'Component-Metrics-ComponentMeasures'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(4),[options.SaveFolder,'Component-Metrics-GrowthRate'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(5),[options.SaveFolder,'Component-Metrics-NumberLabelSamplePoints'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(6),[options.SaveFolder,'Component-Metrics-TotalMeasureRelativeRatio'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(7),[options.SaveFolder,'Component-Metrics-NormalizedMeasureSample'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(8),[options.SaveFolder,'Component-Metrics-TotalEvaluationsPurityNormalizedMeasure'],options.SaveFigureOptions{:});
+        save_print_figure(figureHandle(9),[options.SaveFolder,'Component-Metrics-PaddingRatio'],options.SaveFigureOptions{:});
 
         if(options.CloseFigureAfterSaving)
             close(figureHandle);

@@ -33,7 +33,7 @@ function performanceMeasure = ellipsoid_3d(designSample,systemParameter)
 %
 %   See also ellipse_2d, distance_to_center, sphere_nd.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

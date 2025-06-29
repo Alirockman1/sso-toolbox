@@ -61,7 +61,7 @@ function [nodeDisplacement,nodeReactionForce,elementAxialForce] = truss_analysis
 %
 %	See also plot_truss_deformation, plot_truss_element_response.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

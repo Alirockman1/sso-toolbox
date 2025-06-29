@@ -1,4 +1,4 @@
-function [isInside,score] = is_in_convex_hull_with_facet_normal(facetPoint,facetNormalIn,queryPoint,varargin)
+function [isInside,score] = is_in_convex_hull_with_facet_normal(facetPoint,facetNormalIn,queryPoint)
 %IS_IN_CONVEX_HULL_WITH_FACET_NORMAL Check if point is inside convex hull facets 
 %   IS_IN_CONVEX_HULL_WITH_FACET_NORMAL uses the information on the facets 
 %   (edges, planes, hyperplanes, ...) assuming they form a convex hull and 
@@ -26,7 +26,7 @@ function [isInside,score] = is_in_convex_hull_with_facet_normal(facetPoint,facet
 %
 %   See also compute_convex_hull, find_facet_reference_point_normal.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
     
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,36 +41,16 @@ function [isInside,score] = is_in_convex_hull_with_facet_normal(facetPoint,facet
 %   See the License for the specific language governing permissions and
 %   limitations under the License.
 
-    parser = inputParser;
-    parser.addParameter('Tolerance',1e-10,@isscalar);
-    parser.parse(varargin{:});
-    tolerance = parser.Results.Tolerance;
-
     % see if dot product of each design with the normal vectors is negative
     % if so --> inside
     % if not --> outside
     nQuery = size(queryPoint,1);
-    nFacet = size(facetPoint,1);
+    isInside = false(nQuery,1);
+    score = nan(nQuery,1);
+    for i=1:nQuery
+        dotProduct = dot(facetPoint - queryPoint(i,:),facetNormalIn,2);
 
-    if(nFacet>=nQuery)
-        isInside = false(nQuery,1);
-        score = nan(nQuery,1);
-        for i=1:nQuery
-            dotProduct = dot(facetPoint - queryPoint(i,:),facetNormalIn,2);
-            entry = dotProduct-tolerance;
-
-            isInside(i) = all(entry<=0);
-            score(i) = max(entry);
-        end
-    else
-        isInside = true(nQuery,1);
-        score = -inf(nQuery,1);
-        for i=1:nFacet
-            dotProduct = sum((facetPoint(i,:) - queryPoint).*facetNormalIn(i,:),2);
-            entry = dotProduct-tolerance;
-
-            isInside(entry>0) = false;
-            score = max(score,entry);
-        end
+        isInside(i) = all(dotProduct<=0);
+        score(i) = max(dotProduct);
     end
 end

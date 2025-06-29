@@ -3,7 +3,7 @@
 %   fidelity approach, where we first train a surrogate model for the problem,
 %   and then combine it with the analytical evaluator.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %% Cleanup

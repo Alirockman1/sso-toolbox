@@ -1,10 +1,10 @@
-%TEST_BOX_ELLIPSOIDS Test requirement spaces computation with two ellipsoids
-%   TEST_BOX_ELLIPSOIDS uses a bottom-up mapping with two defined ellipsoids, 
+%test_box_ellipsoids Test requirement spaces computation with two ellipsoids
+%   test_box_ellipsoids uses a bottom-up mapping with two defined ellipsoids, 
 %   one which describes a region where performance is satisfied and another 
 %   which describes where designs are physically feasible, to test the 
 %   computation of requirement spaces with the stochastic algorithm.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -57,8 +57,7 @@ options = sso_stochastic_options('box',...
     'ApplyLeanness','end-only',...
     'NumberSamplesPerIteration',200,...
     'FixIterNumberExploration',true,...
-    'FixIterNumberConsolidation',true,...
-    'UseAdaptiveGrowthRate',true);
+    'FixIterNumberConsolidation',true);
 
 bottomUpMapping = BottomUpMappingFunction(systemFunction);
 designEvaluator = DesignEvaluatorBottomUpMapping(...
@@ -68,7 +67,7 @@ designEvaluator = DesignEvaluatorBottomUpMapping(...
     'PhysicalFeasibilityLowerLimit',physicalFeasibilityLowerLimit,...
     'PhysicalFeasibilityUpperLimit',physicalFeasibilityUpperLimit);
 
-[designBox,optimizationData] = sso_box_stochastic(designEvaluator,initialPoint,...
+[designBox,problemData,iterData] = sso_box_stochastic(designEvaluator,initialPoint,...
     designSpaceLowerBound,designSpaceUpperBound,options);
 
 
@@ -86,7 +85,7 @@ save_print_figure(gcf,[saveFolder,'BasicSolutionBox'],'Size',figureSize);
 
 
 %% Performance Metrics
-algoData = postprocess_sso_box_stochastic(optimizationData);
+algoData = postprocess_sso_box_stochastic(problemData,iterData);
 plot_sso_box_stochastic_metrics(algoData,...
     'SaveFolder',saveFolder,...
     'SaveFigureOptions',{'Size',figureSize});

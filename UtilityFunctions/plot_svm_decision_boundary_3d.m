@@ -1,4 +1,4 @@
-function plotHandle = plot_svm_decision_boundary_3d(graphicsHandle,svm,varargin)
+function plotHandle = plot_svm_decision_boundary_3d(fighan,svm,varargin)
 %PLOT_SVM_DECISION_BOUNDARY_3D Visualize the decision boundary of a SVM
 %   PLOT_SVM_DECISION_BOUNDARY_3D plots a visualization of a Support Vector 
 %   Machine decision boundary in 3D. It estimates where the boundary is via the
@@ -27,7 +27,7 @@ function plotHandle = plot_svm_decision_boundary_3d(graphicsHandle,svm,varargin)
 %
 %   See also patch, ClassificationSVM, legend, isosurface.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,8 +44,8 @@ function plotHandle = plot_svm_decision_boundary_3d(graphicsHandle,svm,varargin)
 
     inputPlotOptions = parser_variable_input_to_structure(varargin{:});
 
-    activate_graphics_object(graphicsHandle);
-    hold on;
+    figure(fighan);
+    hold on
 
     % set step size for fine sampling
     stepSize = 0.01;

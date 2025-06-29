@@ -44,21 +44,21 @@ grid minor;
 
 %% train candidate space
 candidateSpace = CandidateSpaceDelaunay(designSpaceLowerBound,designSpaceUpperBound);
-candidateSpace = candidateSpace.generate_candidate_space(designSample,labelSample);
+candidateSpace = candidateSpace.define_candidate_space(designSample,labelSample);
 isShapeDefinition = candidateSpace.IsShapeDefinition;
 
 figure;
-candidateSpace.plot_candidate_space(gcf,'FaceColor','g','FaceAlpha',0.5,'EdgeColor','k');
-hold all
 plot(designSample(labelSample,1),designSample(labelSample,2),'g.');
+hold all;
 plot(designSample(~labelSample,1),designSample(~labelSample,2),'r.');
+candidateSpace.plot_candidate_space(gcf,'FaceColor','g','FaceAlpha',0.5,'EdgeColor','k');
 plot(designSample(isShapeDefinition,1),designSample(isShapeDefinition,2),'bo');
 grid minor;
 legend({'Inside Points','Outside Points','Candidate Space Inside Region','Shape Points'});
 
 
 %% grow candidate space
-grownCandidateSpace = candidateSpace.expand_candidate_space(0.1);
+grownCandidateSpace = candidateSpace.grow_candidate_space(0.1);
 
 figure;
 plot(designSample(labelSample,1),designSample(labelSample,2),'g.');

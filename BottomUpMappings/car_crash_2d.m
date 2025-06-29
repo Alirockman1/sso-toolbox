@@ -45,7 +45,7 @@ function performanceMeasure = car_crash_2d(designSample,systemParameter)
 %
 %   See also car_crash_5d.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

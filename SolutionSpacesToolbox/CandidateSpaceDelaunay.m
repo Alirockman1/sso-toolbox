@@ -37,9 +37,9 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
 %       'compute_convex_hull' to compute the properties of individual simpleces.
 %
 %   CANDIDATESPACEDELAUNAY methods:
-%       - generate_candidate_space : create a candidate space based on design 
+%       - define_candidate_space : create a candidate space based on design 
 %       samples that are labeled as inside/outside.
-%       - expand_candidate_space : expand the candidate space by a given factor.
+%       - grow_candidate_space : expand the candidate space by a given factor.
 %       - is_in_candidate_space : verify if given design samples are inside 
 %       the candidate space.
 %       - plot_candidate_space : visualize 1D/2D/3D candidate spaces in given
@@ -47,7 +47,7 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
 %
 %   See also CandidateSpaceBase.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -131,17 +131,6 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %   
         %   See also compute_convex_hull.
         SimplexConvexHullOptions
-
-        %SAMPLINGBOXSLACK Slack allowed for for the sampling box
-        %   SAMPLINGBOXSLACK defines where the boundaries of the sampling box will be 
-        %   relative to the strictest bounding box and the most relaxed bounding box. A 
-        %   value of 0 means no slack and therefore the sampling box will be the most 
-        %   strict one possible, and 1 means the sampling box will be the most relaxed.
-        %
-        %   SAMPLINGBOXSLACK : double
-        %
-        %   See also SamplingBox, design_bounding_box.
-        SamplingBoxSlack
     end
 
     properties (SetAccess = protected, Dependent)
@@ -156,18 +145,6 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %
         %   See also DesignSampleDefinition, IsInsideDefinition, convhull, convhulln.   
         Measure
-
-        %SAMPLINGBOX Bounding box of inside region used to help with sampling
-        %   SAMPLINGBOX is a bounding box formed around the internal region of the
-        %   candidate space. It can be used to facilitate trying to sample inside said
-        %   space.
-        %
-        %   SAMPLINGBOX : (2,nDesignVariable) double
-        %       - (1) : lower boundary of the design box
-        %       - (2) : upper boundary of the design box
-        %
-        %   See also SamplingBoxSlack.
-        SamplingBox
     end
 
     methods
@@ -227,18 +204,18 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             	'Measure',[]);
         end
 
-        function obj = generate_candidate_space(obj,designSample,isInside)
-        %GENERATE_CANDIDATE_SPACE Initial definition of the candidate space
-        %   GENERATE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
+        function obj = define_candidate_space(obj,designSample,isInside)
+        %DEFINE_CANDIDATE_SPACE Initial definition of the candidate space
+        %   DEFINE_CANDIDATE_SPACE uses labeled design samples to define the inside / 
         %   outside regions of the candidate space. For CandidateSpaceDelaunay, this
         %   creates a tesselation with all designs labeled as 'inside', and removes any
         %   simplices which contain designs labeled 'outside'.
         %
-        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
+        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE) receives the design samle
         %   points in DESIGNSAMPLE and returns a candidate space object OBJ with the new
         %   definition, assuming all designs are inside the candidate space.
         %
-        %   OBJ = OBJ.GENERATE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
+        %   OBJ = OBJ.DEFINE_CANDIDATE_SPACE(DESIGNSAMPLE,ISINSIDE) additionally 
         %   receives the inside/outside (true/false) labels of each design point in 
         %   ISINSIDE.
         %
@@ -281,7 +258,7 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
                 outsideInsideSimplex = tsearchn(insideSample,obj.DelaunayIndex,designSample(~isInside,:));
                 isInsideWrong = unique(outsideInsideSimplex(~isnan(outsideInsideSimplex)));
     
-                % delete simplices where removed designs are inside
+                % delete simplices where bad designs are inside
                 obj.DelaunayIndex(isInsideWrong,:) = [];
             end
 
@@ -303,48 +280,16 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             end
         end
 
-        %function obj = update_candidate_space(obj,designSample,isInside,trimmingInformation)
-        %    if(isempty(obj.DesignSampleDefinition) || isempty(obj.DelaunayIndex))
-        %        obj = obj.generate_candidate_space(designSample,isInside);
-        %        return;
-        %    end
-        %
-        %    isInsideCurrent = obj.is_in_candidate_space(designSample);
-        %    if(all(isInsideCurrent==isInside))
-        %        return;
-        %    else
-        %        % if any designs should be inside and aren't, retrain
-        %        if(~all(isInsideCurrent(isInside)))
-        %            obj = obj.generate_candidate_space(designSample,isInside);
-        %            isInsideCurrent = obj.is_in_candidate_space(designSample);
-        %        end
-        %        
-        %        % if any designs should be outside and aren't, remove relevant simplices
-        %        if(~all(~isInsideCurrent(~isInside)))
-        %            insideSimplex = tsearchn(obj.ActiveDesign,obj.DelaunayIndex,designSample(~isInside,:));
-        %            isInsideWrong = unique(insideSimplex(~isnan(insideSimplex)));
-        %            
-        %            % delete simplices where removed designs are inside
-        %            obj.DelaunayIndex(isInsideWrong,:) = [];
-        %            obj.DelaunaySimplex(isInsideWrong) = [];
-        %            
-        %            obj.IsShapeDefinition = false(size(obj.DesignSampleDefinition,1),1);
-        %            [~,~,freeBoundaryVertex] = find_triangulation_facets(obj.DelaunayIndex);
-        %            obj.IsShapeDefinition(convert_index_base(obj.IsInsideDefinition,freeBoundaryVertex,'backward')) = true;
-        %        end
-        %    end
-        %end
-
-        function obj = expand_candidate_space(obj,growthRate)
-        %EXPAND_CANDIDATE_SPACE Expansion of candidate space by given factor
-        %   EXPAND_CANDIDATE_SPACE will grow the region considered inside the current 
+        function obj = grow_candidate_space(obj,growthRate)
+        %GROW_CANDIDATE_SPACE Expansion of candidate space by given factor
+        %   GROW_CANDIDATE_SPACE will grow the region considered inside the current 
         %   candidate space by the factor given. Said growth is done in a fixed rate 
         %   defined by the input relative to the design space.
         %   This is done by finding the center of each simplex that forms the 
         %   tesselation and expanding its vertices opposite to that; this is similar to  
         %   same process with the convex hull, but each simplex is treated separately.
         %
-        %   OBJ = OBJ.EXPAND_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
+        %   OBJ = OBJ.GROW_CANDIDATE_SPACE(GROWTHRATE) will growth the candidate space 
         %   defined in OBJ by a factor of GROWTHRATE. This is an isotropic expansion of 
         %   the candidate space by a factor of the growth rate times the size of the 
         %   design space.
@@ -356,18 +301,15 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %   Outputs:
         %       - OBJ : CandidateSpaceDelaunay
         %   
-        %   See also generate_candidate_space, is_in_candidate_space.
+        %   See also define_candidate_space, is_in_candidate_space.
 
             nSimplex = size(obj.DelaunayIndex,1);
             nDimension = size(obj.DesignSampleDefinition,2);
-            
-            designSampleGrown = nan(nSimplex*(nDimension+1),nDimension);
-            delauynayIndexGrown = nan(nSimplex,nDimension+1);
-
+            designSampleNew = nan(nSimplex*(nDimension+1),nDimension);
+            delauynayIndexNew = nan(nSimplex,nDimension+1);
             designSpaceFactor = obj.DesignSpaceUpperBound - obj.DesignSpaceLowerBound;
             designSpace = [obj.DesignSpaceLowerBound;obj.DesignSpaceUpperBound];
         
-            % expand each vertex independently for each simplex
             for i=1:nSimplex
                 simplexVertices = obj.DelaunaySimplex(i).Vertices;
                 simplexCenter = mean(simplexVertices,1);
@@ -383,23 +325,27 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
                 verticesNew = max(verticesNew, obj.DesignSpaceLowerBound); % lower bound limit
                 verticesNew = min(verticesNew, obj.DesignSpaceUpperBound); % upper bound limit
                 verticesNew = unique(verticesNew,'rows');
+                
+                [convexHullIndex,measure] = compute_convex_hull(verticesNew,obj.SimplexConvexHullOptions{:});
+
+                obj.DelaunaySimplex(i) = struct(...
+                    'Vertices',verticesNew,...
+                    'HullIndex',convexHullIndex,...
+                    'Measure',measure);
 
                 simplexIndex = 1 + (nDimension+1)*(i-1) + [0:nDimension];
-                designSampleGrown(simplexIndex,:) = verticesNew;
-                delauynayIndexGrown(i,:) = simplexIndex;
+                designSampleNew(simplexIndex,:) = verticesNew;
+                delauynayIndexNew(i,:) = simplexIndex;
             end
+            obj.DesignSampleDefinition = designSampleNew;
+            obj.DelaunayIndex = delauynayIndexNew;
 
-            % check which designs are inside/outside the new structure
-            outsideSample = obj.DesignSampleDefinition(~obj.IsInsideDefinition,:);
-            insideSimplex = tsearchn(designSampleGrown,delauynayIndexGrown,outsideSample);
-
-            % create new delaunay object
-            designSampleNew = [designSampleGrown;outsideSample];
-            isInsideNew = [true(size(designSampleGrown,1),1);~isnan(insideSimplex)];
-            obj = obj.generate_candidate_space(designSampleNew,isInsideNew);
+            nSample = size(designSampleNew,1);
+            obj.IsInsideDefinition = true(nSample,1);
+            obj.IsShapeDefinition = true(nSample,1);
         end
 
-        function [isInside, score] = is_in_candidate_space(obj,designSample)
+        function [label, score] = is_in_candidate_space(obj,designSample)
         %IS_IN_CANDIDATE_SPACE Verification if given design samples are inside
         %   IS_IN_CANDIDATE_SPACE uses the currently defined candidate space to 
         %   determine if given design sample points are inside or outside the candidate 
@@ -427,17 +373,10 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
         %   
         %   See also tsearchn.
 
-            nSample = size(designSample,1);
-            if(isempty(obj.DesignSampleDefinition))
-                isInside = true(nSample,1);
-                score = zeros(nSample,1);
-                return;
-            end
-
             [insideSimplex,barycentricCoordinate] = tsearchn(obj.ActiveDesign,obj.DelaunayIndex,designSample);
             isInsideSpace = ~isnan(insideSimplex);
             isInBoundary = ismember(designSample,obj.DesignSampleDefinition(obj.IsShapeDefinition,:),'rows');
-            isInside = isInsideSpace | isInBoundary;
+            label = isInsideSpace | isInBoundary;
 
             if(nargout>1)
         	    nSample = size(designSample,1);
@@ -446,7 +385,7 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
                 score(isInsideSpace) = max(barycentricCoordinate(isInsideSpace,:)-1,[],2);
                 %TODO: barycentric coordinate perhaps not most appropriate, as that only tells
                 %how 'inside' that is of the particular simplex, not the tesselation as a whole
-                score(~isInside) = 1;
+                score(~label) = 1;
             end
         end
 
@@ -511,15 +450,6 @@ classdef CandidateSpaceDelaunay < CandidateSpaceBase
             if(nargout<1)
                 clear plotHandle;
             end
-        end
-
-        function samplingBox = get.SamplingBox(obj)
-            [boundingBoxStrict,boundingBoxRelaxed] = design_bounding_box(...
-                obj.DesignSampleDefinition,obj.IsInsideDefinition);
-            samplingBox = (1-obj.SamplingBoxSlack).*boundingBoxStrict + ...
-                obj.SamplingBoxSlack.*boundingBoxRelaxed;
-            samplingBox(1,:) = max(samplingBox(1,:),obj.DesignSpaceLowerBound);
-            samplingBox(2,:) = min(samplingBox(2,:),obj.DesignSpaceUpperBound);
         end
 
         function measure = get.Measure(obj)

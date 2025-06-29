@@ -25,7 +25,7 @@ function isBoundary = design_find_boundary_samples(designSample,label,distanceMe
 %
 %   See also design_closest_point_different_label.
 %   
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

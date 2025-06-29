@@ -34,7 +34,7 @@ function designSelection = design_select_max_distance(referenceDesign,queryDesig
 %
 %   See also knnsearch, design_sort_min_distance.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

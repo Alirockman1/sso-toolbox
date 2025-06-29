@@ -62,15 +62,14 @@ save_print_figure(gcf,[saveFolder,'MaterialRelationEtoSigmaY'],'PrintFormat',{'p
 
 
 %%
-trussAnalysisChoice = '4-Bar-2D';
-fixRadius = true;
+trussAnalysisChoice = '2-Bar-2D';
+fixRadius = false;
 useBoxResultForComponent = false;
 
 computeDisplacement = true;
 computeMass = false;
 computeDisplacementAndMass = false;
 
-computeBoxSolution = true;
 computePlanarTrimmingComponent = true;
 computeCornerBoxRemovalComponent = true;
 computeHolePunchingComponent = false;
@@ -81,13 +80,13 @@ systemFunction = @truss_generic_element_properties_dependent_density;
 
 switch trussAnalysisChoice
     case '2-Bar-2D'
-        nSample = 500;
-        maxIterDisplacement = 150;
+        nSample = 100;
+        maxIterDisplacement = 30;
         maxIterMass = 20;
-        maxIterDisplacementAndMass = 100;
-        growthRateDisplacement = 0.01;
+        maxIterDisplacementAndMass = 30;
+        growthRateDisplacement = 0.07;
         growthRateMass = 0.07;
-        trimmingPasses = 'single';
+        trimmingPasses = 'reduced';
         requirementSpacesType = 'Omega1';
         systemParameter.NodePosition = [...
             0   0;  ...
@@ -104,43 +103,14 @@ switch trussAnalysisChoice
         systemParameter.NodeElement = [...
             1 3; ...
             2 3];
-    case '4-Bar-2D'
-        nSample = 400;
-        maxIterDisplacement = 150;
-        maxIterMass = 20;
-        maxIterDisplacementAndMass = 200;
-        growthRateDisplacement = 0.07;
-        growthRateMass = 0.07;
-        trimmingPasses = 'single';
-        requirementSpacesType = 'Omega1';
-        systemParameter.NodePosition = [...
-            0 0;  ...
-            1 0; ...
-            1 1; ...
-            0 1];
-        systemParameter.FixedDegreesOfFreedom = [...
-            true true; ...
-            false false; ...
-            false false; ...
-            true true];
-        systemParameter.NodeForce = [...
-            0 0; ...
-            0 0; ...
-            0 -1000; ...
-            0 0];
-        systemParameter.NodeElement = [...
-            1 2; ...
-            2 3; ...
-            3 4; ...
-            2 4];
     case '6-Bar-2D'
-        nSample = 600;
-        maxIterDisplacement = 200;
+        nSample = 100;
+        maxIterDisplacement = 30;
         maxIterMass = 20;
         maxIterDisplacementAndMass = 30;
         growthRateDisplacement = 0.07;
         growthRateMass = 0.07;
-        trimmingPasses = 'single';
+        trimmingPasses = 'reduced';
         requirementSpacesType = 'Omega1';
         systemParameter.NodePosition = [...
             0 0;  ...
@@ -168,13 +138,13 @@ switch trussAnalysisChoice
             2 5; ...
             2 4];
     case '18-Bar-2D'
-        nSample = 300;
-        maxIterDisplacement = 500;
+        nSample = 100;
+        maxIterDisplacement = 250;
         maxIterMass = 250;
         maxIterDisplacementAndMass = 250;
         growthRateDisplacement = 0.01;
         growthRateMass = 0.01;
-        trimmingPasses = 'single';
+        trimmingPasses = 'reduced';
         requirementSpacesType = 'Omega1';
         systemParameter.NodePosition = [...
 	          1, 1; ... % (1)
@@ -232,8 +202,8 @@ switch trussAnalysisChoice
             7 9; ... % (17)
             8 9]; % (18)
     case '38-Bar-2D'
-        nSample = 300;
-        maxIterDisplacement = 500;
+        nSample = 100;
+        maxIterDisplacement = 300;
         maxIterMass = 300;
         maxIterDisplacementAndMass = 300;
         growthRateDisplacement = 0.007;
@@ -347,8 +317,8 @@ switch trussAnalysisChoice
             17 18; ... % (38) |
             ];
     case '11-Bar-3D'
-        nSample = 300;
-        maxIterDisplacement = 500;
+        nSample = 100;
+        maxIterDisplacement = 100;
         maxIterMass = 100;
         maxIterDisplacementAndMass = 100;
         growthRateDisplacement = 0.04;
@@ -394,13 +364,13 @@ switch trussAnalysisChoice
             5 7; % (10)
             6 7]; % (11)
     case '21-Bar-3D'
-        nSample = 300;
-        maxIterDisplacement = 500;
+        nSample = 100;
+        maxIterDisplacement = 300;
         maxIterMass = 250;
         maxIterDisplacementAndMass = 300;
         growthRateDisplacement = 0.005;
         growthRateMass = 0.005;
-        trimmingPasses = 'single';
+        trimmingPasses = 'reduced';
         requirementSpacesType = 'Omega1';
         systemParameter.NodePosition = [...
               0   0   0; % (1)
@@ -461,8 +431,8 @@ switch trussAnalysisChoice
             8 10; % (20)
             9 10]; % (21)
     case '39-Bar-3D'
-        nSample = 300;
-        maxIterDisplacement = 500;
+        nSample = 100;
+        maxIterDisplacement = 300;
         maxIterMass = 300;
         maxIterDisplacementAndMass = 300;
         growthRateDisplacement = 0.004;
@@ -571,12 +541,12 @@ end
 %% base parameters
 nElement = size(systemParameter.NodeElement,1);
 
-minimumRadius = 0.5;
+minimumRadius = 0.001;
 minimumThickness = 0.001;
 minimumYoungsModulus = min(youngsModulusMaterial);
 
-maximumRadius = 1.5;
-maximumThickness = 0.5;
+maximumRadius = 1;
+maximumThickness = 1;
 maximumYoungsModulus = max(youngsModulusMaterial);
 
 designSpaceLowerBound = repmat([minimumRadius,minimumThickness,minimumYoungsModulus],1,nElement);
@@ -605,41 +575,8 @@ nodeDisplacementInitial = ...
 	    elementCrossSectionArea,...
 	    elementYoungsModulus);
 
-is3dPlot = (size(systemParameter.NodePosition,2) == 3);
-
 figure;
-
-plot_truss_deformation(gcf,systemParameter.NodePosition,systemParameter.NodeElement,'TrussPlotOptions',{'Color',color_palette_tol('blue')},'MaximumLinewidth',3.0,'ShowBarNumber',true,'BarNumberOptions',{'HorizontalAlignment','right','VerticalAlignment','bottom','FontSize',16});
-
-isTrussTip = (systemParameter.NodeForce~=0);
-positionTip = systemParameter.NodePosition(any(isTrussTip,2),:);
-appliedForceOptions = {'Color',color_palette_tol('red'),'LineWidth',3.0};
-if(is3dPlot)
-    [wallY,wallZ] = meshgrid([-0.5,1.5]);
-    wallX = zeros(size(wallY));
-    wallOptions = {'FaceColor','w','EdgeColor','k','FaceAlpha',0.7};
-    handleWall = surf(wallX,wallY,wallZ,wallOptions{:});
-
-    handleForce = quiver3(positionTip(1),positionTip(2),positionTip(3),0,0,-0.5,appliedForceOptions{:});
-
-    set(gca,'XColor', 'none','YColor','none','ZColor','none');
-
-    axis('tight','equal','vis3d');
-    camproj('perspective');
-    cameratoolbar; % better adjust angle/perspective
-else
-    wallX = [0 0];
-    wallY = [-0.1 1.1];
-    wallOptions = {'Linewidth',8.0,'Color','k'};
-    handleWall = plot(wallX,wallY,wallOptions{:});
-
-    handleForce = quiver(positionTip(1),positionTip(2),0,-0.5,appliedForceOptions{:});
-
-    set(gca,'XColor', 'none','YColor','none');
-
-    axis('tight','equal');
-end
-
+plot_truss_deformation(gcf,systemParameter.NodePosition,systemParameter.NodeElement,nodeDisplacementInitial);
 save_print_figure(gcf,[saveFolder,'InitialTrussDeformation'],'PrintFormat',{'png','pdf'},'Size',figureSize);
 
 
@@ -661,10 +598,10 @@ performanceMeasureInitial = bottomUpMapping.response(initialDesign);
 % displacement
 if(computeDisplacement)
     performanceUpperLimitDisplacement = performanceUpperLimit;
-    performanceUpperLimitDisplacement(1) = performanceMeasureInitial(1)*1.1;
+    performanceUpperLimitDisplacement(1) = performanceMeasureInitial(1);
 
     performanceLowerLimitDisplacement = performanceLowerLimit;
-    performanceLowerLimitDisplacement(1) = performanceMeasureInitial(1)*0.9;
+    performanceLowerLimitDisplacement(1) = performanceMeasureInitial(1)*0.95;
 
     designEvaluatorDisplacement = DesignEvaluatorBottomUpMapping(...
         bottomUpMapping,...
@@ -674,7 +611,7 @@ if(computeDisplacement)
     [solutionSpaceBoxDisplacement,componentSolutionSpacePlanarTrimmingDisplacement,componentSolutionSpaceCornerBoxRemovalDisplacement,componentSolutionSpaceHolePunchingDisplacement] = ...
     compute_truss_solution_spaces('Displacement',designEvaluatorDisplacement,initialDesign,designSpaceLowerBound,designSpaceUpperBound,...
         componentIndex,nSample,maxIterDisplacement,growthRateDisplacement,trimmingPasses,requirementSpacesType,...
-        useBoxResultForComponent,computeBoxSolution,computePlanarTrimmingComponent,computeCornerBoxRemovalComponent,computeHolePunchingComponent,...
+        useBoxResultForComponent,computePlanarTrimmingComponent,computeCornerBoxRemovalComponent,computeHolePunchingComponent,...
         rngState,saveFolder,figureSize);
 
     plot_relevant_results_truss_moving_node('Displacement',...
@@ -694,7 +631,7 @@ if(computeMass)
     [solutionSpaceBoxMass,componentSolutionSpacePlanarTrimmingMass,componentSolutionSpaceCornerBoxRemovalMass,componentSolutionSpaceHolePunchingMass] = ...
         compute_truss_solution_spaces('Mass',designEvaluatorMass,initialDesign,designSpaceLowerBound,designSpaceUpperBound,...
             componentIndex,nSample,maxIterMass,growthRateMass,trimmingPasses,requirementSpacesType,useBoxResultForComponent,...
-            computeBoxSolution,computePlanarTrimmingComponent,computeCornerBoxRemovalComponent,computeHolePunchingComponent,...
+            computePlanarTrimmingComponent,computeCornerBoxRemovalComponent,computeHolePunchingComponent,...
             rngState,saveFolder,figureSize);
 
     plot_relevant_results_truss_moving_node('Mass',...
@@ -716,7 +653,7 @@ if(computeDisplacementAndMass)
     compute_truss_solution_spaces('DisplacementAndMass',designEvaluatorDisplacementAndMass,initialDesign,...
         designSpaceLowerBound,designSpaceUpperBound,componentIndex,nSample,maxIterDisplacementAndMass,...
         growthRateDisplacement,trimmingPasses,requirementSpacesType,useBoxResultForComponent,...
-        computeBoxSolution,computePlanarTrimmingComponent,computeCornerBoxRemovalComponent,computeHolePunchingComponent,...
+        computePlanarTrimmingComponent,computeCornerBoxRemovalComponent,computeHolePunchingComponent,...
         rngState,saveFolder,figureSize);
 
     plot_relevant_results_truss_moving_node('DisplacementAndMass',...
@@ -734,49 +671,41 @@ diary off;
 function [solutionSpaceBox,componentSolutionSpacePlanarTrimming,componentSolutionSpaceCornerBoxRemoval,componentSolutionSpaceHolePunching] = ...
     compute_truss_solution_spaces(typeName,designEvaluator,initialDesign,designSpaceLowerBound,designSpaceUpperBound,componentIndex,...
         nSample,maxIter,growthRate,trimmingPasses,requirementSpacesType,useBoxResultForComponent,...
-        computeBoxSolution,computePlanarTrimmingComponent,computeCornerBoxRemovalComponent,computeHolePunchingComponent,...
+        computePlanarTrimmingComponent,computeCornerBoxRemovalComponent,computeHolePunchingComponent,...
         rngState,saveFolder,figureSize)
     
     %% box
-    solutionSpaceBox = [];
-    if(computeBoxSolution)
-        timeElapsedBox = tic;
-        optionsBox = sso_stochastic_options('box',...
-            'RequirementSpacesType',requirementSpacesType,...
-            'NumberSamplesPerIterationExploration',nSample,...
-            'NumberSamplesPerIterationConsolidation',nSample,...
-            'FixIterNumberExploration',true,...
-            'FixIterNumberConsolidation',true,...
-            'MaxIterExploration',maxIter,...
-            'MaxIterConsolidation',maxIter,...
-            'UseAdaptiveGrowthRate',true,...
-            'GrowthRate',growthRate,...
-            'MaximumGrowthAdaptationFactor',1.5,...
-            'ApplyLeanness','never',...
-            'TrimmingOperationOptions',{'PassesCriterion',trimmingPasses},...
-            'TrimmingOrderOptions',{'OrderPreference','score'},...
-            'LoggingLevel','all');
-        
-        rng(rngState);
-        [solutionSpaceBox,optimizationDataBox] = sso_box_stochastic(designEvaluator,...
-            initialDesign,designSpaceLowerBound,designSpaceUpperBound,optionsBox);
-        toc(timeElapsedBox)
+    timeElapsedBox = tic;
+    optionsBox = sso_stochastic_options('box',...
+        'RequirementSpacesType',requirementSpacesType,...
+        'NumberSamplesPerIterationExploration',nSample,...
+        'NumberSamplesPerIterationConsolidation',nSample,...
+        'FixIterNumberExploration',true,...
+        'FixIterNumberConsolidation',true,...
+        'MaxIterExploration',maxIter,...
+        'MaxIterConsolidation',maxIter,...
+        'UseAdaptiveGrowthRate',true,...
+        'GrowthRate',growthRate,...
+        'ApplyLeanness','never',...
+        'TrimmingOperationOptions',{'PassesCriterion',trimmingPasses},...
+        'TrimmingOrderOptions',{'OrderPreference','score'});
+    
+    rng(rngState);
+    [solutionSpaceBox,optimizationDataBox] = sso_box_stochastic(designEvaluator,...
+        initialDesign,designSpaceLowerBound,designSpaceUpperBound,optionsBox);
+    toc(timeElapsedBox)
 
-        resultsFolder = [saveFolder,sprintf('PerformanceBox%s/',typeName)];
-        mkdir(resultsFolder);
-        algoDataBox = postprocess_sso_box_stochastic(optimizationDataBox);
-        plot_sso_box_stochastic_metrics(algoDataBox,...
-            'SaveFolder',resultsFolder,...
-            'CloseFigureAfterSaving',true,...
-            'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
-    end
+    resultsFolder = [saveFolder,sprintf('PerformanceBox%s/',typeName)];
+    mkdir(resultsFolder);
+    algoDataBox = postprocess_sso_box_stochastic(optimizationDataBox);
+    plot_sso_box_stochastic_metrics(algoDataBox,...
+        'SaveFolder',resultsFolder,...
+        'CloseFigureAfterSaving',true,...
+        'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
 
-    if(useBoxResultForComponent && ~isempty(solutionSpaceBox))
+    if(useBoxResultForComponent)
         initialDesignComponent = solutionSpaceBox;
     else
-        if(useBoxResultForComponent && isempty(solutionSpaceBox))
-            warning('Box solution requested for component initialization but box solution was not computed. Using initial design instead.');
-        end
         initialDesignComponent = initialDesign;
     end
     comparisonComponent = {};
@@ -800,15 +729,12 @@ function [solutionSpaceBox,componentSolutionSpacePlanarTrimming,componentSolutio
             'TrimmingMethodOptions',{'NormalizeVariables',true},...
             'UseAdaptiveGrowthRate',true,...
             'GrowthRate',growthRate,...
-            'MaximumGrowthAdaptationFactor',1.5,...
             'ApplyLeanness','never',...
-            'MaximumNumberPaddingSamples',10000,...
             'UsePaddingSamplesInTrimming',true,...
             'UsePreviousEvaluatedSamplesConsolidation',false,...
             'TrimmingOperationOptions',{'PassesCriterion',trimmingPasses},...
             'TrimmingOrderOptions',{'OrderPreference','score'},...
-            'ShapeSamplesUsefulConsolidation',true,...
-            'LoggingLevel','all');
+            'ShapeSamplesUsefulConsolidation',true);
         
         rng(rngState);
         [componentSolutionSpacePlanarTrimming,optimizationDataComponentPlanarTrimming] = sso_component_stochastic(designEvaluator,...
@@ -840,20 +766,17 @@ function [solutionSpaceBox,componentSolutionSpacePlanarTrimming,componentSolutio
             'MaxIterExploration',maxIter,...
             'MaxIterConsolidation',maxIter,...
             'CandidateSpaceConstructor',@CandidateSpaceCornerBoxRemoval,...
-            'CandidateSpaceOptions',{'NormalizeGrowthDirection',true,'CheckRedundantTrimmingGrowth',false,'CheckRedundantTrimmingUpdate',true,'CheckDuplicatePointsGrowth',false,'CheckDuplicatePointsUpdate',true,'MeasureEstimationFactor',2},...
+            'CandidateSpaceOptions',{'NormalizeGrowthDirection',true},...
             'TrimmingMethodFunction',@component_trimming_method_corner_box_removal,...
             'TrimmingMethodOptions',{'NormalizeVariables',true},...
             'UseAdaptiveGrowthRate',true,...
             'GrowthRate',growthRate,...
-            'MaximumGrowthAdaptationFactor',1.5,...
             'ApplyLeanness','never',...
-            'MaximumNumberPaddingSamples',10000,...
             'UsePaddingSamplesInTrimming',true,...
             'UsePreviousEvaluatedSamplesConsolidation',false,...
             'TrimmingOperationOptions',{'PassesCriterion',trimmingPasses},...
             'TrimmingOrderOptions',{'OrderPreference','score'},...
-            'ShapeSamplesUsefulConsolidation',true,...
-            'LoggingLevel','all');
+            'ShapeSamplesUsefulConsolidation',true);
         
         rng(rngState);
         [componentSolutionSpaceCornerBoxRemoval,optimizationDataComponentCornerBoxRemoval] = sso_component_stochastic(designEvaluator,...
@@ -888,16 +811,13 @@ function [solutionSpaceBox,componentSolutionSpacePlanarTrimming,componentSolutio
             'TrimmingMethodFunction',@component_trimming_method_hole_punching,...
             'UseAdaptiveGrowthRate',true,...
             'GrowthRate',growthRate,...
-            'MaximumGrowthAdaptationFactor',1.5,...
             'ApplyLeanness','never',...
-            'MaximumNumberPaddingSamples',10000,...
             'UsePaddingSamplesInTrimming',true,...
             'UsePreviousEvaluatedSamplesConsolidation',true,...
             'TrimmingOperationOptions',{'PassesCriterion',trimmingPasses},...
             'TrimmingOrderOptions',{'OrderPreference','score'},...
             'ShapeSamplesUsefulConsolidation',false,...
-            'NumberPaddingSamples',1000,...
-            'LoggingLevel','all');
+            'NumberPaddingSamples',1000);
         
         rng(rngState);
         [componentSolutionSpaceHolePunching,optimizationDataComponentHolePunching] = sso_component_stochastic(designEvaluator,...
@@ -919,18 +839,12 @@ function [solutionSpaceBox,componentSolutionSpacePlanarTrimming,componentSolutio
     % comparison
     resultsFolder = [saveFolder,sprintf('PerformanceComparison%s/',typeName)];
     mkdir(resultsFolder);
-    
-    boxData = {};
-    if(computeBoxSolution)
-        boxData = {algoDataBox};
-    end
-    
     plot_sso_comparison_box_component_stochastic_metrics(...
-        boxData,...
+        {algoDataBox},...
         comparisonComponent,...
         'ComponentLabel',componentLabel,...
         'BoxColor','k',...
-        'ComponentColor',color_palette_tol({'purple','cyan','yellow'}),...
+        'ComponentColor',color_palette_tol({'cyan','purple','yellow'}),...
         'SaveFolder',resultsFolder,...
         'CloseFigureAfterSaving',true,...
         'SaveFigureOptions',{'Size',figureSize,'PrintFormat',{'png','pdf'}});
@@ -999,10 +913,7 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
     % (14) legend
     parser.addParameter('IncludeLegend',false);
     parser.addParameter('LegendOptions',{});
-    % (15) title
-    parser.addParameter('ShowTitle',true);
-    parser.addParameter('TitleOptions',{});
-
+    
     parser.parse(varargin{:});
     options = parser.Results;
 
@@ -1051,28 +962,26 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
     % (3) box - displacement and mass
     defaultCommonBoxSolutionDisplacementAndMassOptions = {'EdgeColor','k','FaceAlpha',0.0};
     % (4) planar trimming - displacement
-    defaultCommonPlanarTrimmingDisplacementOptions = {'FaceColor',color_palette_tol('purple'),'EdgeColor',color_palette_tol('purple'),'FaceAlpha',0.25};
+    defaultCommonPlanarTrimmingDisplacementOptions = {'FaceColor',color_palette_tol('cyan'),'EdgeColor',color_palette_tol('cyan'),'FaceAlpha',0.2};
     % (5) planar trimming - mass
-    defaultCommonPlanarTrimmingMassOptions = {'FaceColor',color_palette_tol('purple'),'EdgeColor',color_palette_tol('purple'),'FaceAlpha',0.25};
+    defaultCommonPlanarTrimmingMassOptions = {'FaceColor',color_palette_tol('cyan'),'EdgeColor',color_palette_tol('cyan'),'FaceAlpha',0.2};
     % (6) planar trimming - displacement and mass
-    defaultCommonPlanarTrimmingDisplacementAndMassOptions = {'FaceColor',color_palette_tol('purple'),'EdgeColor',color_palette_tol('purple'),'FaceAlpha',0.25};
+    defaultCommonPlanarTrimmingDisplacementAndMassOptions = {'FaceColor',color_palette_tol('cyan'),'EdgeColor',color_palette_tol('cyan'),'FaceAlpha',0.2};
     % (7) corner box removal - displacement
-    defaultCommonCornerBoxRemovalDisplacementOptions = {'FaceColor',color_palette_tol('cyan'),'EdgeColor',color_palette_tol('cyan'),'FaceAlpha',0.4,'EdgeColor','none'};
+    defaultCommonCornerBoxRemovalDisplacementOptions = {'FaceColor',color_palette_tol('purple'),'EdgeColor',color_palette_tol('purple'),'FaceAlpha',0.2,'EdgeColor','none'};
     % (8) corner box removal - mass
-    defaultCommonCornerBoxRemovalMassOptions = {'FaceColor',color_palette_tol('cyan'),'EdgeColor',color_palette_tol('cyan'),'FaceAlpha',0.4,'EdgeColor','none'};
+    defaultCommonCornerBoxRemovalMassOptions = {'FaceColor',color_palette_tol('purple'),'EdgeColor',color_palette_tol('purple'),'FaceAlpha',0.2,'EdgeColor','none'};
     % (9) corner box removal - displacement and mass
-    defaultCommonCornerBoxRemovalDisplacementAndMassOptions = {'FaceColor',color_palette_tol('cyan'),'EdgeColor',color_palette_tol('cyan'),'FaceAlpha',0.4,'EdgeColor','none'};
+    defaultCommonCornerBoxRemovalDisplacementAndMassOptions = {'FaceColor',color_palette_tol('purple'),'EdgeColor',color_palette_tol('purple'),'FaceAlpha',0.2,'EdgeColor','none'};
     % (10) hole punching - displacement
-    defaultCommonHolePunchingDisplacementOptions = {'FaceColor',color_palette_tol('yellow'),'EdgeColor',color_palette_tol('yellow'),'FaceAlpha',0.3};
+    defaultCommonHolePunchingDisplacementOptions = {'FaceColor',color_palette_tol('yellow'),'EdgeColor',color_palette_tol('yellow'),'FaceAlpha',0.2};
     % (11) hole punching - mass
-    defaultCommonHolePunchingMassOptions = {'FaceColor',color_palette_tol('yellow'),'EdgeColor',color_palette_tol('yellow'),'FaceAlpha',0.3};
+    defaultCommonHolePunchingMassOptions = {'FaceColor',color_palette_tol('yellow'),'EdgeColor',color_palette_tol('yellow'),'FaceAlpha',0.2};
     % (12) hole punching - displacement and mass
-    defaultCommonHolePunchingDisplacementAndMassOptions = {'FaceColor',color_palette_tol('yellow'),'EdgeColor',color_palette_tol('yellow'),'FaceAlpha',0.3};
+    defaultCommonHolePunchingDisplacementAndMassOptions = {'FaceColor',color_palette_tol('yellow'),'EdgeColor',color_palette_tol('yellow'),'FaceAlpha',0.2};
     % (13) axes
     % (14) legend
     defaultCommonLegendOptions = {'location','west'};
-    % (15) title
-    defaultCommonTitleOptions = {'FontSize',14};
 
     %% merge options
     % (1) box - displacement 
@@ -1128,10 +1037,6 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
     [~,legendOptions] = merge_name_value_pair_argument(...
         defaultCommonLegendOptions,...
         options.LegendOptions);
-    % (15) title
-    [~,titleOptions] = merge_name_value_pair_argument(...
-        defaultCommonTitleOptions,...
-        options.TitleOptions);
 
 
     %% plot each element (where applicable)
@@ -1357,13 +1262,6 @@ function figureHandle = plot_results_truss_generic_moving_node(varargin)
         legentText = {legendTextAll{~cellfun(@isempty,handleObjectAll)}};
 
         legend(handleObject,legentText,legendOptions{:});
-    end
-
-    if(options.ShowTitle)
-        for i=1:nElement
-            figure(figureHandle(i));
-            title(['Element ',num2str(i)],titleOptions{:});
-        end
     end
 
     if(nargout<1)

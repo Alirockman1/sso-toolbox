@@ -1,10 +1,5 @@
-%TEST_BOX_CAR_CRASH_PYTHON Python Bottom-up Mapping test for SSO
-%   TEST_BOX_CAR_CRASH_PYTHON allows for testing of the use of Python function
-%   as a bottom-up mapping with a known problem, namely the simplified 2D car
-%   crash design problem. With the same settings, the output of this should
-%   be the same as 'test_box_car_crash'.
 %
-% Copyright 2025 Eduardo Rodrigues Della Noce
+% Copyright 2024 Eduardo Rodrigues Della Noce
 % SPDX-License-Identifier: Apache-2.0
 
 % Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +24,7 @@ diary off;
 
 
 %% debugging
-rng(4);
+rng(6);
 
 
 %% Documentation / Archive
@@ -63,7 +58,7 @@ options = sso_stochastic_options('box',...
     'FixIterNumberExploration',true,...
     'FixIterNumberConsolidation',true,...
     'UseAdaptiveGrowthRate',false);
-[designBox,optimizationData] = sso_box_stochastic(...
+[designBox,problemData,iterData] = sso_box_stochastic(...
     designEvaluator,initialDesign,designSpaceLowerBound,designSpaceUpperBound,options);
 
 
@@ -85,7 +80,7 @@ save_print_figure(gcf,[saveFolder,'SolutionBox'],'Size',figureSize);
 
 
 %% Performance Metrics
-algoData = postprocess_sso_box_stochastic(optimizationData);
+algoData = postprocess_sso_box_stochastic(problemData,iterData);
 plot_sso_box_stochastic_metrics(algoData,...
     'SaveFolder',saveFolder,...
     'SaveFigureOptions',{'Size',figureSize});

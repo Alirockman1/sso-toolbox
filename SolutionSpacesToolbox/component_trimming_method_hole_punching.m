@@ -1,4 +1,4 @@
-function [removalCandidate,removalInformation] = component_trimming_method_hole_punching(designSampleComponent,iRemove,isKeep,varargin)
+function removalCandidate = component_trimming_method_hole_punching(designSampleComponent,iRemove,varargin)
 %COMPONENT_TRIMMING_METHOD_HOLE_PUNCHING Component SSO Trimming
 %   COMPONENT_TRIMMING_METHOD_HOLE_PUNCHING uses the hole punching method to 
 %   find the sample points for candidate removal during the trimming operation 
@@ -23,7 +23,7 @@ function [removalCandidate,removalInformation] = component_trimming_method_hole_
 %   component_trimming_method_planar_trimming, 
 %   component_trimming_method_corner_box_removal.
 %   
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,17 +39,10 @@ function [removalCandidate,removalInformation] = component_trimming_method_hole_
 %   limitations under the License.
 
     nSample = size(designSampleComponent,1);
-    nDimension = size(designSampleComponent,2);
-    designSampleMax = max(designSampleComponent(isKeep,:),[],1);
-    designSampleMin = min(designSampleComponent(isKeep,:),[],1);
-
-    % hole size: measure design space / sqrt(nSample)
-    holeSize = (designSampleMax-designSampleMin)*((1/sqrt(nSample))^(1/nDimension));
+    nDesignVariable = size(designSampleComponent,2);
+    designSampleMax = max(designSampleComponent,[],1);
+    designSampleMin = min(designSampleComponent,[],1);
+    holeSize = (designSampleMax-designSampleMin)*((1/sqrt(nSample))^(1/nDesignVariable));
     
     removalCandidate = all(abs(designSampleComponent-designSampleComponent(iRemove,:))<=holeSize./2,2);
-
-    if(nargout>1)
-        removalInformation.Anchor = designSampleComponent(iRemove,:);
-        removalInformation.HoleSize = holeSize;
-    end
 end

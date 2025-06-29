@@ -1,52 +1,40 @@
-function iChoice = component_trimming_cost(designSample,isViable,isExclude,isInsideComponent,isInsideAll,removalCandidate,ineligibleCandidate,varargin)
-%COMPONENT_TRIMMING_COST Choose removal operation based on multiple criteria
-%   COMPONENT_TRIMMING_COST determines which one of multiple candidate removal
-%   operations yields the best outcome for a component, according to a 
-%   prioritized list of selection criteria. Each criterion helps break ties 
-%   among equally good candidates, in sequence.
+function removalCost = component_trimming_cost(designSample,activeKeep,removalCandidate,varargin)
+%COMPONENT_TRIMMING_COST Cost of removing selected designs from component space
+%   COMPONENT_TRIMMING_COST computes the cost associated with performing the
+%   candidate trimming operations on the component space. 
 %
-%   ICHOICE = COMPONENT_TRIMMING_COST(DESIGNSAMPLE,ISVIABLE,ISEXCLUDE,
-%   ISINSIDECOMPONENT,ISINSIDEALL,REMOVALCANDIDATE,INELIGIBLECANDIDATE) returns
-%   the index ICHOICE corresponding to the best candidate removal operation,
-%   considering the set of design points in DESIGNSAMPLE and various logical
-%   masks:
-%       - ISVIABLE : indicates viable points for the component.
-%       - ISEXCLUDE : indicates points that are excluded.
-%       - ISINSIDECOMPONENT : indicates points inside the component region.
-%       - ISINSIDEALL : indicates points currently inside all components.
-%   REMOVALCANDIDATE is an logical matrix whose columns represent different 
-%   candidate operations. INELIGIBLECANDIDATE indicates which of these 
-%   candidates are invalid or already excluded.
+%   REMOVALCOST = COMPONENT_TRIMMING_COST(DESIGNSAMPLE,ACTIVEKEEP,
+%   REMOVALCANDIDATE) receives the component design sample points in 
+%   DESIGNSAMPLE, the label for which points should be kept on ACTIVEKEEP, and
+%   all the trimming operation candidates for this component in 
+%   REMOVALCANDIDATE, and returns the cost for each of those removal candidates
+%   in REMOVALCOST. This cost is defined by the amount of points that are 
+%   supposed to be kept that are being removed.
 %
-%   The function attempts to pick a single best candidate index by evaluating
-%   the criteria listed in the 'SelectionCriteria' name-value pair (in order).
-%   By default, 'SelectionCriteria' = 
-%       {'NumberInsideViable','NumberInsideExclude','NumberExclude', ...
-%        'NumberViable','NumberInsideNotExclude'}
+%   REMOVALCOST = COMPONENT_TRIMMING_COST(...NAME,VALUE,...) allows the 
+%   specification of name-value pair arguments. These can be:
+%       - 'CostType' : how to compute the cost of each removal candidate option. 
+%       This can be one of the following:
+%           -- 'NumberKeep' : number of design points labeled as 'keep' which 
+%           are being removed.
+%           -- 'VolumeKeep' : estimated volume of the desired region being 
+%           removed.
+%       Alternatively, a function handle can be used to define custom weighting.
+%       This function must have the form 
+%       'cost = f(designSample,activeKeep,removalCandidate)'. 
 %
-%   ICHOICE = COMPONENT_TRIMMING_COST(...,'SelectionCriteria',CRITERIA) allows
-%   specifying a custom sequence of criteria (CRITERIA can be a cell array of 
-%   strings or function handles). For each criterion, the cost is computed for 
-%   each candidate, and the function narrows down to whichever candidates 
-%   minimize that cost. The process continues until only one candidate remains
-%   or all criteria are exhausted.
-%
-%   Inputs:
+%   Input:
 %       - DESIGNSAMPLE : (nSample,nDesignVariable) double
-%       - ISVIABLE : (nSample,1) logical
-%       - ISEXCLUDE : (nSample,1) logical
-%       - ISINSIDECOMPONENT : (nSample,1) logical
-%       - ISINSIDEALL : (nSample,1) logical
+%       - ACTIVEKEEP : (nSample,1) logical
 %       - REMOVALCANDIDATE : (nSample,nRemovalCandidate) logical
-%       - INELIGIBLECANDIDATE : (1,nRemovalCandidate) logical
-%       - 'SelectionCriteria' : cell array of strings/function handles
+%       - 'CostType' : char OR string OR function_handle
 %
 %   Output:
-%       - ICHOICE : integer
+%       - REMOVALCOST : (1,nRemovalCandidate) double
 %
 %   See also component_trimming_choice, component_trimming_operation.
 %   
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -62,58 +50,25 @@ function iChoice = component_trimming_cost(designSample,isViable,isExclude,isIns
 %   limitations under the License.
 
     parser = inputParser;
-    parser.addParameter('SelectionCriteria',{'NumberInsideViable','NumberInsideExclude','NumberInsideNotExclude','NumberExclude','NumberViable'});
+    parser.addParameter('CostType','NumberKeep');
     parser.parse(varargin{:});
     options = parser.Results;
     
-    nCandidate = size(removalCandidate,2);
-    nCriteria = length(options.SelectionCriteria);
+    nRemovalCandidate = size(removalCandidate,2);
+    removalCost = nan(1,nRemovalCandidate);
+    if(isa(options.CostType,'function_handle'))
+        removalCost = options.CostType(designSample,activeKeep,removalCandidate);
+    elseif(strcmpi(options.CostType,'ComponentDimension'))
+        nSample = size(designSample,1);
+        keepFraction = sum(removalCandidate & activeKeep,1)./nSample;
 
-    if(isempty(ineligibleCandidate) || all(ineligibleCandidate))
-        isTie = true(1,nCandidate);
-    else
-        isTie = ~ineligibleCandidate;
-    end
-    nTie = sum(isTie);
-
-    i = 1;
-    while(nTie>1 && i<=nCriteria)
-        criterionCurrent = options.SelectionCriteria{i};
-        removalCandidateCurrent = removalCandidate(:,isTie);
-        nCandidateCurrent = size(removalCandidateCurrent,2);
-
-        removalCost = nan(1,nCandidateCurrent);
-        if(isa(criterionCurrent,'function_handle'))
-            removalCost = options.CostType(designSample,isViable,isExclude,isInsideComponent,isInsideAll,removalCandidateCurrent);
-        elseif(strcmpi(criterionCurrent,'NumberInsideViable'))
-            removalCost = -sum(isViable & isInsideAll & ~removalCandidateCurrent,1);
-        elseif(strcmpi(criterionCurrent,'NumberViable'))
-            removalCost = -sum(isViable & isInsideComponent & ~removalCandidateCurrent,1);
-        elseif(strcmpi(criterionCurrent,'NumberInsideExclude'))
-            removalCost = -sum(isExclude & isInsideAll & removalCandidateCurrent,1);
-        elseif(strcmpi(criterionCurrent,'NumberExclude'))
-            removalCost = -sum(isExclude & isInsideComponent & removalCandidateCurrent,1);
-        elseif(strcmpi(criterionCurrent,'NumberInsideNotExclude'))
-            removalCost = -sum(isInsideComponent & ~isExclude & ~removalCandidateCurrent,1);
-        elseif(strcmpi(criterionCurrent,'VolumeInsideViable'))
-            for j=1:nCandidateCurrent
-                isInsideRemainViable = isViable & isInsideAll & ~removalCandidateCurrent(:,j);
-                if(~any(isInsideRemainViable))
-                    removalCost(j)=0;
-                    continue;
-                end
-                
-                boundingBox = design_bounding_box(designSample,isInsideRemainViable);
-                isInBoundingBox = is_in_design_box(designSample,boundingBox);
-                volumeFraction = sum(isInsideRemainViable)/sum(isInBoundingBox);
-                removalCost(j) = -volumeFraction*prod(boundingBox(2,:)-boundingBox(1,:));
-            end
+        for i=1:nRemovalCandidate
+            boundingBoxRemoval = design_bounding_box(designSample,removalCandidate(:,i));
+            totalVolumeRemoved = prod(boundingBoxRemoval(2,:) - boundingBoxRemoval(1,:));
+            removalCost(i) = keepFraction(i) * totalVolumeRemoved;
         end
-
-        isTie(isTie) = (removalCost==min(removalCost));
-        nTie = sum(isTie);
-        i = i+1;
+    else%if(strcmpi(options.CostType,'NumberKeep'))
+        removalCost = sum(removalCandidate & activeKeep,1);
     end
-    iChoice = find(isTie,1);
 end
 

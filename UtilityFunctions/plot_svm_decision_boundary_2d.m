@@ -1,4 +1,4 @@
-function plotHandle = plot_svm_decision_boundary_2d(graphicsHandle,svm,varargin)
+function plotHandle = plot_svm_decision_boundary_2d(figureHandle,svm,varargin)
 %PLOT_SVM_DECISION_BOUNDARY_2D Visualize the decision boundary of a SVM
 %   PLOT_SVM_DECISION_BOUNDARY_2D plots a visualization of a Support Vector 
 %   Machine decision boundary in 2D. It estimates where the boundary is via the
@@ -26,7 +26,7 @@ function plotHandle = plot_svm_decision_boundary_2d(graphicsHandle,svm,varargin)
 %
 %   See also patch, contourc, ClassificationSVM, legend.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -65,47 +65,19 @@ function plotHandle = plot_svm_decision_boundary_2d(graphicsHandle,svm,varargin)
 
     % process data
     countourXY = [];
-    iEntry = 0;
-    startCurve = [];
-    endCurve = [];
     while(~isempty(contourMatrix))
-        iEntry = iEntry + 1;
-
         index = contourMatrix(2)+1;
-        countourXY{iEntry} = [contourMatrix(:,2:index)'];
+        countourXY = [countourXY;contourMatrix(:,2:index)'];
         contourMatrix(:,1:index) = [];
-        
-        startCurve = [startCurve;countourXY{iEntry}(1,:)];
-        endCurve = [endCurve;countourXY{iEntry}(end,:)];
-    end
-
-    % determine the order of entries
-    orderedCurve = countourXY{1};
-    availableQuery = true(iEntry,1);
-    availableQuery(1) = false;
-    for i=1:iEntry-1
-        % find start of next curve closest to end of current curve
-        [iClosestAvailableForward,distanceForward] = knnsearch(startCurve(availableQuery,:),orderedCurve(end,:));
-        [iClosestAvailableBackward,distanceBackward] = knnsearch(endCurve(availableQuery,:),orderedCurve(end,:));
-        
-        if(distanceForward<distanceBackward)
-            iClosest = convert_index_base(availableQuery,iClosestAvailableForward,'backward');
-            xyCoordinate = countourXY{iClosest};
-        else
-            iClosest = convert_index_base(availableQuery,iClosestAvailableBackward,'backward');
-            xyCoordinate = flip(countourXY{iClosest},1);
-        end
-        orderedCurve = [orderedCurve;xyCoordinate];
-        availableQuery(iClosest) = false;
     end
 
     % plot options
     defaultPlotOptions = {};
     [~,plotOptions] = merge_name_value_pair_argument(defaultPlotOptions,inputPlotOptions);
 
-    activate_graphics_object(graphicsHandle);
+    figure(figureHandle);
     hold on;
-    plotHandle = patch('XData',orderedCurve(:,1),'YData',orderedCurve(:,2),plotOptions{:});
+    plotHandle = patch('XData',countourXY(:,1),'YData',countourXY(:,2),plotOptions{:});
 
     if(nargout<1)
         clear plotHandle

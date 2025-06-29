@@ -60,12 +60,11 @@ function [linearConvertedQuery,logicalConvertedQuery] = convert_index_base(baseC
 %       - CONVERSIONTYPE : char OR string
 %   Output:
 %       - LINEARCONVERTEDQUERY : (m,p) integer
-%       - LOGICALCONVERTEDQUERY : (n,p) ('backward') OR (nT,p) ('forward') 
-%       logical
+%       - LOGICALCONVERTEDQUERY : (n,p) ('backward') OR (nT,p) ('forward') logical
 %
 %   See also convert_logical_index_base_or.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
     
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -90,14 +89,12 @@ function [linearConvertedQuery,logicalConvertedQuery] = convert_index_base(baseC
         % connect the logical conversion to full-size linear indices
         iBaseConversion = [1:sizeNewBase]';
         iBaseConversion = iBaseConversion(baseConversion);
-    elseif(strcmpi(conversionType,'forward'))
+    else%if(strcmpi(conversionType,'forward'))
         % new arrays will have as many elements as there were 'true's in conversion
         sizeNewBase = sum(baseConversion);
         % new linear indices are only increased for each 'true' in the base
         iBaseConversion = cumsum(baseConversion);
         iBaseConversion(~baseConversion) = nan;
-    else
-        error('ConvertIndexBase:ModeNotFound','Conversion mode not found; check again for argument.');
     end
 
     nConversionEntry = size(indexQuery,2);

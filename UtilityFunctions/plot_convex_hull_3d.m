@@ -1,4 +1,4 @@
-function plotHandle = plot_convex_hull_3d(graphicsHandle,hullSample,convexHullIndex,varargin)
+function plotHandle = plot_convex_hull_3d(figureHandle,hullSample,convexHullIndex,varargin)
 %PLOT_CONVEX_HULL_3D Visualize a 3-dimensional convex hull
 %   PLOT_CONVEX_HULL_3D plots in a figure the surfaces of a convex hull.
 %   
@@ -26,7 +26,7 @@ function plotHandle = plot_convex_hull_3d(graphicsHandle,hullSample,convexHullIn
 %
 %   See also patch, compute_convex_hull, legend, plot_convex_hull_2d.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,7 +46,7 @@ function plotHandle = plot_convex_hull_3d(graphicsHandle,hullSample,convexHullIn
     defaultPlotOptions = {'FaceColor',[0 0 0]};
     [~,plotOptions] = merge_name_value_pair_argument(defaultPlotOptions,inputPlotOptions);
 
-    activate_graphics_object(graphicsHandle);
+    figure(figureHandle);
     hold on;
 	plotHandle = patch('Faces',convexHullIndex,'Vertices',hullSample,...
         plotOptions{:});

@@ -48,7 +48,7 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_pare
 %   See also paretosearch, optimoptions, design_optimize_quantities_of_interest, 
 %	design_optimize_performance_score.
 %   
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -65,33 +65,17 @@ function [designOptimal,objectiveOptimal,optimizationOutput] = optimization_pare
 
 	options = optimoptions('paretosearch',varargin{:});
 
-	% initialize logger
-	logger_objective_function(objectiveFunction);
-	logger_constraint_function(constraintFunction);
-
 	nDesignVariable = size(initialDesign,2);
 	[designOptimal,objectiveOptimal,exitflag,output,residuals] = paretosearch(...
-		@logger_objective_function,...
+		objectiveFunction,...
 		nDesignVariable,...
 		[],[],[],[],... % A, b, Aeq, beq
 		designSpaceLowerBound,...
 		designSpaceUpperBound,...
-		@logger_constraint_function,...
+		constraintFunction,...
 		options);
-
-	[evaluatedDesignObjective,evaluatedObjectiveValue] = logger_objective_function();
-	[evaluatedDesignConstraint,evaluatedInequalityConstraintValue,evaluatedEqualityConstraintValue] = logger_constraint_function();
 
 	optimizationOutput.ExitCondition = exitflag;
 	optimizationOutput.InformationOptimizationProcess = output;
 	optimizationOutput.Residuals = residuals;
-	optimizationOutput.EvaluatedDesignObjective = evaluatedDesignObjective;
-	optimizationOutput.EvaluatedObjectiveValue = evaluatedObjectiveValue;
-	optimizationOutput.EvaluatedDesignConstraint = evaluatedDesignConstraint;
-	optimizationOutput.EvaluatedInequalityConstraintValue = evaluatedInequalityConstraintValue;
-	optimizationOutput.EvaluatedEqualityConstraintValue = evaluatedEqualityConstraintValue;
-
-	% finalize logger
-	clear logger_objective_function;
-	clear logger_constraint_function;
 end

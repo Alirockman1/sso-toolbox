@@ -67,7 +67,7 @@ function [boundingBoxStrict,boundingBoxRelaxed] = design_bounding_box(designSamp
 %
 %	See also box_apply_leanness, plot_design_box_2d.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

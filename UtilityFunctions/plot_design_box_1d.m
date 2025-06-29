@@ -1,4 +1,4 @@
-function plotHandle = plot_design_box_1d(graphicsHandle, designBox, varargin)
+function plotHandle = plot_design_box_1d(figureHandle, designBox, varargin)
 %PLOT_DESIGN_BOX_1D Visualize a 1-dimensional design box
 %   PLOT_DESIGN_BOX_1D plots in a figure the interval of a design box.
 %
@@ -59,7 +59,7 @@ function plotHandle = plot_design_box_1d(graphicsHandle, designBox, varargin)
     end
 
     % make plot
-    activate_graphics_object(graphicsHandle);
+    figure(figureHandle);
     hold on;
     plotHandle = line([designBox(1) designBox(2)], [yValue yValue], plotOptions{:});
 

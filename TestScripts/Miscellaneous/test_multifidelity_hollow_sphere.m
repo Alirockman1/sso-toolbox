@@ -2,7 +2,7 @@
 %   test_surrogate_hollow_sphere creates a surrogate model for the 
 %   hollow sphere problem. This is done using an active set strategy.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

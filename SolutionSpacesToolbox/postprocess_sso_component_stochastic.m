@@ -1,4 +1,4 @@
-function algorithmData = postprocess_sso_component_stochastic(optimizationData)
+function algorithmData = postprocess_sso_component_stochastic(problemData,iterationData)
 %POSTPROCESS_SSO_COMPONENT_STOCHASTIC Postprocess for stochastic component SSO
 %   POSTPROCESS_SSO_COMPONENT_STOCHASTIC extracts the most important information  
 %   from the data outputs of the SSO stochastic method for components and 
@@ -53,7 +53,7 @@ function algorithmData = postprocess_sso_component_stochastic(optimizationData)
 %
 %   See also sso_component_stochastic, plot_sso_component_stochastic_metrics.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -68,68 +68,53 @@ function algorithmData = postprocess_sso_component_stochastic(optimizationData)
 %   See the License for the specific language governing permissions and
 %   limitations under the License.
 
-	designSpaceLowerBound = optimizationData.DesignSpaceLowerBound;
-    designSpaceUpperBound = optimizationData.DesignSpaceUpperBound;
+	designSpaceLowerBound = problemData.DesignSpaceLowerBound;
+    designSpaceUpperBound = problemData.DesignSpaceUpperBound;
     designSpaceMeasure = prod(designSpaceUpperBound - designSpaceLowerBound);
     
     % algorithm data
     iExplorationStart = 1;
-    iConsolidationStart = find([optimizationData.IterationData.Phase]==2,1,'first');
+    iConsolidationStart = find([iterationData.Phase]==2,1,'first');
     iExplorationEnd = iConsolidationStart-1;
-    iConsolidationEnd = length(optimizationData.IterationData);
+    iConsolidationEnd = length(iterationData);
     
     % requirement spaces plots only necessary if there are useless designs
-    if(all([optimizationData.IterationData.IsUseful],'all'))
+    if(all([iterationData.IsUseful],'all'))
         flagReqSpaces = false;
     else
         flagReqSpaces = true;
     end
     
     % create column arrays
-    growthRate = [optimizationData.IterationData.GrowthRate]';
-    nPadGenerated = [optimizationData.IterationData.NumberPaddingSamplesGenerated]';
-    phase = [optimizationData.IterationData.Phase]';
-    timeElapsedAdaptGrowthRate = [optimizationData.IterationData.TimeElapsedAdaptGrowthRate]';
-    timeElapsedGrow = [optimizationData.IterationData.TimeElapsedGrow]';
-    timeElapsedGenerate = [optimizationData.IterationData.TimeElapsedGenerate]';
-    timeElapsedEvaluate = [optimizationData.IterationData.TimeElapsedEvaluate]';
-    timeElapsedLabel = [optimizationData.IterationData.TimeElapsedLabel]';
-    timeElapsedCount = [optimizationData.IterationData.TimeElapsedCount]';
-    timeElapsedShape = [optimizationData.IterationData.TimeElapsedShape]';
-    timeElapsedPrepare = [optimizationData.IterationData.TimeElapsedPrepare]';
-    timeElapsedTrimmingOrder = [optimizationData.IterationData.TimeElapsedTrimmingOrder]';
-    timeElapsedTrim = [optimizationData.IterationData.TimeElapsedTrim]';
-    timeElapsedLeanness = [optimizationData.IterationData.TimeElapsedLeanness]';
-    timeElapsedMeasure = [optimizationData.IterationData.TimeElapsedMeasure]';
-    timeElapsedConvergence = [optimizationData.IterationData.TimeElapsedConvergence]';
-    timeElapsedIteration = [optimizationData.IterationData.TimeElapsedIteration]';
+    growthRate = [iterationData.GrowthRate]';
+    nPadGenerated = [iterationData.NumberPaddingSamplesGenerated]';
+    phase = [iterationData.Phase]';
     
     % get measures
-    componentIndex = optimizationData.ComponentIndex;
-    nComponent = size(optimizationData.ComponentIndex,2);
+    componentIndex = problemData.ComponentIndex;
+    nComponent = size(problemData.ComponentIndex,2);
     componentMeasuresBeforeTrim = nan(iConsolidationEnd,nComponent);
     componentMeasuresAfterTrim = nan(iConsolidationEnd,nComponent);
     componentMeasuresBeforeTrimNormalized = nan(iConsolidationEnd,nComponent);
     componentMeasuresAfterTrimNormalized = nan(iConsolidationEnd,nComponent);
     for i=1:iConsolidationEnd
         for j=1:nComponent
-            if(isempty(optimizationData.IterationData(i).CandidateSpacesBeforeTrim(j)) || isempty(optimizationData.IterationData(i).CandidateSpacesBeforeTrim(j).DesignSampleDefinition))
-                if(isempty(optimizationData.IterationData(i).CandidateSpacesAfterTrim))
+            if(isempty(iterationData(i).CandidateSpacesBeforeTrim(j)) || isempty(iterationData(i).CandidateSpacesBeforeTrim(j).IsInsideDefinition))
+                if(isempty(iterationData(i).CandidateSpacesAfterTrim))
                     componentMeasuresBeforeTrim(i,j) = 0;
                 else
-                    samplingBox = optimizationData.IterationData(i).SamplingBoxBeforeTrim;
-                    sbU = samplingBox(2,componentIndex{j});
-                    sbL = samplingBox(1,componentIndex{j});
+                    sbU = iterationData(i).SamplingBoxBeforeTrim(2,componentIndex{j});
+                    sbL = iterationData(i).SamplingBoxBeforeTrim(1,componentIndex{j});
                     componentMeasuresBeforeTrim(i,j) = prod(sbU - sbL);
                 end
             else
-                componentMeasuresBeforeTrim(i,j) = optimizationData.IterationData(i).ComponentMeasureBeforeTrim(j);
+                componentMeasuresBeforeTrim(i,j) = iterationData(i).CandidateSpacesBeforeTrim(j).Measure;
             end
 
-            if(isempty(optimizationData.IterationData(i).CandidateSpacesAfterTrim))
+            if(isempty(iterationData(i).CandidateSpacesAfterTrim))
                 componentMeasuresAfterTrim(i,j) = componentMeasuresBeforeTrim(i,j);
             else
-                componentMeasuresAfterTrim(i,j) = optimizationData.IterationData(i).ComponentMeasureAfterTrim(j);
+                componentMeasuresAfterTrim(i,j) = iterationData(i).CandidateSpacesAfterTrim(j).Measure;
             end
 
             componentMeasuresBeforeTrimNormalized(i,j) = componentMeasuresBeforeTrim(i,j)...
@@ -148,13 +133,13 @@ function algorithmData = postprocess_sso_component_stochastic(optimizationData)
     [nSample, nPadUsed, nGood, nPhysicallyFeasible, nAccUse, nAcc, nUse] = ... 
         deal(nan(nIter,1));
     for i=iExplorationStart:iConsolidationEnd
-        nSample(i) = size(optimizationData.IterationData(i).EvaluatedDesignSamples,1);
-        nPadUsed(i) = size(optimizationData.IterationData(i).PaddingSamplesUsed,1);
-        nGood(i) = sum(optimizationData.IterationData(i).IsGoodPerformance);
-        nPhysicallyFeasible(i) = sum(optimizationData.IterationData(i).IsPhysicallyFeasible);
-        nAccUse(i) = sum(optimizationData.IterationData(i).IsAcceptable & optimizationData.IterationData(i).IsUseful);
-        nAcc(i) = sum(optimizationData.IterationData(i).IsAcceptable);
-        nUse(i) = sum(optimizationData.IterationData(i).IsUseful);
+        nSample(i) = size(iterationData(i).EvaluatedDesignSamples,1);
+        nPadUsed(i) = size(iterationData(i).PaddingSamplesUsed,1);
+        nGood(i) = sum(iterationData(i).IsGoodPerformance);
+        nPhysicallyFeasible(i) = sum(iterationData(i).IsPhysicallyFeasible);
+        nAccUse(i) = sum(iterationData(i).IsAcceptable & iterationData(i).IsUseful);
+        nAcc(i) = sum(iterationData(i).IsAcceptable);
+        nUse(i) = sum(iterationData(i).IsUseful);
     end
     phaseIterNumber = [1:iExplorationEnd , ...
         (iConsolidationStart:iConsolidationEnd)-iConsolidationStart+1]';
@@ -169,7 +154,6 @@ function algorithmData = postprocess_sso_component_stochastic(optimizationData)
     ratioTotalMeasureChangeBeforeTrim = measureBeforeTrim./[0;measureBeforeTrim(1:end-1)];
     ratioTotalMeasureChangeAfterTrim = measureAfterTrim./[0;measureAfterTrim(1:end-1)];
     ratioPaddingSamples = nPadUsed./(nPadUsed+nSample);
-    totalTimeElapsed = cumsum(timeElapsedIteration);
 
     % wrap
     algorithmData = struct(...
@@ -203,20 +187,5 @@ function algorithmData = postprocess_sso_component_stochastic(optimizationData)
         'RatioComponentMeasureChangeAfterTrim',ratioComponentMeasureChangeAfterTrim,...
     	'RatioTotalMeasureChangeBeforeTrim',ratioTotalMeasureChangeBeforeTrim,...
     	'RatioTotalMeasureChangeAfterTrim',ratioTotalMeasureChangeAfterTrim,...
-    	'RatioPadding',ratioPaddingSamples,...
-        'TotalTimeElapsed',totalTimeElapsed,...
-        'TimeElapsedAdaptGrowthRate',timeElapsedAdaptGrowthRate,...
-        'TimeElapsedGrow',timeElapsedGrow,...
-        'TimeElapsedGenerate',timeElapsedGenerate,...
-        'TimeElapsedEvaluate',timeElapsedEvaluate,...
-        'TimeElapsedLabel',timeElapsedLabel,...
-        'TimeElapsedCount',timeElapsedCount,...
-        'TimeElapsedShape',timeElapsedShape,...
-        'TimeElapsedPrepare',timeElapsedPrepare,...
-        'TimeElapsedTrimmingOrder',timeElapsedTrimmingOrder,...
-        'TimeElapsedTrim',timeElapsedTrim,...
-        'TimeElapsedLeanness',timeElapsedLeanness,...
-        'TimeElapsedMeasure',timeElapsedMeasure,...
-        'TimeElapsedConvergence',timeElapsedConvergence,...
-        'TimeElapsedIteration',timeElapsedIteration);
+    	'RatioPadding',ratioPaddingSamples);
 end

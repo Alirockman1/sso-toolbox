@@ -18,7 +18,7 @@ classdef BottomUpMappingPython < BottomUpMappingBase
 %
 %   See also BottomUpMappingBase.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
     
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -147,10 +147,10 @@ classdef BottomUpMappingPython < BottomUpMappingBase
         %	These are:
         %       - 'PhysicalFeasibilityDefaultValue' : default value used for the measure
         %		when no information regarding physical feasibility is available. 
-        %		Default is empty.
+        %		Default: -1.
         %       - 'PhysicalFeasibilityFunction' : function handle to be used to compute
         %		physical feasibility measures when that is not a part of the main 
-        %		response function. Default is empty.
+        %		response function. Default: [].
         %       - 'PhysicalFeasibilityParameter' : constant system parameters used
         %		exclusively when computing physical feasibility measures with the
         %		correspondent specific function. By default it is given the same value 

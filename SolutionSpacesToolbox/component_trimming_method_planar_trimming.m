@@ -1,4 +1,4 @@
-function [removalCandidate,removalInformation] = component_trimming_method_planar_trimming(designSampleComponent,iRemove,isKeep,varargin)
+function removalCandidate = component_trimming_method_planar_trimming(designSampleComponent,iRemove,isKeep,varargin)
 %COMPONENT_TRIMMING_METHOD_PLANAR_TRIMMING Component SSO Convex Trimming
 %   COMPONENT_TRIMMING_METHOD_PLANAR_TRIMMING uses the planar trimming method to
 %   find the sample points for candidate removal during the trimming operation 
@@ -40,7 +40,7 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
 %   See also component_trimming_operation, component_trimming_leanness, 
 %   component_trimming_method_corner_box_removal.
 %   
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -57,89 +57,45 @@ function [removalCandidate,removalInformation] = component_trimming_method_plana
 
     parser = inputParser;
     parser.addParameter('ReferenceDesigns','keep');
-    parser.addParameter('TrimmingSlack',0.5);
-    parser.addParameter('ConsiderOnlyKeepInSlack',true);
-    parser.addParameter('NormalizeVariables',false);
-    parser.addParameter('Tolerance',1e-10,@isscalar);
     parser.parse(varargin{:});
     options = parser.Results;
 
     [upperValueDesignVariable,upperBoundaryDesignIndexKeep] = max(designSampleComponent(isKeep,:),[],1);
     [lowerValueDesignVariable,lowerBoundaryDesignIndexKeep] = min(designSampleComponent(isKeep,:),[],1);
     
-    if(options.NormalizeVariables)
-        normalizationFactor = (upperValueDesignVariable-lowerValueDesignVariable);
-    else
-        normalizationFactor = 1;
-    end
+    % normalize values for better numerical behavior
+    designSampleComponent = designSampleComponent./(upperValueDesignVariable-lowerValueDesignVariable);
 
-    designReference = [];
     if(strcmpi(options.ReferenceDesigns,'all'))
         designReference = designSampleComponent;
         designReference(iRemove,:) = [];
     elseif(strcmpi(options.ReferenceDesigns,'keep'))
         designReference = designSampleComponent(isKeep,:);
-    elseif(strcmpi(options.ReferenceDesigns,'boundary'))
+    elseif(strcmpi(options.ReferenceDesigns,'boundary-center'))
         boundaryIndexKeep = unique([upperBoundaryDesignIndexKeep,lowerBoundaryDesignIndexKeep])';
         boundaryIndex = convert_index_base(isKeep,boundaryIndexKeep,'backward');
         designReference = designSampleComponent(boundaryIndex,:);
+        designReference = [designReference;mean(designSampleComponent(isKeep,:),1)];
+    elseif(strcmpi(options.ReferenceDesigns,'center'))
+        designReference = mean(designSampleComponent(isKeep,:),1);
     end
-    designReference = [designReference;mean(designSampleComponent(isKeep,:),1)];
 
     % find all distances
-    distanceToAnchorBase = (designSampleComponent(iRemove,:) - designSampleComponent)./normalizationFactor;
+    distanceAll = designSampleComponent(iRemove,:) - designSampleComponent;
+    normalizedDistanceAll = distanceAll./vecnorm(distanceAll,2,2);
 
-    planeOrientation = (designReference - designSampleComponent(iRemove,:))./normalizationFactor;
-    normalizedPlaneOrientation = planeOrientation./vecnorm(planeOrientation,2,2);
-
-    % in 1d case, only two options: -1 or 1
-    nDimension = size(designSampleComponent,2);
-    if(nDimension==1)
-        direction1d = [];
-        if(any(normalizedPlaneOrientation<0))
-            direction1d = [-1];
-        end
-        if(any(normalizedPlaneOrientation>0))
-            direction1d = [direction1d;1];
-        end
-        normalizedPlaneOrientation = direction1d;
-    end
+    distanceReference = designSampleComponent(iRemove,:) - designReference;
+    normalizedDistanceReference = distanceReference./vecnorm(distanceReference,2,2);
 
     % for each plane, points being removed are all whose dot product between the 
     % distance to the anchor and each normal is non-positive
     % note: full product could be written as a matrix multiplication, but in my
     % experience, that actually makes the performance worse
     nSample = size(designSampleComponent,1);
-    nRemovalCandidate = size(normalizedPlaneOrientation,1);
+    nRemovalCandidate = size(normalizedDistanceReference,1);
     removalCandidate = false(nSample,nRemovalCandidate);
     for i=1:nRemovalCandidate
-        anchorPoint = designSampleComponent(iRemove,:);
-        dotProduct = sum(normalizedPlaneOrientation(i,:).*distanceToAnchorBase,2);
-        dotProductWithTolerance = dotProduct - options.Tolerance;
-        removalCandidateCurrent = (dotProductWithTolerance>0);
-
-        if(options.TrimmingSlack<1)
-            isInsideSlack = ~removalCandidateCurrent;
-            if(options.ConsiderOnlyKeepInSlack)
-                isInsideSlack = isInsideSlack & isKeep;
-            end
-            allowedSlack = min(-dotProduct(isInsideSlack));
-            if(isempty(allowedSlack))
-                allowedSlack = 0;
-            end
-            anchorSlack = allowedSlack*normalizedPlaneOrientation(i,:);
-            anchorPoint = anchorPoint + normalizationFactor.*(1-options.TrimmingSlack).*anchorSlack;
-
-            distanceToAnchorCurrent = (anchorPoint - designSampleComponent)./normalizationFactor;
-            dotProduct = sum(normalizedPlaneOrientation(i,:).*distanceToAnchorCurrent,2);
-        end
-
-        dotProductWithTolerance = dotProduct - options.Tolerance;
-        removalCandidate(:,i) = (dotProductWithTolerance>0);
-        if(nargout>1)
-            removalInformation(i).Anchor = anchorPoint;
-            removalInformation(i).PlaneOrientationInside = normalizedPlaneOrientation(i,:);
-            removalInformation(i).NormalizationFactor = normalizationFactor;
-        end
+        dotProduct = sum(normalizedDistanceReference(i,:).*normalizedDistanceAll,2);
+        removalCandidate(:,i) = (dotProduct<=0);
     end
 end

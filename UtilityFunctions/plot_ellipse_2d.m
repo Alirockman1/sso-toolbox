@@ -1,4 +1,4 @@
-function handlePatch = plot_ellipse_2d(graphicsHandle,ellipseCenter,ellipseMajorSemiAxis,varargin)
+function handlePatch = plot_ellipse_2d(figureHandle,ellipseCenter,ellipseMajorSemiAxis,varargin)
 %PLOT_ELLIPSE_2D Visualize ellipse (or circle) in figure
 %	PLOT_ELLIPSE_2D plots an ellipse in the given figure given the ellipse's
 %	center, major semi-axes, and rotation angle. If only one major semi-axis 
@@ -33,7 +33,7 @@ function handlePatch = plot_ellipse_2d(graphicsHandle,ellipseCenter,ellipseMajor
 %
 %   See also patch.
 %   
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -71,7 +71,7 @@ function handlePatch = plot_ellipse_2d(graphicsHandle,ellipseCenter,ellipseMajor
 	yPoint = ellipseCenter(2) + ...
 		xPointLocal*sin(options.RotationAngle) + yPointLocal*cos(options.RotationAngle);
 
-	activate_graphics_object(graphicsHandle);
+	figure(figureHandle);
 	handlePatch = patch('XData',xPoint,'YData',yPoint,options.PatchOptions{:});
 
 	if(nargout<1)

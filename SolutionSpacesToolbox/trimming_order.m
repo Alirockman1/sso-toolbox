@@ -33,7 +33,7 @@ function trimmingOrder = trimming_order(isExclude,score,varargin)
 %
 %   See also sso_box_stochastic, sso_component_stochastic.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
     
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,7 +50,7 @@ function trimmingOrder = trimming_order(isExclude,score,varargin)
 
 	tagScoreLowToHigh = {'score-low-to-high','lth','low-to-high','lowest-first'};
 	tagScoreHighToLow = {'score-high-to-low','htl','high-to-low','highest-first'};
-	tagScoreBoth = {'score-both','score','both'};
+	tagScoreBoth = {'score-both','score'};
 	tagRandom = {'random','rand'};
 
 	parser = inputParser;
@@ -82,8 +82,8 @@ function trimmingOrder = trimming_order(isExclude,score,varargin)
     	orderExclude = nan(nExclude,2);
         [~,orderExclude(:,1)] = sort(scoreExclude,'ascend');
         orderExclude(:,2) = flip(orderExclude(:,1));
-    elseif(any(strcmpi(orderPreference,tagRandom)))
-        orderExclude = randperm(nExclude)';
+    elseif(strcmpi(orderPreference,'random'))
+        orderExclude = randperm(nExclude);
     else
     	orderExclude = (1:nExclude)';
     end

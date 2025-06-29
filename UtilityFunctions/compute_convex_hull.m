@@ -26,7 +26,7 @@ function [convexHullIndex,measure] = compute_convex_hull(convexHullPoint,varargi
 %   See also convhull, convhulln, find_facet_reference_point_normal, 
 %   is_in_convex_hull_with_facet_normal.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
     
 %   Licensed under the Apache License, Version 2.0 (the "License");

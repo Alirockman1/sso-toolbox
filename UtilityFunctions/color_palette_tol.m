@@ -1,5 +1,5 @@
 function color = color_palette_tol(index,paletteType)
-%COLOR_PALETTE_TOL Color Blind Accessible color palette from Dr. Paul Tol
+%COLOR_PALETTE_TOL Colorblind-friendly color palette from Dr. Paul Tol
 %	COLOR_PALETTE_TOL returns a color palette developed by Dr. Paul Tol which is 
 %	more accessible to colorblind people. Multiple palettes are available, and 
 %	the choice of which one to get can be specified.
@@ -280,7 +280,7 @@ function color = color_palette_tol(index,paletteType)
 %   See also color_palette_ibm, color_palette_okabe_ito, orderedcolors, 
 %	colororder.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");

@@ -1,4 +1,4 @@
-function plotHandle = plot_design_box_2d(graphicsHandle,designBox,varargin)
+function plotHandle = plot_design_box_2d(figureHandle,designBox,varargin)
 %PLOT_DESIGN_BOX_2D Visualize a 2-dimensional design box
 %	PLOT_DESIGN_BOX_2D plots in a figure the edges of a design box.
 %
@@ -26,7 +26,7 @@ function plotHandle = plot_design_box_2d(graphicsHandle,designBox,varargin)
 %
 %   See also patch, legend, plot_design_box_3d.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -61,7 +61,7 @@ function plotHandle = plot_design_box_2d(graphicsHandle,designBox,varargin)
 	[~,plotOptions] = merge_name_value_pair_argument(defaultPlotOptions,inputPlotOptions);
 	
 	% make plot
-	activate_graphics_object(graphicsHandle);
+    axis(figureHandle);
 	plotHandle = patch('Vertices', vertices,'Faces', faces, plotOptions{:});
 
 	if(nargout<1)

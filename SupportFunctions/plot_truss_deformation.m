@@ -59,7 +59,7 @@ function [handleUndeformed,handleDeformed] = plot_truss_deformation(figureHandle
 %
 %   See also truss_analysis, plot_truss_element_response.
 %   
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -83,8 +83,6 @@ function [handleUndeformed,handleDeformed] = plot_truss_deformation(figureHandle
     parser.addParameter('TrussPlotOptions',{},@(x)iscell(x));
     parser.addParameter('UndeformedPlotOptions',{});
     parser.addParameter('DeformedPlotOptions',{});
-    parser.addParameter('ShowBarNumber',false,@(x)islogical(x));
-    parser.addParameter('BarNumberOptions',{'HorizontalAlignment','center'},@(x)iscell(x));
 	parser.parse(varargin{:});
     options = parser.Results;
 
@@ -146,8 +144,6 @@ function [handleUndeformed,handleDeformed] = plot_truss_deformation(figureHandle
             end
 
             plotFunction = @plot;
-
-            textInput = {mean(undeformedTrussX),mean(undeformedTrussY)};
         else
             undeformedTrussZ = nodePosition(nodeElement(i,:),3);
             plotInputArgumentUndeformed = {undeformedTrussX,undeformedTrussY,undeformedTrussZ};
@@ -158,22 +154,15 @@ function [handleUndeformed,handleDeformed] = plot_truss_deformation(figureHandle
             end
 
             plotFunction = @plot3;
-
-            textInput = {mean(undeformedTrussX),mean(undeformedTrussY),mean(undeformedTrussZ)};
         end
 
         handleUndeformed = plotFunction(plotInputArgumentUndeformed{:},...
             'Linewidth',elementLinewidth(i),...
             undeformedPlotOptions{:});
-
         if(isPlotDeformed)
             handleDeformed = plotFunction(plotInputArgumentDeformed{:},...
                 'Linewidth',elementLinewidth(i),...
                 deformedPlotOptions{:});
-        end
-
-        if(options.ShowBarNumber)
-            text(textInput{:},num2str(i),options.BarNumberOptions{:});
         end
     end
 end

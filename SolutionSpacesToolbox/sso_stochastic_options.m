@@ -10,206 +10,222 @@ function options = sso_stochastic_options(solutionSpaceType,varargin)
 %   'sso_component_stochastic' if SOLUTIONSPACETYPE is 'component'.
 %
 %   OPTIONS = SSO_STOCHASTIC_OPTIONS(...,NAME,VALUE,...) allows one to specify
-%   those options by name-value pairs. 
-%
-%   Common options (available for both box and component SSO):
-%       - 'RequirementSpacesType' : type of requirement spaces to be used 
-%         during trimming; available options are 'Omega0','Omega1','Omega2', 
-%         and 'Omega3'. Default: 'Omega2'.
+%   those options. Available for both box SSO and component SSO are:
+%       - 'RequirementSpacesType' : type of requirement spaces to be used during
+%       trimming; avialable options are 'Omega0','Omega1','Omega2' and 'Omega3'.
+%       See more about this on 'design_requirement_spaces_label'. Default value
+%       is 'Omega2'.
 %
 %       - 'ApplyLeanness' : determine when/if the leanness condition of 
-%         requirement spaces should be applied. 
-%         Available: 'always','end-only','never'. Default: 'always'.
+%       requirement spaces should be applied. 'always' means it is applied at 
+%       the end of each trimming step, 'end-only' only applies it after the 
+%       last consolidation step, and 'never' the condition is not applied.
 %
-%       - 'NumberSamplesPerIteration' : integer, number of samples to be 
-%         evaluated per iteration (both in exploration and consolidation 
-%         phases) if the phase-specific options are not set. Default: 100.
+%       - 'NumberSamplesPerIteration' : number of samples to be evaluated in each
+%       iteration of the algorithm, in both exploration and consolidation 
+%       phases. Default value is 100.
 %
-%       - 'SamplingMethodFunction' : function handle used for sampling
-%         stochastically inside candidate spaces. Default: 
-%         @sampling_latin_hypercube.
+%       - 'SamplingMethodFunction' : function used to stochastically sample 
+%       inside a given design box, or base sampling method for sampling the 
+%       candidate spaces in component SSO. Default: @sampling_latin_hypercube.
 %
-%       - 'SamplingMethodOptions' : cell array of additional options for 
-%         the sampling function. Default: {}.
+%       - 'SamplingMethodOptions' : options for the (base) sampling function. 
+%       Default is empty.
 %
-%       - 'NumberSamplesPerIterationExploration' : integer, number of samples 
-%         used during the exploration phase. If empty, defaults to 
-%         'NumberSamplesPerIteration'.
+%       - 'NumberSamplesPerIterationExploration' : number of samples to be used
+%       during the exploration phase; set to 'NumberSamplesPerIteration' if 
+%       empty.
 %
-%       - 'NumberSamplesPerIterationConsolidation' : integer, number of samples 
-%         used during the consolidation phase. If empty, defaults to 
-%         'NumberSamplesPerIteration'.
+%       - 'NumberSamplesPerIterationConsolidation' : number of samples to be 
+%       used during the consolidation phase; set to 'NumberSamplesPerIteration'  
+%       if empty.
 %
-%       - 'GrowthRate' : double, fixed growth rate of the box/candidate spaces 
-%         during exploration if adaptive growth is not used. Default: 0.1.
+%       - 'GrowthRate' : fixed growth rate of the box / candidate spaces during 
+%       exploration. Default: 0.2.
 %
-%       - 'UseAdaptiveGrowthRate' : logical, whether the adaptive growth 
-%         rate method should be used. Default: false.
+%       - 'UseAdaptiveGrowthRate' : flag to determine whether the adaptive 
+%       growth rate method should be used to try to keep a given ratio of 
+%       accepted / not accepted designs. Default: false.
 %
-%       - 'MinimumGrowthRate' : double, minimum growth rate if using 
-%         adaptive growth. Default: 0.
+%       - 'MinimumGrowthRate' : minimum value the growth rate can assume if the
+%       adaptive growth method is used. Default value is '0.01'.
 %
-%       - 'MaximumGrowthRate' : double, maximum growth rate if using 
-%         adaptive growth. Default: 0.2.
+%       - 'TargetAcceptedRatioExploration' : target value for the adaptive 
+%       growth method. Default value is '0.8'.
 %
-%       - 'MinimumGrowthPurity' : double, lower bound for the considered purity
-%         if using an adaptive approach for trimming/expansion. Default: 0.001.
+%       - 'ToleranceMeasureChangeExploration' : tolerance for how much the 
+%       overall measure of the box / candidate space can vary between iterations
+%       before it is considered the algorithm has converged. Default: 0.01.
 %
-%       - 'MaximumGrowthPurity' : double, upper bound for the considered purity
-%         if using an adaptive approach. Default: 0.999.
+%       - 'TolerancePurityConsolidation' : tolerance for the level of purity 
+%       required for the consolidation to be considered done. Default: 1.0.
 %
-%       - 'GrowthAdaptationFactorFunction' : function handle used to adapt 
-%         the growth rate based on measured volume/purity/etc. 
-%         Default: @growth_rate_adaptation_volume.
+%       - 'MaxIter' : maximum number of iterations for the whole algorithm. 
+%       Default: 40.
 %
-%       - 'GrowthAdaptationFactorOptions' : cell array of additional options 
-%         for the growth adaptation factor function. Default: {}.
+%       - 'MaxFunctionEvaluations' : maximum number of function evaluations. If
+%       specified, the maximum number of iterations for the exploration and 
+%       consolidation phases will be derived from this (if they have not been
+%       specified themselves). Default is empty.
 %
-%       - 'MinimumGrowthAdaptationFactor' : double, minimum factor the
-%         growth rate can be multiplied by when adapted. Default: 0.2.
+%       - 'MaxIterExploration' : maximum number of iterations allowed during the
+%       exploration phase. If empty, it first sees if that value can be
+%       obtained from the maximum number of function evaluations; if not, 
+%       it uses maximum number of iterations. Default is empty.
 %
-%       - 'MaximumGrowthAdaptationFactor' : double, maximum factor the
-%         growth rate can be multiplied by when adapted. Default: 1.5.
+%       - 'MaxIterConsolidation' : maximum number of iterations allowed during the
+%       consolidation phase. If empty, it first sees if that value can be
+%       obtained from the maximum number of function evaluations; if not, 
+%       it uses maximum number of iterations. Default is empty.
 %
-%       - 'TargetAcceptedRatioExploration' : double, target ratio of accepted 
-%         designs in exploration to drive adaptive growth. Default: 0.7.
+%       - 'FixIterNumberExploration' : flag to determine if the number of 
+%       iterations performed during exploration should be fixed to its maximum
+%       value ('true'), or if convergence criteria should be checked to stop
+%       the algorithm ('false'). Default: 'true'.
 %
-%       - 'ToleranceMeasureChangeExploration' : double, how much the measure 
-%         (box volume or candidate space volume) can change between iterations 
-%         before being considered converged. Default: 1e-2.
+%       - 'FixIterNumberConsolidation' : flag to determine if the number of 
+%       iterations performed during consolidation should be fixed to its maximum
+%       value ('true'), or if convergence criteria should be checked to stop
+%       the algorithm ('false'). Default: 'true'.
 %
-%       - 'TolerancePurityConsolidation' : double, required purity level in 
-%         consolidation for stopping. Default: 1.0.
+%       - 'TrimmingOrderFunction' : function to be used when determining
+%       the order that non-acceptable designs should be trimmed out of the
+%       candidate space. Default: @trimming_order.
 %
-%       - 'MaxIter' : integer, maximum total number of iterations for the entire
-%         algorithm if the exploration and consolidation phase limits are 
-%         not directly specified. Default: 40.
+%       - 'TrimmingOrderOptions' : options to be used for for the trimming
+%       order function. Default: empty.
 %
-%       - 'MaxFunctionEvaluations' : integer, if specified, the maximum total 
-%         number of function evaluations. This may be used to derive 
-%         'MaxIterExploration' and 'MaxIterConsolidation' if those are empty.
-%         Default: [].
+%       - 'TrimmingOperationFunction' : function to be used when performing the 
+%       trimming operation for each component. Default is 
+%       'box_trimming_operation' for box SSO and 'component_trimming_operation'
+%       for component SSO.
 %
-%       - 'MaxIterExploration' : integer, maximum number of iterations 
-%         allowed in the exploration phase. If empty, it may be derived from 
-%         'MaxFunctionEvaluations' or 'MaxIter'. Default: [].
+%       - 'TrimmingOperationOptions' : options to be used for for the trimming
+%       operation function. Default is empty. 
 %
-%       - 'MaxIterConsolidation' : integer, maximum number of iterations 
-%         allowed in the consolidation phase. If empty, it may be derived from 
-%         'MaxFunctionEvaluations' or 'MaxIter'. Default: [].
+%       - 'LoggingLevel' : setting for what should be logged to console. See 
+%       more on 'ConsoleLogging'. Default: 'info'. 
+%   
+%   Available exclusively for box SSO are:
+%       - 'MeasureFunction' : function to get the measure of a candidate box.
+%       Default: @box_measure_volume.
 %
-%       - 'FixIterNumberExploration' : logical, whether to fix the 
-%         exploration phase to 'MaxIterExploration' or allow early stopping 
-%         upon convergence. Default: true.
+%       - 'MeasureOptions' : options for the measure function. Default: empty.
 %
-%       - 'FixIterNumberConsolidation' : logical, whether to fix the 
-%         consolidation phase to 'MaxIterConsolidation' or allow early 
-%         stopping upon convergence. Default: true.
+%   Available exclusively for component SSO are:
+%       - 'NumberPaddingSamples' : number of padding sample points to generate.
+%       These are points that used during trimming and candidate space 
+%       definition, but don't get evaluated. Default: 1000.
 %
-%       - 'TrimmingOrderFunction' : function handle used to determine the 
-%         order of trimming non-acceptable points or regions. Default: 
-%         @trimming_order.
+%       - 'CandidateSpaceSamplingFunction' : function to sample the candidate 
+%       spaces. Default: @candidate_space_sampling_individual_feasible.
+%       
+%       - 'CandidateSpaceSamplingOptions' : options for the sampling of the 
+%       candidate space. 'SamplingMethodFunction' and 'SamplingMethodOptions'
+%       get added to this when the algorithm is actually running. 
+%       Default is empty.
 %
-%       - 'TrimmingOrderOptions' : cell array of additional options for the 
-%         trimming order function. Default: {}.
+%       - 'TrimmingMethodFunction' : method of trimming used, as in how the
+%       unnaceptable designs are removed. Default: 
+%       @component_trimming_method_planar_trimming.
 %
-%       - 'TrimmingOperationFunction' : function handle used to perform 
-%         trimming operations for the solution space (box or component). 
-%         If 'box' SSO, defaults to @box_trimming_operation; if 'component' 
-%         SSO, defaults to @component_trimming_operation.
+%       - 'TrimmingMethodOptions' : options for the trimming method. Default is
+%       empty.
 %
-%       - 'TrimmingOperationOptions' : cell array of additional options 
-%         for the trimming operation. Default: {}.
+%       - 'TrimmingCostFunction' : function to compute the costs of the removal 
+%       of different trimming candidates. Default: @component_trimming_cost.
 %
-%       - 'LoggingLevel' : controls the logging verbosity. 
-%         Default: 'info' (see ConsoleLogging.SeverityLevelName).
+%       - 'TrimmingCostOptions' : options for the trimming cost function.
+%       Default is empty.
 %
-%   Options exclusive to box SSO (SOLUTIONSPACETYPE == 'box'):
-%       - 'MeasureFunction' : function handle to compute the "size" 
-%         (measure) of the candidate box. Default: @box_measure_volume.
+%       - 'TrimmingComponentChoiceFunction' : function to choose from the 
+%       available component trimmings which one should be done based on the 
+%       cost. Default: @component_trimming_choice.
 %
-%       - 'MeasureOptions' : cell array of additional options for the measure 
-%         function. Default: {}.
+%       - 'TrimmingComponentChoiceOptions' : options for the trimming choice 
+%       function. Default is empty.
 %
-%   Options exclusive to component SSO (SOLUTIONSPACETYPE == 'component'):
-%       - 'MinimumNumberPaddingSamples' : integer, minimum number of 
-%         padding sample points to generate for each iteration. Default: 1000.
+%       - 'UsePaddingSamplesInTrimming' : flag to decide if padding samples 
+%       should be considered in the trimming operation (and, as a consequence,
+%       on candidate space definition/update). Default: true.
 %
-%       - 'MaximumNumberPaddingSamples' : integer or empty, maximum number 
-%         of padding samples. If empty, no explicit maximum is enforced. 
-%         Default: [].
+%       - 'UsePreviousEvaluatedSamplesConsolidation' : flag to decide whether
+%       all previously evaluated samples should be kept and remain in the 
+%       trimming process / candidate space update during consolidation. Default:
+%       false.
 %
-%       - 'CandidateSpaceSamplingFunction' : function handle to sample 
-%         candidate spaces. Default: 
-%         @candidate_space_sampling_individual_feasible.
+%       - 'UsePreviousPaddingSamplesConsolidation' : flag to decide whether
+%       all previous padding samples should be kept and remain in the trimming
+%       process / candidate space update during consolidation. Default: false.
 %
-%       - 'CandidateSpaceSamplingOptions' : cell array of additional options 
-%         for candidate space sampling. Default: {}.
+%       - 'CandidateSpaceConstructorExploration' : constructor function handle
+%       for the candidate spaces to be used during exploration. Default:
+%       @CandidateSpaceConvexHull.
 %
-%       - 'TrimmingMethodFunction' : function handle describing which 
-%         "method" of trimming is performed. Default: 
-%         @component_trimming_method_planar_trimming.
+%       - 'CandidateSpaceConstructorConsolidation' : constructor function handle
+%       for the candidate spaces to be used during consolidation. Default:
+%       @CandidateSpaceConvexHull.
 %
-%       - 'TrimmingMethodOptions' : cell array of additional options for 
-%         the trimming method function. Default: {}.
+%       - 'CandidateSpaceOptionsExploration' : options to be used when first
+%       initializing the candidate spaces with the constructors during 
+%       exploration. Default is empty.
 %
-%       - 'TrimmingCostFunction' : function handle to compute the cost(s) 
-%         of removing certain portions of the design space. Default: 
-%         @component_trimming_cost.
+%       - 'CandidateSpaceOptionsConsolidation' : options to be used when first
+%       initializing the candidate spaces with the constructors during 
+%       exploration. Default is empty.
 %
-%       - 'TrimmingCostOptions' : cell array of additional options for the 
-%         trimming cost function. Default: {}.
-%
-%       - 'TrimmingComponentChoiceFunction' : function handle to choose 
-%         among multiple possible trimming components based on cost or 
-%         other criteria. Default: @component_trimming_component_choice.
-%
-%       - 'TrimmingComponentChoiceOptions' : cell array of additional 
-%         options for the trimming component choice function. Default: {}.
-%
-%       - 'TrimmingOptimalChoiceFunction' : function handle to pick a 
-%         possibly optimal trimming strategy after potential partial choices. 
-%         Default: @component_trimming_optimal_choice.
-%
-%       - 'TrimmingOptimalChoiceOptions' : cell array of additional options 
-%         for the trimming optimal choice function. Default: {}.
-%
-%       - 'UsePaddingSamplesInTrimming' : logical, whether the padding 
-%         samples are also considered in trimming. Default: true.
-%
-%       - 'UseShapeSamplesExploration' : logical, whether shape 
-%         (component-based) sample points should be used for exploration steps. 
-%         Default: true.
-%
-%       - 'ShapeSamplesUsefulExploration' : logical, whether shape samples 
-%         from the exploration phase are considered useful for subsequent 
-%         steps. Default: false.
-%
-%       - 'ShapeSamplesUsefulConsolidation' : logical, whether shape 
-%         samples are considered useful during consolidation. 
-%         Default: true.
-%
-%       - 'UsePreviousEvaluatedSamplesConsolidation' : logical, whether 
-%         previously evaluated samples from exploration are retained and 
-%         reused during consolidation. Default: false.
-%
-%       - 'CandidateSpaceConstructor' : function handle for constructing 
-%         the underlying candidate space representation. Default: 
-%         @CandidateSpaceConvexHull.
-%
-%       - 'CandidateSpaceOptions' : cell array of options passed to the 
-%         candidate space constructor. Default: {}.
-%
+%   
 %   Input:
-%       - SOLUTIONSPACETYPE : char or string, 'box' or 'component'
-%       - Various NAME,VALUE pairs as described above
+%       - SOLUTIONSPACETYPE : char OR string
+%       - 'RequirementSpacesType' : char OR string OR function_handle
+%       - 'ApplyLeanness' : logical
+%       - 'NumberSamplesPerIteration' : integer 
+%       - 'SamplingMethodFunction' : function_handle
+%       - 'SamplingMethodOptions' : (1,nOptionSamplingMethod) cell
+%       - 'NumberSamplesPerIterationExploration' : integer
+%       - 'NumberSamplesPerIterationConsolidation' : integer
+%       - 'GrowthRate' : double
+%       - 'AdaptiveGrowthRate' : logical
+%       - 'MinimumGrowthRate' : double
+%       - 'TargetAcceptedRatioExploration' : double
+%       - 'ToleranceMeasureChangeExploration' : double
+%       - 'TolerancePurityConsolidation' : double
+%       - 'MaxIter' : integer
+%       - 'MaxFunctionEvaluations' : integer
+%       - 'MaxIterExploration' : integer
+%       - 'MaxIterConsolidation' : integer
+%       - 'FixIterNumberExploration' : logical
+%       - 'FixIterNumberConsolidation' : logical
+%       - 'TrimmingOrderFunction' : function_handle
+%       - 'TrimmingOrderOptions' : (1,nOptionOrder) cell
+%       - 'TrimmingOperationFunction' : function_handle
+%       - 'TrimmingOperationOptions' : (1,nOptionOperation) cell
+%       - 'LoggingLevel' : char OR string OR integer
+%       - 'MeasureFunction' : function_handle
+%       - 'MeasureOptions' : (1,nOptionMeasure) cell
+%       - 'NumberPaddingSamples' : integer
+%       - 'CandidateSpaceSamplingFunction' : function_handle
+%       - 'CandidateSpaceSamplingOptions' : (1,nOptionCandidateSampling) cell
+%       - 'TrimmingMethodFunction' : function_handle
+%       - 'TrimmingMethodOptions' : (1,nOptionTrimmingMethod) cell
+%       - 'TrimmingCostFunction' : function_handle
+%       - 'TrimmingCostOptions' : (1,nOptionCost) cell
+%       - 'TrimmingComponentChoiceFunction' : function_handle
+%       - 'TrimmingComponentChoiceOptions' : (1,nOptionChoice) cell
+%       - 'UsePaddingSamplesInTrimming' : logical
+%       - 'UsePreviousEvaluatedSamplesConsolidation' : logical
+%       - 'UsePreviousPaddingSamplesConsolidation' : logical
+%       - 'CandidateSpaceConstructorExploration' : funciton_handle
+%       - 'CandidateSpaceConstructorConsolidation' : funciton_handle
+%       - 'CandidateSpaceOptionsExploration' : (1,nOptionCandidate) cell
+%       - 'CandidateSpaceOptionsConsolidation' : (1,nOptionCandidate) cell
 %
 %   Output:
-%       - OPTIONS : struct of parsed options
+%       - OPTIONS : struct
 %
 %   See also sso_box_stochastic, design_requirement_spaces_label.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce (Supervisor, Main Author)
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -238,16 +254,11 @@ function options = sso_stochastic_options(solutionSpaceType,varargin)
     % growth
     parser.addParameter('GrowthRate',0.1,@(x)isnumeric(x)&&isscalar(x)&&(x>0));
     parser.addParameter('UseAdaptiveGrowthRate',false,@(x)islogical(x)&&isscalar(x));
-    parser.addParameter('MinimumGrowthRate',0,@(x)isnumeric(x)&&isscalar(x)&&(x>=0));
-    parser.addParameter('MaximumGrowthRate',0.2,@(x)isnumeric(x)&&isscalar(x)&&(x>0));
-    parser.addParameter('MinimumGrowthPurity',0.001,@(x)isnumeric(x)&&isscalar(x)&&(x>=0));
+    parser.addParameter('MinimumGrowthRate',0,@(x)isnumeric(x)&&isscalar(x)&&(x>0));
+    parser.addParameter('MaximumGrowthRate',0.25,@(x)isnumeric(x)&&isscalar(x)&&(x>0));
+    parser.addParameter('MinimumGrowthPurity',0.001,@(x)isnumeric(x)&&isscalar(x)&&(x>0));
     parser.addParameter('MaximumGrowthPurity',0.999,@(x)isnumeric(x)&&isscalar(x)&&(x>0));
-    parser.addParameter('GrowthAdaptationFactorFunction',@growth_rate_adaptation_volume,@(x)isa(x,'function_handle'));
-    parser.addParameter('GrowthAdaptationFactorOptions',{},@(x)iscell(x));
-    parser.addParameter('MinimumGrowthAdaptationFactor',0.2,@(x)isnumeric(x)&&isscalar(x)&&(x>=0));
-    parser.addParameter('MaximumGrowthAdaptationFactor',1.5,@(x)isnumeric(x)&&isscalar(x)&&(x>0));
     parser.addParameter('TargetAcceptedRatioExploration',0.7,@(x)isnumeric(x)&&isscalar(x)&&(x>0));
-    parser.addParameter('MinimumPurityReset',0.15,@(x)isnumeric(x)&&isscalar(x)&&(x>=0));
     % loop control
     parser.addParameter('ToleranceMeasureChangeExploration',1e-2,@(x)isnumeric(x)&&isscalar(x)&&(x>0));
     parser.addParameter('TolerancePurityConsolidation',1.0,@(x)isnumeric(x)&&isscalar(x)&&(x>=0));
@@ -277,8 +288,7 @@ function options = sso_stochastic_options(solutionSpaceType,varargin)
     %% component parameters
     if(strcmpi(solutionSpaceType,'component'))
         % sampling
-        parser.addParameter('MinimumNumberPaddingSamples',1000,@(x)isnumeric(x)&&all(x>=0));
-        parser.addParameter('MaximumNumberPaddingSamples',[],@(x)isnumeric(x)&&all(x>=0));
+        parser.addParameter('NumberPaddingSamples',1000,@(x)isnumeric(x)&&all(x>0));
         parser.addParameter('CandidateSpaceSamplingFunction',@candidate_space_sampling_individual_feasible,@(x)isa(x,'function_handle'));
         parser.addParameter('CandidateSpaceSamplingOptions',{},@(x)iscell(x));
         % trimming
@@ -287,18 +297,16 @@ function options = sso_stochastic_options(solutionSpaceType,varargin)
         parser.addParameter('TrimmingMethodOptions',{},@(x)iscell(x));
         parser.addParameter('TrimmingCostFunction',@component_trimming_cost,@(x)isa(x,'function_handle'));
         parser.addParameter('TrimmingCostOptions',{},@(x)iscell(x));
-        parser.addParameter('TrimmingComponentChoiceFunction',@component_trimming_component_choice,@(x)isa(x,'function_handle'));
+        parser.addParameter('TrimmingComponentChoiceFunction',@component_trimming_choice,@(x)isa(x,'function_handle'));
         parser.addParameter('TrimmingComponentChoiceOptions',{},@(x)iscell(x));
-        parser.addParameter('TrimmingOptimalChoiceFunction',@component_trimming_optimal_choice,@(x)isa(x,'function_handle'));
-        parser.addParameter('TrimmingOptimalChoiceOptions',{},@(x)iscell(x));
         parser.addParameter('UsePaddingSamplesInTrimming',true,@(x)islogical(x)&&isscalar(x));
-        parser.addParameter('UseShapeSamplesExploration',true,@(x)islogical(x)&&isscalar(x));
-        parser.addParameter('ShapeSamplesUsefulExploration',false,@(x)islogical(x)&&isscalar(x));
-        parser.addParameter('ShapeSamplesUsefulConsolidation',true,@(x)islogical(x)&&isscalar(x));
         parser.addParameter('UsePreviousEvaluatedSamplesConsolidation',false,@(x)islogical(x)&&isscalar(x));
+        parser.addParameter('UsePreviousPaddingSamplesConsolidation',false,@(x)islogical(x)&&isscalar(x));
         % candidate spaces
-        parser.addParameter('CandidateSpaceConstructor',@CandidateSpaceConvexHull,@(x)isa(x,'function_handle'));
-        parser.addParameter('CandidateSpaceOptions',{},@(x)iscell(x));
+        parser.addParameter('CandidateSpaceConstructorExploration',@CandidateSpaceConvexHull,@(x)isa(x,'function_handle'));
+        parser.addParameter('CandidateSpaceConstructorConsolidation',@CandidateSpaceConvexHull,@(x)isa(x,'function_handle'));
+        parser.addParameter('CandidateSpaceOptionsExploration',{},@(x)iscell(x));
+        parser.addParameter('CandidateSpaceOptionsConsolidation',{},@(x)iscell(x));
     end    
 
     parser.parse(varargin{:});

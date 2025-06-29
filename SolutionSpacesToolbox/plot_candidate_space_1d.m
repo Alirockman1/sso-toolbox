@@ -1,11 +1,11 @@
-function plotHandle = plot_candidate_space_1d(graphicsHandle, candidateSpace, varargin)
+function plotHandle = plot_candidate_space_1d(figureHandle, candidateSpace, varargin)
 %PLOT_CANDIDATE_SPACE_1D Visualize the boundary of a 1D candidate space
 %   PLOT_CANDIDATE_SPACE_1D plots the intervals of a 1D candidate space in the
 %   given figure. It estimates where the boundary is via the scores applied to
 %   a large sample to identify potentially disconnected intervals.
 %
-%   PLOT_CANDIDATE_SPACE_1D(GRAPHICSHANDLE,CANDIDATESPACE) plots in 
-%   GRAPHICSHANDLE the intervals of the candidate space CANDIDATESPACE.
+%   PLOT_CANDIDATE_SPACE_1D(FIGUREHANDLE,CANDIDATESPACE) plots in figure 
+%   FIGUREHANDLE the intervals of the candidate space CANDIDATESPACE.
 %
 %   PLOT_CANDIDATE_SPACE_1D(...,NAME,VALUE,...) allows for setting
 %   additional options for the plot operation; said options should refer to the
@@ -20,7 +20,7 @@ function plotHandle = plot_candidate_space_1d(graphicsHandle, candidateSpace, va
 %   for 'legend', for example.
 %
 %   Inputs:
-%       - GRAPHICSHANDLE : Figure
+%       - FIGUREHANDLE : Figure
 %       - CANDIDATESPACE : CandidateSpaceBase
 %       - Name-value pair arguments: passed directly to 'line'.
 %
@@ -44,43 +44,19 @@ function plotHandle = plot_candidate_space_1d(graphicsHandle, candidateSpace, va
 %   See the License for the specific language governing permissions and
 %   limitations under the License.
 
-    parser = inputParser;
-    parser.KeepUnmatched = true;
-    parser.addParameter('StepSize',0.001);
-    parser.addParameter('FixedVariables',[]);
-    parser.parse(varargin{:});
+    inputPlotOptions = parser_variable_input_to_structure(varargin{:});
 
-    stepSize = parser.Results.StepSize;
-    fixedVariables = parser.Results.FixedVariables;
-    inputPlotOptions = namedargs2cell(parser.Unmatched);
-
-    activate_graphics_object(graphicsHandle);
-    hold on;
+    % set step size for fine sampling
+    stepSize = 0.001;
 
     % make the intervals for each variable
     [~,positiveRegionBox] = design_bounding_box(candidateSpace.DesignSampleDefinition,candidateSpace.IsInsideDefinition);
-    positiveRegionBox(1,:) = max(positiveRegionBox(1,:),candidateSpace.DesignSpaceLowerBound);
-    positiveRegionBox(2,:) = min(positiveRegionBox(2,:),candidateSpace.DesignSpaceUpperBound);
-
-    if(~isempty(fixedVariables))
-        nDimension = size(positiveRegionBox,2);
-        isFixed = ~isnan(fixedVariables);
-        positiveRegionBox = positiveRegionBox(:,~isFixed);
-    end
-
-    xInterval = [positiveRegionBox(1,:) + (0:stepSize:1)*(positiveRegionBox(2,:)-positiveRegionBox(1,:))]';
-
-    if(~isempty(fixedVariables))
-        nPoints = size(xInterval,1);
-        xIntervalComplete = nan(nPoints,nDimension);
-        xIntervalComplete(:,~isFixed) = xInterval;
-        xIntervalComplete(:,isFixed) = repmat(fixedVariables(isFixed),nPoints,1);
-        xInterval = xIntervalComplete;
-        clear xIntervalComplete;
-    end
+    positiveRegionBox(1) = max(positiveRegionBox(1),candidateSpace.DesignSpaceLowerBound);
+    positiveRegionBox(2) = min(positiveRegionBox(2),candidateSpace.DesignSpaceUpperBound);
+    xInterval = positiveRegionBox(1) + (0:stepSize:1)*(positiveRegionBox(2)-positiveRegionBox(1));
 
     % get scores
-    [~,score] = candidateSpace.is_in_candidate_space(xInterval);
+    [~,score] = candidateSpace.is_in_candidate_space(xInterval');
 
     % find zero crossings to identify interval boundaries
     signChanges = diff(sign(score));
@@ -112,7 +88,7 @@ function plotHandle = plot_candidate_space_1d(graphicsHandle, candidateSpace, va
     end
 
     % Plot each interval
-    activate_graphics_object(graphicsHandle);
+    figure(figureHandle);
     hold on;
     plotHandle = gobjects(nIntervals,1);
     for i = 1:nIntervals

@@ -1,9 +1,9 @@
-%TEST_COMPONENT_TWO_COMPONENT_ARM_IBEAMS 2-link Robot Arm with I-beams 
-%   TEST_COMPONENT_TWO_COMPONENT_ARM_IBEAMS computes component solution spaces for the 
+%test_component_two_component_arm_ibeams 2-link Robot Arm with I-beams 
+%   test_component_two_component_arm_ibeams computes component solution spaces for the 
 %   two-component arm problem where each component is an I-beam. The solution
 %   regions refer to the stifnesses of each component.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,7 +52,7 @@ initialDesign = [1710.8 60426e3 42987e3 478.2648 23175e3 7253100];
 %                        k1_11   k1_22   k1_44    k2_11    k2_22   k2_44
 designSpaceLowerBound = [ 600.0   0.5e7     1e7      200   0.5e7   0.2e7];
 designSpaceUpperBound = [3000.0     9e7     8e7     1600     7e7     8e7];
-componentIndex = {[1,2,3],[4,5,6]};
+Components = {[1,2,3],[4,5,6]};
 %                         displ   m 
 performanceLowerLimit = [ -inf -inf];
 performanceUpperLimit = [    2  120];
@@ -80,7 +80,7 @@ options = sso_stochastic_options('box',...
     'TrimmingOperationOptions',{'PassesCriterion','reduced'},...
     'TrimmingOrderOptions',{'OrderPreference','score'});
 
-[solutionSpaceBox,optimizationDataBox] = sso_box_stochastic(designEvaluator,...
+[solutionSpaceBox,problemDataBox,iterDataBox] = sso_box_stochastic(designEvaluator,...
     initialDesign,designSpaceLowerBound,designSpaceUpperBound,options);
 toc
 
@@ -107,8 +107,8 @@ options = sso_stochastic_options('component',...
     'TrimmingOperationOptions',{'PassesCriterion','reduced'},...
     'TrimmingOrderOptions',{'OrderPreference','score'});
 
-[componentSolutionSpace,optimizationDataComponent] = sso_component_stochastic(designEvaluator,...
-    solutionSpaceBox,designSpaceLowerBound,designSpaceUpperBound,componentIndex,options);
+[componentSolutionSpace,problemDataComponent,iterDataComponent] = sso_component_stochastic(designEvaluator,...
+    solutionSpaceBox,designSpaceLowerBound,designSpaceUpperBound,Components,options);
 toc
 
 %% Selective Design Space Projection
@@ -123,7 +123,7 @@ desiredPlots = [...
     5,6];
 axisLabel = {'k_{(1)11}','k_{(1)22}','k_{(1)44}','k_{(2)11}','k_{(2)22}','k_{(2)44}'};
 
-[h,plotData] = plot_selective_design_space_projection(...
+[h,problemData,plotData] = plot_selective_design_space_projection(...
     designEvaluator,...
     solutionSpaceBox,...
     designSpaceLowerBound,...

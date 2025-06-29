@@ -62,7 +62,7 @@ function [performanceMeasure,physicalFeasibilityMeasure] = two_links_ibeams_cons
 %
 %   See also two_links_ibeam_hollow_circle.
 %
-%   Copyright 2025 Eduardo Rodrigues Della Noce
+%   Copyright 2024 Eduardo Rodrigues Della Noce
 %   SPDX-License-Identifier: Apache-2.0
 
 %   Licensed under the Apache License, Version 2.0 (the "License");
