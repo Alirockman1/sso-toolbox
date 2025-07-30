@@ -70,6 +70,7 @@ function [plotData,evaluationData] = evaluate_selective_design_space_projection(
         'DesignSpaceLowerBound',[],...
         'DesignSpaceUpperBound',[],...
         'DesignBox',[]);
+    
     for j=1:nPlot
         % Calculate row indices for this plot's samples
         startRow = (j-1)*options.NumberSamplesPerPlot + 1;
